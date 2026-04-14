@@ -1,0 +1,10 @@
+node_modules
+mobile/node_modules
+dist
+.git
+.github
+.cursor
+terminals
+agent-transcripts
+*.log
+.env
