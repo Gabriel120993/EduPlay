@@ -1,0 +1,10 @@
+ARG BASE_IMAGE=docker.io/library/eduplay-api:latest
+FROM ${BASE_IMAGE}
+
+# Imagen de despliegue para servidor privado:
+# toma la imagen publicada en DockerHub y define defaults de ejecución.
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV AUTO_SEED_DEMO=true
+
+EXPOSE 3000

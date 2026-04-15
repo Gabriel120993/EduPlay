@@ -310,6 +310,49 @@ Se ejecuta en `push` y `pull_request` con dos jobs:
 
 ---
 
+## Publicar imagen en DockerHub
+
+Workflow: `.github/workflows/docker-publish.yml`
+
+Publica la imagen del backend en DockerHub cuando hay `push` a `main`, tags `v*.*.*` o ejecución manual (`workflow_dispatch`).
+
+### Secrets requeridos en GitHub
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN` (access token de DockerHub)
+
+La imagen se publica como:
+
+- `DOCKERHUB_USERNAME/eduplay-api:latest` (solo rama principal)
+- `DOCKERHUB_USERNAME/eduplay-api:<branch>`
+- `DOCKERHUB_USERNAME/eduplay-api:<tag>`
+- `DOCKERHUB_USERNAME/eduplay-api:sha-...`
+
+### Seed demo en Docker
+
+El contenedor API ahora soporta:
+
+- `AUTO_SEED_DEMO=true`: ejecuta `npm run db:seed` al iniciar.
+- `AUTO_SEED_DEMO=false`: no ejecuta seed (valor recomendado luego del primer arranque).
+
+Credenciales demo ya definidas en `prisma/seed.ts`:
+
+- contraseña para tutor/menores: `EduPlayDemo2026`
+- tutores: `seed.parent1@eduplay.demo`, `seed.parent2@eduplay.demo`
+- menores: `lucia_explora`, `mateo_numeros`, `sofia_ciencia`, `daniel_mapas`, `emma_lectora`
+
+### Servidor privado usando imagen publicada
+
+Se agregó `Dockerfile.private-server` para construir una imagen final desde DockerHub:
+
+```bash
+docker build -f Dockerfile.private-server --build-arg BASE_IMAGE=docker.io/<tu_usuario>/eduplay-api:latest -t eduplay-api-private .
+```
+
+Luego podés correrla en tu servidor con `DATABASE_URL`, `JWT_SECRET` y `AUTO_SEED_DEMO=true` en el primer arranque.
+
+---
+
 ## Problemas Comunes
 
 ### 1) `EADDRINUSE: address already in use :::3000`

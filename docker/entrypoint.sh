@@ -8,5 +8,14 @@ until npx prisma migrate deploy >/dev/null 2>&1; do
   sleep 2
 done
 
-echo "Migraciones aplicadas. Iniciando API..."
+echo "Migraciones aplicadas."
+
+if [ "${AUTO_SEED_DEMO:-false}" = "true" ]; then
+  echo "AUTO_SEED_DEMO=true: ejecutando seed de demo..."
+  npm run db:seed
+else
+  echo "AUTO_SEED_DEMO=false: omitiendo seed de demo."
+fi
+
+echo "Iniciando API..."
 exec node -r tsconfig-paths/register dist/index.js
