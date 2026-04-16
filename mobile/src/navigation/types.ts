@@ -6,6 +6,8 @@ export type LegalDocumentKind = "privacy" | "terms";
 /** Stack de acceso (sin sesión). */
 export type AuthStackParamList = {
   AuthHome: undefined;
+  ParentRegister: undefined;
+  MinorLogin: undefined;
   LegalDocument: { kind: LegalDocumentKind };
 };
 
@@ -42,6 +44,9 @@ export type RootStackParamList = {
 /** Panel tutor (stack aparte del tab del menor). */
 export type ParentStackParamList = {
   Parent: { parentId?: string };
+  ParentDashboard: { parentId?: string } | undefined;
+  AddMinor: undefined;
+  ParentApproval: { parentId?: string } | undefined;
   ParentAnalytics: { parentId?: string };
   Premium: undefined;
   LegalDocument: { kind: LegalDocumentKind };

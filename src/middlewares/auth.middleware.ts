@@ -8,14 +8,18 @@ const PUBLIC_PATHS = new Set([
   "/api/health",
   "/api/content-categories",
   "/api/auth/register",
+  "/api/auth/register/parent",
   "/api/auth/login",
   "/api/auth/login-child",
+  "/api/auth/minor/login-with-code",
   /** Alias de registro (mismo handler que `/api/auth/register`). */
   "/api/parents",
   "/api/parents/",
   "/auth/register",
+  "/auth/register/parent",
   "/auth/login",
   "/auth/login-child",
+  "/auth/minor/login-with-code",
 ]);
 
 function isPublicPath(path: string): boolean {

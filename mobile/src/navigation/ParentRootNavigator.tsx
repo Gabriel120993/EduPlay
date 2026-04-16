@@ -8,7 +8,10 @@ import { space } from "../theme/tokens";
 import type { ParentStackParamList } from "./types";
 import { LegalDocumentScreen } from "../screens/LegalDocumentScreen";
 import { ParentAnalyticsScreen } from "../screens/ParentAnalyticsScreen";
+import { ParentDashboardScreen } from "../screens/ParentDashboardScreen";
 import { ParentScreen } from "../screens/ParentScreen";
+import { AddMinorScreen } from "../screens/AddMinorScreen";
+import { ParentApprovalScreen } from "../screens/ParentApprovalScreen";
 import { PremiumScreen } from "../screens/PremiumScreen";
 
 function legalTitle(kind: "privacy" | "terms"): string {
@@ -46,6 +49,29 @@ export function ParentRootNavigator({ onLogout }: { onLogout: () => void }) {
         initialParams={{ parentId: parent?.id }}
         options={{
           headerTitle: () => <AppHeaderBrandTitle />,
+        }}
+      />
+      <Stack.Screen
+        name="ParentDashboard"
+        component={ParentDashboardScreen}
+        initialParams={{ parentId: parent?.id }}
+        options={{
+          headerTitle: () => <AppHeaderBrandTitle detail="Dashboard" />,
+        }}
+      />
+      <Stack.Screen
+        name="AddMinor"
+        component={AddMinorScreen}
+        options={{
+          headerTitle: () => <AppHeaderBrandTitle detail="Agregar menor" />,
+        }}
+      />
+      <Stack.Screen
+        name="ParentApproval"
+        component={ParentApprovalScreen}
+        initialParams={{ parentId: parent?.id }}
+        options={{
+          headerTitle: () => <AppHeaderBrandTitle detail="Aprobaciones" />,
         }}
       />
       <Stack.Screen

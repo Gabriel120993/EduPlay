@@ -44,6 +44,8 @@ model User {
   id               String   @id @default(uuid())
   username         String   @unique
   realName         String
+  type             UserType   @default(minor)
+  status           UserStatus @default(active)
   /// Hash bcrypt; si es null el menor no puede iniciar sesión por usuario/contraseña.
   passwordHash     String?
   age              Int
@@ -104,7 +106,16 @@ model User {
   /// El tutor aprobó la cuenta en el panel (`POST .../approve-account`); null = menor vinculado pero bloqueado hasta aprobación.
   parentAccountApprovedAt DateTime?
 
+  parentProfile ParentProfile?
+  minorProfile  MinorProfile?
+  minorDependents MinorProfile[] @relation("MinorProfileParent")
+  parentChildRelationsAsParent ParentChildRelation[] @relation("ParentChildRelationParent")
+  parentChildRelationsAsChild  ParentChildRelation[] @relation("ParentChildRelationChild")
+  activityApprovalsAsParent    ActivityApproval[]    @relation("ActivityApprovalParent")
+  activityApprovalsAsMinor     ActivityApproval[]    @relation("ActivityApprovalMinor")
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /// Archivo subido a almacenamiento en la nube (p. ej. Cloudinary); vinculación segura al crear un post.
@@ -554,6 +565,55 @@ enum ContentFilterLevel {
   HIGH
 }
 
+enum UserType {
+  parent
+  minor
+  admin
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+}
+
+enum VerificationStatus {
+  pending
+  verified
+  rejected
+}
+
+enum VerificationMethod {
+  email
+  phone
+  id_document
+}
+
+enum SubscriptionTier {
+  free
+  basic
+  premium
+}
+
+enum ParentChildRelationStatus {
+  active
+  pending
+  blocked
+}
+
+enum ActivityType {
+  friend_request
+  post
+  purchase
+  content_access
+}
+
+enum ActivityApprovalStatus {
+  pending
+  approved
+  rejected
+}
+
 /// Eventos de analítica (app / servidor); `userId` opcional para eventos anónimos o previos al login.
 model AnalyticsEvent {
   id        String   @id @default(uuid())
@@ -566,6 +626,75 @@ model AnalyticsEvent {
   @@index([userId, createdAt])
   @@index([eventName, createdAt])
   @@index([createdAt])
+}
+
+model ParentProfile {
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verificationStatus VerificationStatus @default(pending)
+  verificationMethod VerificationMethod
+  subscriptionTier   SubscriptionTier   @default(free)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([verificationStatus])
+  @@index([subscriptionTier])
+}
+
+model MinorProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId            String
+  parent              User     @relation("MinorProfileParent", fields: [parentId], references: [id], onDelete: Restrict)
+  age                 Int
+  gradeLevel          String?
+  school              String?
+  interests           Json     @default("[]")
+  dailyTimeLimit      Int
+  contentRestrictions Json     @default("{}")
+  canMakePurchases    Boolean  @default(false)
+  canAddFriends       Boolean  @default(true)
+  canPostContent      Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([parentId])
+  @@index([age, gradeLevel])
+}
+
+model ParentChildRelation {
+  id                  String                    @id @default(uuid())
+  parentId            String
+  parent              User                      @relation("ParentChildRelationParent", fields: [parentId], references: [id], onDelete: Cascade)
+  childId             String
+  child               User                      @relation("ParentChildRelationChild", fields: [childId], references: [id], onDelete: Cascade)
+  status              ParentChildRelationStatus @default(pending)
+  approvalRequiredFor Json                      @default("[]")
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  @@unique([parentId, childId])
+  @@index([parentId, status])
+  @@index([childId, status])
+}
+
+model ActivityApproval {
+  id           String                 @id @default(uuid())
+  minorId      String
+  minor        User                   @relation("ActivityApprovalMinor", fields: [minorId], references: [id], onDelete: Cascade)
+  parentId     String
+  parent       User                   @relation("ActivityApprovalParent", fields: [parentId], references: [id], onDelete: Cascade)
+  activityType ActivityType
+  activityData Json                   @default("{}")
+  status       ActivityApprovalStatus @default(pending)
+  requestedAt  DateTime               @default(now())
+  respondedAt  DateTime?
+
+  @@index([minorId, status, requestedAt])
+  @@index([parentId, status, requestedAt])
+  @@index([activityType, status])
 }
 
 model EducationalContent {

@@ -66,6 +66,19 @@ export async function registerParent(email: string, password: string): Promise<A
   return data;
 }
 
+export type ParentRegisterPayload = {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+};
+
+export async function registerParentFull(payload: ParentRegisterPayload): Promise<AuthResponse> {
+  const { data } = await api.post<AuthResponse>("/api/auth/register/parent", payload);
+  return data;
+}
+
 export async function loginParent(email: string, password: string): Promise<AuthResponse> {
   const { data } = await api.post<AuthResponse>("/api/auth/login", { email, password });
   return data;
@@ -134,6 +147,90 @@ export type LoginChildResponse = {
 export async function loginChild(username: string, password: string): Promise<LoginChildResponse> {
   const { data } = await api.post<LoginChildResponse>("/api/auth/login-child", { username, password });
   return data;
+}
+
+export type LoginMinorWithCodeResponse = {
+  token: string;
+  user: { id: string; username: string; realName: string; type: "minor" };
+  approvalStatus: "approved" | "pending" | "blocked";
+};
+
+export async function loginMinorWithCode(
+  username: string,
+  accessCode: string
+): Promise<LoginMinorWithCodeResponse> {
+  const { data } = await api.post<LoginMinorWithCodeResponse>("/api/auth/minor/login-with-code", {
+    username,
+    accessCode,
+  });
+  return data;
+}
+
+export type RegisterMinorPayload = {
+  username: string;
+  password: string;
+  age: number;
+  avatar?: string;
+  interests: string[];
+};
+
+export type RegisterMinorResponse = {
+  minor: {
+    id: string;
+    username: string;
+    age: number;
+    avatar: string | null;
+    parentId: string;
+    approvalStatus: "pending" | "approved" | "blocked";
+  };
+  accessCode: string;
+  notification: string;
+};
+
+export async function registerMinor(payload: RegisterMinorPayload): Promise<RegisterMinorResponse> {
+  const { data } = await api.post<RegisterMinorResponse>("/api/auth/register/minor", payload);
+  return data;
+}
+
+export type ParentMinorsListItem = {
+  id: string;
+  username: string;
+  age: number;
+  avatarUrl: string | null;
+  status: string;
+  approvalStatus: "pending" | "approved" | "blocked";
+  relationStatus: string;
+  relationUpdatedAt: string | null;
+  lastActivity: { eventName: string; at: string } | null;
+  minorProfile: {
+    gradeLevel?: string | null;
+    interests?: unknown;
+  } | null;
+};
+
+export async function getParentMinors(parentId: string): Promise<ParentMinorsListItem[]> {
+  const { data } = await api.get<ParentMinorsListItem[]>(`/api/parents/${encodeURIComponent(parentId)}/minors`);
+  return data;
+}
+
+export type MinorApprovalItem = {
+  id: string;
+  activityType: "friend_request" | "post" | "purchase" | "content_access";
+  activityData: Record<string, unknown>;
+  status: "pending" | "approved" | "rejected";
+  requestedAt: string;
+};
+
+export async function getParentPendingApprovals(parentId: string): Promise<MinorApprovalItem[]> {
+  const { data } = await api.get<MinorApprovalItem[]>(`/api/parents/${encodeURIComponent(parentId)}/approvals`);
+  return data;
+}
+
+export async function patchMinorApproval(
+  minorId: string,
+  payload: { approvalId: string; status: "approved" | "rejected" }
+): Promise<void> {
+  await api.patch(`/api/minors/${encodeURIComponent(minorId)}/approve`, payload);
 }
 
 export type OnboardingStatusResponse = {

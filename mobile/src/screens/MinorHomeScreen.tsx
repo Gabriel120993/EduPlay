@@ -1,0 +1,57 @@
+import { useMemo } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../contexts/ThemeContext";
+
+type Props = {
+  age?: number;
+  pendingApprovals?: number;
+};
+
+export function MinorHomeScreen({ age = 9, pendingApprovals = 0 }: Props) {
+  const { colors } = useTheme();
+
+  const ageBucket = useMemo(() => {
+    if (age <= 7) return "kids";
+    if (age <= 10) return "junior";
+    return "teen";
+  }, [age]);
+
+  const recommended = useMemo(() => {
+    if (ageBucket === "kids") return ["Cuentos cortos", "Números básicos", "Juegos de colores"];
+    if (ageBucket === "junior") return ["Ciencia divertida", "Matemáticas", "Lectura guiada"];
+    return ["Proyectos STEM", "Historia interactiva", "Desafíos de lógica"];
+  }, [ageBucket]);
+
+  return (
+    <ScrollView style={[styles.root, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      <Text style={[styles.title, { color: colors.text }]}>Mi Inicio</Text>
+      <Text style={{ color: colors.textMuted }}>Contenido adaptado para tu edad ({age} años)</Text>
+
+      {pendingApprovals > 0 ? (
+        <View style={[styles.banner, { backgroundColor: colors.warnBannerBg, borderColor: colors.warnBannerBorder }]}>
+          <Text style={{ color: colors.warnBannerText, fontWeight: "700" }}>
+            Tenés {pendingApprovals} aprobaciones pendientes de tu tutor.
+          </Text>
+        </View>
+      ) : null}
+
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Recomendado para vos</Text>
+        {recommended.map((item) => (
+          <Text key={item} style={{ color: colors.textBody }}>
+            • {item}
+          </Text>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  content: { padding: 16, gap: 12 },
+  title: { fontSize: 24, fontWeight: "800" },
+  banner: { borderWidth: 1, borderRadius: 12, padding: 10 },
+  card: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 8 },
+  cardTitle: { fontSize: 18, fontWeight: "700" },
+});

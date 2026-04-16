@@ -4,13 +4,21 @@
  */
 import "dotenv/config";
 import {
+  ActivityApprovalStatus,
+  ActivityType,
   AchievementRarity,
   ContentCategory,
   Difficulty,
   FriendStatus,
+  ParentChildRelationStatus,
   PostType,
   PrismaClient,
   ReactionType,
+  SubscriptionTier,
+  UserStatus,
+  UserType,
+  VerificationMethod,
+  VerificationStatus,
   Visibility,
 } from "@prisma/client";
 
@@ -255,6 +263,8 @@ function buildQuizSeedRows(): QuizSeedRow[] {
 async function main() {
   await prisma.$transaction(
     async (tx) => {
+      await tx.activityApproval.deleteMany();
+      await tx.parentChildRelation.deleteMany();
       await tx.reaction.deleteMany();
       await tx.moderationLog.deleteMany();
       await tx.post.deleteMany();
@@ -271,25 +281,88 @@ async function main() {
       await tx.visualQuestion.deleteMany();
       await tx.educationalContent.deleteMany();
       await tx.parentSettings.deleteMany();
+      await tx.minorProfile.deleteMany();
+      await tx.parentProfile.deleteMany();
       await tx.parent.deleteMany();
     },
     { timeout: 60_000 }
   );
 
-  /** Contraseña demo para tutor y menores en la app: `EduPlayDemo2026` (bcrypt). */
+  /**
+   * Credenciales demo (entorno local / staging):
+   * - Padres:
+   *   - parent1@eduplay.demo / EduPlayDemo2026
+   *   - parent2@eduplay.demo / EduPlayDemo2026
+   * - Menores (username + password):
+   *   - lucia_explora / EduPlayDemo2026
+   *   - mateo_numeros / EduPlayDemo2026
+   *   - sofia_ciencia / EduPlayDemo2026
+   *   - daniel_mapas / EduPlayDemo2026
+   *   - emma_lectora / EduPlayDemo2026
+   */
   const demoParentPasswordHash = "$2b$10$sMZjqxFg2qdrdazBREswkeOfyJpD9CxtAfwTjzmZQPjiMB0p/wpVu";
 
   const [parent1, parent2] = await Promise.all([
     prisma.parent.create({
       data: {
-        email: "seed.parent1@eduplay.demo",
+        email: "parent1@eduplay.demo",
         password: demoParentPasswordHash,
       },
     }),
     prisma.parent.create({
       data: {
-        email: "seed.parent2@eduplay.demo",
+        email: "parent2@eduplay.demo",
         password: demoParentPasswordHash,
+      },
+    }),
+  ]);
+
+  const [parentUser1, parentUser2] = await Promise.all([
+    prisma.user.create({
+      data: {
+        username: "parent1_demo",
+        realName: "Padre Demo 1",
+        passwordHash: demoParentPasswordHash,
+        age: 37,
+        parentId: parent1.id,
+        type: UserType.parent,
+        status: UserStatus.active,
+        level: 1,
+        experience: 0,
+        parentAccountApprovedAt: new Date(),
+      },
+    }),
+    prisma.user.create({
+      data: {
+        username: "parent2_demo",
+        realName: "Padre Demo 2",
+        passwordHash: demoParentPasswordHash,
+        age: 39,
+        parentId: parent2.id,
+        type: UserType.parent,
+        status: UserStatus.active,
+        level: 1,
+        experience: 0,
+        parentAccountApprovedAt: new Date(),
+      },
+    }),
+  ]);
+
+  await Promise.all([
+    prisma.parentProfile.create({
+      data: {
+        userId: parentUser1.id,
+        verificationStatus: VerificationStatus.verified,
+        verificationMethod: VerificationMethod.email,
+        subscriptionTier: SubscriptionTier.premium,
+      },
+    }),
+    prisma.parentProfile.create({
+      data: {
+        userId: parentUser2.id,
+        verificationStatus: VerificationStatus.pending,
+        verificationMethod: VerificationMethod.phone,
+        subscriptionTier: SubscriptionTier.basic,
       },
     }),
   ]);
@@ -300,8 +373,10 @@ async function main() {
         username: "lucia_explora",
         realName: "Lucía Fernández",
         passwordHash: demoParentPasswordHash,
-        age: 11,
+        age: 8,
         parentId: parent1.id,
+        type: UserType.minor,
+        status: UserStatus.active,
         level: 3,
         experience: 45,
         avatarUrl: null,
@@ -315,6 +390,8 @@ async function main() {
         passwordHash: demoParentPasswordHash,
         age: 10,
         parentId: parent1.id,
+        type: UserType.minor,
+        status: UserStatus.active,
         level: 2,
         experience: 30,
         avatarUrl: null,
@@ -326,12 +403,14 @@ async function main() {
         username: "sofia_ciencia",
         realName: "Sofía Martín",
         passwordHash: demoParentPasswordHash,
-        age: 12,
+        age: 6,
         parentId: parent1.id,
+        type: UserType.minor,
+        status: UserStatus.inactive,
         level: 4,
         experience: 20,
         avatarUrl: null,
-        parentAccountApprovedAt: new Date(),
+        parentAccountApprovedAt: null,
       },
     }),
     prisma.user.create({
@@ -339,8 +418,10 @@ async function main() {
         username: "daniel_mapas",
         realName: "Daniel Ruiz",
         passwordHash: demoParentPasswordHash,
-        age: 9,
+        age: 12,
         parentId: parent2.id,
+        type: UserType.minor,
+        status: UserStatus.active,
         level: 2,
         experience: 80,
         avatarUrl: null,
@@ -352,8 +433,10 @@ async function main() {
         username: "emma_lectora",
         realName: "Emma Torres",
         passwordHash: demoParentPasswordHash,
-        age: 11,
+        age: 9,
         parentId: parent2.id,
+        type: UserType.minor,
+        status: UserStatus.active,
         level: 3,
         experience: 10,
         avatarUrl: null,
@@ -363,6 +446,147 @@ async function main() {
   ]);
 
   const [u1, u2, u3, u4, u5] = users;
+
+  await Promise.all([
+    prisma.minorProfile.create({
+      data: {
+        userId: u1.id,
+        parentId: parentUser1.id,
+        age: 8,
+        gradeLevel: "3rd",
+        school: "Escuela Aurora",
+        interests: ["science", "creativity"],
+        dailyTimeLimit: 60,
+        contentRestrictions: { allowExternalLinks: false, chatFilterLevel: "high" },
+        canMakePurchases: false,
+        canAddFriends: false,
+        canPostContent: false,
+      },
+    }),
+    prisma.minorProfile.create({
+      data: {
+        userId: u2.id,
+        parentId: parentUser1.id,
+        age: 10,
+        gradeLevel: "5th",
+        school: "Colegio Horizonte",
+        interests: ["math", "science"],
+        dailyTimeLimit: 90,
+        contentRestrictions: { allowExternalLinks: false, chatFilterLevel: "medium" },
+        canMakePurchases: false,
+        canAddFriends: true,
+        canPostContent: true,
+      },
+    }),
+    prisma.minorProfile.create({
+      data: {
+        userId: u3.id,
+        parentId: parentUser1.id,
+        age: 6,
+        gradeLevel: "1st",
+        school: "Jardín Semillas",
+        interests: ["science", "art"],
+        dailyTimeLimit: 45,
+        contentRestrictions: { allowExternalLinks: false, chatFilterLevel: "high", approveEverything: true },
+        canMakePurchases: false,
+        canAddFriends: false,
+        canPostContent: false,
+      },
+    }),
+    prisma.minorProfile.create({
+      data: {
+        userId: u4.id,
+        parentId: parentUser2.id,
+        age: 12,
+        gradeLevel: "7th",
+        school: "Instituto Rutas",
+        interests: ["geography", "math"],
+        dailyTimeLimit: 120,
+        contentRestrictions: { allowExternalLinks: true, chatFilterLevel: "low" },
+        canMakePurchases: false,
+        canAddFriends: true,
+        canPostContent: true,
+      },
+    }),
+    prisma.minorProfile.create({
+      data: {
+        userId: u5.id,
+        parentId: parentUser2.id,
+        age: 9,
+        gradeLevel: "4th",
+        school: "Escuela Letras",
+        interests: ["education", "creativity"],
+        dailyTimeLimit: 75,
+        contentRestrictions: { allowExternalLinks: false, chatFilterLevel: "medium" },
+        canMakePurchases: false,
+        canAddFriends: true,
+        canPostContent: true,
+      },
+    }),
+  ]);
+
+  await prisma.parentChildRelation.createMany({
+    data: [
+      {
+        parentId: parentUser1.id,
+        childId: u1.id,
+        status: ParentChildRelationStatus.active,
+        approvalRequiredFor: ["friend_request", "post", "purchase", "content_access"],
+      },
+      {
+        parentId: parentUser1.id,
+        childId: u2.id,
+        status: ParentChildRelationStatus.active,
+        approvalRequiredFor: ["purchase", "content_access"],
+      },
+      {
+        parentId: parentUser1.id,
+        childId: u3.id,
+        status: ParentChildRelationStatus.pending,
+        approvalRequiredFor: ["friend_request", "post", "purchase", "content_access"],
+      },
+      {
+        parentId: parentUser2.id,
+        childId: u4.id,
+        status: ParentChildRelationStatus.active,
+        approvalRequiredFor: ["purchase"],
+      },
+      {
+        parentId: parentUser2.id,
+        childId: u5.id,
+        status: ParentChildRelationStatus.active,
+        approvalRequiredFor: ["friend_request", "purchase"],
+      },
+    ],
+  });
+
+  await prisma.activityApproval.createMany({
+    data: [
+      {
+        minorId: u3.id,
+        parentId: parentUser1.id,
+        activityType: ActivityType.content_access,
+        activityData: { contentCategory: "science", requestedBy: "sofia_ciencia" },
+        status: ActivityApprovalStatus.pending,
+      },
+      {
+        minorId: u1.id,
+        parentId: parentUser1.id,
+        activityType: ActivityType.friend_request,
+        activityData: { targetUsername: "emma_lectora" },
+        status: ActivityApprovalStatus.approved,
+        respondedAt: new Date(),
+      },
+      {
+        minorId: u4.id,
+        parentId: parentUser2.id,
+        activityType: ActivityType.post,
+        activityData: { draftTitle: "Mi mapa del mundo" },
+        status: ActivityApprovalStatus.approved,
+        respondedAt: new Date(),
+      },
+    ],
+  });
 
   const games = await Promise.all([
     prisma.game.create({
@@ -986,7 +1210,7 @@ async function main() {
   }
 
   console.log(
-    "Seed OK: 5 usuarios, 9 juegos, 9 logros, amistades ACCEPTED, publicaciones variadas por categoría, reacciones."
+    "Seed OK: padres demo + menores con perfiles/restricciones, relaciones parent-child, aprobaciones de actividad, juegos/logros/posts y reacciones."
   );
 }
 

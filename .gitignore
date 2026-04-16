@@ -2,6 +2,7 @@ node_modules/
 .prisma-client/
 dist/
 .env
+.env.prod
 .env.docker
 *.log
 .DS_Store

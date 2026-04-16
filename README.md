@@ -353,6 +353,40 @@ Luego podés correrla en tu servidor con `DATABASE_URL`, `JWT_SECRET` y `AUTO_SE
 
 ---
 
+## Deploy en VPS con Docker Compose
+
+Se agregó `docker-compose.prod.yml` para correr API + PostgreSQL usando imagen publicada en DockerHub.
+
+### Pasos rápidos
+
+1. Copiar archivo de entorno:
+
+```bash
+cp .env.prod.example .env.prod
+```
+
+2. Editar `.env.prod` (mínimo: `POSTGRES_PASSWORD`, `JWT_SECRET`, `DOCKERHUB_IMAGE`).
+
+3. Primer arranque con datos demo (opcional):
+
+- `AUTO_SEED_DEMO=true` solo en el primer `up`.
+- luego volver a `AUTO_SEED_DEMO=false`.
+
+4. Levantar servicios:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
+```
+
+5. Verificar estado:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f api
+```
+
+---
+
 ## Problemas Comunes
 
 ### 1) `EADDRINUSE: address already in use :::3000`
