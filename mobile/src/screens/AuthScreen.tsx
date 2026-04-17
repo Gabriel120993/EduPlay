@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -297,17 +298,46 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
         </Pressable>
 
         {accountKind === "tutor" ? (
+          <>
+            <Pressable
+              style={styles.switchBtn}
+              onPress={() => {
+                setMode((prev) => (prev === "login" ? "register" : "login"));
+                setError(null);
+              }}
+              disabled={authSubmitBusy}
+            >
+              <Text style={styles.switchText}>{mode === "login" ? "No tengo cuenta" : "Ya tengo cuenta"}</Text>
+            </Pressable>
+
+            {mode === "login" ? (
+              <Pressable
+                style={styles.switchBtn}
+                onPress={() => navigation.navigate("ParentRegister")}
+                disabled={authSubmitBusy}
+              >
+                <Text style={styles.switchText}>Crear nueva cuenta</Text>
+              </Pressable>
+            ) : null}
+          </>
+        ) : (
           <Pressable
             style={styles.switchBtn}
             onPress={() => {
-              setMode((prev) => (prev === "login" ? "register" : "login"));
-              setError(null);
+              Alert.alert(
+                "Crear cuenta de menor",
+                "La cuenta de menor debe crearla un padre/tutor desde su panel familiar. Te llevamos al registro de tutor para empezar.",
+                [
+                  { text: "Cancelar", style: "cancel" },
+                  { text: "Ir a registro", onPress: () => navigation.navigate("ParentRegister") },
+                ]
+              );
             }}
             disabled={authSubmitBusy}
           >
-            <Text style={styles.switchText}>{mode === "login" ? "No tengo cuenta" : "Ya tengo cuenta"}</Text>
+            <Text style={styles.switchText}>Crear cuenta de menor</Text>
           </Pressable>
-        ) : null}
+        )}
 
         <View style={styles.themeHint}>
           <Text style={styles.themeHintLabel}>Apariencia</Text>

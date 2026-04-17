@@ -54,6 +54,7 @@ import {
 import { feedLabelFromPostType } from "../lib/feedLabels";
 import { interleaveFeedPostsByType } from "../lib/feedMix";
 import { formatFeedTime } from "../lib/feedTime";
+import { isRemoteAvatarUrl } from "../lib/avatarDisplay";
 import { useFeedStyles } from "./feedScreenStyles";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Feed">;
@@ -354,23 +355,29 @@ function FeedPostCardHeader({
   const [imageFailed, setImageFailed] = useState(false);
   const timeLabel = formatFeedTime(createdAt, createdAtFormatted);
   const typeLabel = feedLabel ?? feedLabelFromPostType(postType);
+  const remote = isRemoteAvatarUrl(avatarUrl);
+  const glyph = avatarUrl && !remote ? avatarUrl.trim() : null;
 
   useEffect(() => {
     setImageFailed(false);
   }, [avatarUrl]);
 
-  const showPlaceholder = !avatarUrl || imageFailed;
+  const showPlaceholder = !avatarUrl || (remote && imageFailed);
 
   return (
     <View style={styles.cardHeader}>
       <View style={styles.avatarOuterCompact}>
-        {showPlaceholder ? (
+        {glyph ? (
+          <View style={styles.avatarPlaceholderCompact}>
+            <Text style={styles.avatarEmojiCompact}>{glyph}</Text>
+          </View>
+        ) : showPlaceholder ? (
           <View style={styles.avatarPlaceholderCompact}>
             <Text style={styles.avatarPlaceholderTextCompact}>{initial}</Text>
           </View>
         ) : (
           <Image
-            source={{ uri: avatarUrl }}
+            source={{ uri: avatarUrl as string }}
             style={styles.avatarImageCompact}
             onError={() => setImageFailed(true)}
           />

@@ -825,6 +825,21 @@ export function ParentScreen({ route }: Props) {
       <View style={styles.parentBanner}>
         <Text style={styles.parentEmail}>{data.parent.email}</Text>
         <Text style={styles.dateLine}>Datos del día UTC: {data.dateUtc}</Text>
+        <Pressable
+          onPress={() => navigation.navigate("AddMinor")}
+          style={{
+            marginTop: 10,
+            alignSelf: "flex-start",
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 10,
+            backgroundColor: colors.primary,
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Agregar menor"
+        >
+          <Text style={{ color: colors.textOnPrimary, fontWeight: "700" }}>➕ Agregar hijo</Text>
+        </Pressable>
         {parent?.isPremium ? (
           <Pressable
             onPress={() => navigation.navigate("ParentAnalytics", { parentId })}

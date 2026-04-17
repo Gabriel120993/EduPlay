@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
+import { formatApiError } from "../lib/apiErrors";
 import { registerMinor } from "../services/api";
 
 const AVATARS = ["🐼", "🦊", "🦄", "🐸", "🦁", "🐙"];
@@ -31,7 +32,7 @@ export function AddMinorScreen() {
         username: username.trim(),
         password,
         age: Number(age) || 8,
-        avatar: undefined,
+        avatar,
         interests: selectedInterests,
       });
       Alert.alert(
@@ -40,8 +41,8 @@ export function AddMinorScreen() {
           strictMode ? "estrictas" : "flexibles"
         }${requireAllApprovals ? " + aprobación para todo" : ""}`
       );
-    } catch {
-      Alert.alert("Error", "No se pudo crear el perfil del menor.");
+    } catch (e) {
+      Alert.alert("Error", formatApiError(e, "No se pudo crear el perfil del menor."));
     } finally {
       setBusy(false);
     }

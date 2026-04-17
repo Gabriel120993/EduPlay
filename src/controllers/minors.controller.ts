@@ -5,12 +5,18 @@ import { z } from "zod";
 import { logError } from "../lib/logger";
 import { hashPassword } from "../lib/password";
 import { prisma } from "../lib/prisma";
-import { formatZodError, usernameSchema, uuidSchema } from "../lib/validation/schemas";
+import {
+  formatZodError,
+  minorAvatarOptionalSchema,
+  minorAvatarUpdateSchema,
+  usernameSchema,
+  uuidSchema,
+} from "../lib/validation/schemas";
 
 const minorCreateBodySchema = z.object({
   username: usernameSchema,
   age: z.coerce.number().int().min(3, "La edad mínima es 3.").max(17, "La edad máxima es 17."),
-  avatar: z.string().trim().url("avatar debe ser una URL válida.").max(2000).optional(),
+  avatar: minorAvatarOptionalSchema,
   interests: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
   gradeLevel: z.string().trim().min(1).max(50).optional(),
   password: z.string().min(6).max(128).optional(),
@@ -20,7 +26,7 @@ const minorUpdateBodySchema = z
   .object({
     username: usernameSchema.optional(),
     age: z.coerce.number().int().min(3).max(17).optional(),
-    avatar: z.string().trim().url("avatar debe ser una URL válida.").max(2000).nullable().optional(),
+    avatar: minorAvatarUpdateSchema,
     interests: z.array(z.string().trim().min(1).max(100)).max(30).optional(),
     gradeLevel: z.string().trim().min(1).max(50).nullable().optional(),
   })
@@ -137,7 +143,7 @@ export async function createMinor(req: Request, res: Response): Promise<void> {
           realName: parsedBody.data.username,
           passwordHash,
           age: parsedBody.data.age,
-          avatarUrl: parsedBody.data.avatar ?? null,
+          avatarUrl: (parsedBody.data.avatar as string | undefined) ?? null,
           parentId,
           type: "minor",
           status: "active",
@@ -339,7 +345,9 @@ export async function updateMinor(req: Request, res: Response): Promise<void> {
       userData.age = parsedBody.data.age;
       profileData.age = parsedBody.data.age;
     }
-    if (parsedBody.data.avatar !== undefined) userData.avatarUrl = parsedBody.data.avatar;
+    if (parsedBody.data.avatar !== undefined) {
+      userData.avatarUrl = parsedBody.data.avatar as string | null;
+    }
     if (parsedBody.data.interests !== undefined) profileData.interests = parsedBody.data.interests;
     if (parsedBody.data.gradeLevel !== undefined) profileData.gradeLevel = parsedBody.data.gradeLevel;
 

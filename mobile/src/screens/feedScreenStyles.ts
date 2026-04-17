@@ -359,6 +359,11 @@ export function createFeedStyles(c: AppColors) {
       fontWeight: "800",
       color: c.avatarPhText,
     },
+    avatarEmojiCompact: {
+      fontSize: Math.round(avatarSize.feedCompact * 0.5),
+      textAlign: "center",
+      lineHeight: Math.round(avatarSize.feedCompact * 0.55),
+    },
     /** Usuario y hora en una sola línea (avatar a la izquierda). */
     nameTimeRow: {
       flexDirection: "row",

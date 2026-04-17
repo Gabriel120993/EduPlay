@@ -48,6 +48,37 @@ export const childLoginSchema = z.object({
   password: passwordSchema,
 });
 
+const minorAvatarUrlPart = z.string().trim().url("avatar debe ser una URL válida.").max(2000);
+const minorAvatarGlyphPart = z
+  .string()
+  .trim()
+  .min(1, "avatar no puede estar vacío.")
+  .max(32, "El avatar de texto/emoji no puede superar 32 caracteres.")
+  .refine((s) => !/^https?:\/\//i.test(s), {
+    message: "Para una imagen remota usá una URL completa (https://…).",
+  });
+
+/** Alta de menor: URL de imagen o texto corto (p. ej. emoji) en `User.avatarUrl`. */
+export const minorAvatarOptionalSchema = z.preprocess(
+  (val) => {
+    if (val === undefined || val === null) return undefined;
+    if (typeof val === "string" && val.trim() === "") return undefined;
+    return val;
+  },
+  z.union([minorAvatarUrlPart, minorAvatarGlyphPart]).optional()
+);
+
+/** Actualización de avatar: URL, emoji, o null para borrar. */
+export const minorAvatarUpdateSchema = z.preprocess(
+  (val) => {
+    if (val === undefined) return undefined;
+    if (val === null) return null;
+    if (typeof val === "string" && val.trim() === "") return null;
+    return val;
+  },
+  z.union([minorAvatarUrlPart, minorAvatarGlyphPart, z.null()]).optional()
+);
+
 /** Mismas reglas que `parentCredentialsSchema` (registro tutor vía `POST /api/auth/register` o alias `POST /api/parents`). */
 export const createParentBodySchema = parentCredentialsSchema;
 

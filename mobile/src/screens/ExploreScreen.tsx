@@ -30,6 +30,7 @@ import { READ_ONLY_TOAST_MSG, useScreenTime } from "../contexts/ScreenTimeContex
 import { getRarityBadgeVisual } from "../lib/achievementRarityUi";
 import { getCategoryChrome } from "../lib/contentCategoryUi";
 import { touchChildLastActiveAt } from "../lib/activityReminders";
+import { isRemoteAvatarUrl } from "../lib/avatarDisplay";
 import { applyNotificationPreferencesFromProfile } from "../lib/notificationPreferencesStore";
 import {
   loadContinueLearning,
@@ -200,6 +201,10 @@ function ExplorePostCard({
   const timeLabel = formatFeedTime(item.createdAt, item.createdAtFormatted);
   const typeLabel = item.feedLabel ?? feedLabelFromPostType(item.type);
   const av = avatarSize.feedCompact;
+  const avUrl = item.user.avatarUrl;
+  const remote = isRemoteAvatarUrl(avUrl);
+  const glyph = avUrl && !remote ? avUrl.trim() : null;
+  const showRemoteImage = remote && !!avUrl && !imgFail;
 
   useEffect(() => {
     setImgFail(false);
@@ -218,9 +223,15 @@ function ExplorePostCard({
       <View style={styles.exploreCardInner}>
         <View style={styles.exploreCardHeader}>
           <View style={[styles.exploreAvatarOuter, { width: av, height: av, borderRadius: av / 2 }]}>
-            {item.user.avatarUrl && !imgFail ? (
+            {glyph ? (
+              <View
+                style={[styles.exploreAvatarPh, { width: av, height: av, borderRadius: av / 2, borderColor: chrome.accent }]}
+              >
+                <Text style={[styles.exploreAvatarPhText, { fontSize: Math.round(av * 0.48) }]}>{glyph}</Text>
+              </View>
+            ) : showRemoteImage ? (
               <Image
-                source={{ uri: item.user.avatarUrl }}
+                source={{ uri: avUrl as string }}
                 style={[styles.exploreAvatarImg, { width: av, height: av, borderRadius: av / 2 }]}
                 onError={() => setImgFail(true)}
               />

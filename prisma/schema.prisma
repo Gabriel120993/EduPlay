@@ -115,7 +115,7 @@ model User {
   activityApprovalsAsMinor     ActivityApproval[]    @relation("ActivityApprovalMinor")
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 /// Archivo subido a almacenamiento en la nube (p. ej. Cloudinary); vinculación segura al crear un post.

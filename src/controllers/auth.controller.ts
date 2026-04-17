@@ -10,6 +10,7 @@ import { prisma } from "../lib/prisma";
 import {
   childLoginSchema,
   formatZodError,
+  minorAvatarOptionalSchema,
   passwordSchema,
   parentCredentialsSchema,
   usernameSchema,
@@ -21,16 +22,16 @@ type MinorApprovalStatus = "approved" | "pending" | "blocked";
 const registerParentSchema = z.object({
   email: z.string().trim().email("Email inválido.").max(320),
   password: passwordSchema,
-  firstName: z.string().trim().min(1).max(100),
-  lastName: z.string().trim().min(1).max(100),
-  phone: z.string().trim().min(6).max(30),
+  firstName: z.string().trim().min(1).max(100).optional().default("Tutor"),
+  lastName: z.string().trim().min(1).max(100).optional().default("EduPlay"),
+  phone: z.string().trim().min(6).max(30).optional().default("000000"),
 });
 
 const registerMinorSchema = z.object({
   username: usernameSchema,
   password: passwordSchema,
   age: z.coerce.number().int().min(3).max(17),
-  avatar: z.string().trim().url("avatar debe ser una URL válida.").max(2000).optional(),
+  avatar: minorAvatarOptionalSchema,
   interests: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
 });
 
@@ -232,7 +233,8 @@ export async function registerMinor(req: Request, res: Response): Promise<void> 
           parentId: parent.id,
           type: "minor",
           status: "active",
-          parentAccountApprovedAt: null,
+          // Alta creada por el tutor autenticado: queda aprobada para login inmediato.
+          parentAccountApprovedAt: new Date(),
         },
       });
 
@@ -257,7 +259,7 @@ export async function registerMinor(req: Request, res: Response): Promise<void> 
         data: {
           parentId: parentUser.id,
           childId: created.id,
-          status: "pending",
+          status: "active",
           approvalRequiredFor: ["friend_request", "post", "purchase", "content_access"],
         },
       });
@@ -268,7 +270,7 @@ export async function registerMinor(req: Request, res: Response): Promise<void> 
           kind: "MINOR_REGISTERED",
           childId: created.id,
           title: "Nuevo menor registrado",
-          body: `Se creó la cuenta ${created.username}. Pendiente de aprobación inicial.`,
+          body: `Se creó la cuenta ${created.username}. Lista para iniciar sesión.`,
         },
       });
 
@@ -282,7 +284,7 @@ export async function registerMinor(req: Request, res: Response): Promise<void> 
         age: minor.age,
         avatar: minor.avatarUrl,
         parentId: minor.parentId,
-        approvalStatus: "pending",
+        approvalStatus: "approved",
       },
       accessCode,
       notification: "Se notificó al tutor del registro del menor.",

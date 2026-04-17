@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { formatApiError } from "../lib/apiErrors";
 import { registerParentFull } from "../services/api";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -8,6 +10,7 @@ const STRONG_PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 export function ParentRegisterScreen() {
   const { colors } = useTheme();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -31,16 +34,19 @@ export function ParentRegisterScreen() {
     if (!valid || busy) return;
     setBusy(true);
     try {
+      const cleanEmail = email.trim();
       await registerParentFull({
-        email: email.trim(),
+        email: cleanEmail,
         password,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         phone: phone.trim(),
       });
-      Alert.alert("Cuenta creada", "Tu cuenta de padre/tutor fue creada correctamente.");
-    } catch {
-      Alert.alert("Error", "No se pudo completar el registro.");
+      // Iniciar sesión automáticamente tras registro.
+      await login(cleanEmail, password, true);
+      Alert.alert("Cuenta creada", "Registro completado e inicio de sesión exitoso.");
+    } catch (e) {
+      Alert.alert("Error", formatApiError(e, "No se pudo completar el registro."));
     } finally {
       setBusy(false);
     }

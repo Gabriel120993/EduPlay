@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { isRemoteAvatarUrl } from "../lib/avatarDisplay";
 import { getParentMinors, type ParentMinorsListItem } from "../services/api";
 
 export function ParentDashboardScreen() {
@@ -58,7 +59,10 @@ export function ParentDashboardScreen() {
 
       {rows.map((row) => (
         <View key={row.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.name, { color: colors.text }]}>{row.username}</Text>
+          <View style={styles.cardTitleRow}>
+            <MinorListAvatar avatarUrl={row.avatarUrl} username={row.username} />
+            <Text style={[styles.name, { color: colors.text, flex: 1 }]}>{row.username}</Text>
+          </View>
           <Text style={{ color: colors.textMuted }}>
             Edad {row.age} · Estado {row.approvalStatus}
           </Text>
@@ -80,6 +84,36 @@ function StatCard({ label, value, color }: { label: string; value: number; color
   );
 }
 
+function MinorListAvatar({ avatarUrl, username }: { avatarUrl: string | null; username: string }) {
+  const { colors } = useTheme();
+  const initial = username.trim().charAt(0).toUpperCase() || "?";
+  const remote = isRemoteAvatarUrl(avatarUrl);
+  const glyph = avatarUrl && !remote ? avatarUrl.trim() : null;
+  const size = 40;
+  const r = size / 2;
+
+  if (glyph) {
+    return (
+      <View style={[styles.minorAvatarWrap, { width: size, height: size, borderRadius: r, borderColor: colors.border }]}>
+        <Text style={{ fontSize: 22, lineHeight: 26 }}>{glyph}</Text>
+      </View>
+    );
+  }
+  if (remote && avatarUrl) {
+    return (
+      <Image
+        source={{ uri: avatarUrl }}
+        style={{ width: size, height: size, borderRadius: r }}
+      />
+    );
+  }
+  return (
+    <View style={[styles.minorAvatarWrap, { width: size, height: size, borderRadius: r, borderColor: colors.border }]}>
+      <Text style={{ fontSize: 14, fontWeight: "800", color: colors.textMuted }}>{initial}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { padding: 16, gap: 12 },
@@ -91,5 +125,12 @@ const styles = StyleSheet.create({
   addBtn: { borderRadius: 12, paddingVertical: 12, alignItems: "center" },
   addBtnText: { fontSize: 16, fontWeight: "700" },
   card: { borderWidth: 1, borderRadius: 12, padding: 12 },
+  cardTitleRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
+  minorAvatarWrap: {
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
   name: { fontSize: 18, fontWeight: "700" },
 });

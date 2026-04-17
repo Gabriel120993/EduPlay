@@ -24,6 +24,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useScreenTime } from "../contexts/ScreenTimeContext";
 import { getRarityBadgeVisual } from "../lib/achievementRarityUi";
 import { categoryDisplayLabel, getCategoryUi } from "../lib/contentCategoryUi";
+import { isRemoteAvatarUrl } from "../lib/avatarDisplay";
 import { formatApiError } from "../lib/apiErrors";
 import { applyNotificationPreferencesFromProfile } from "../lib/notificationPreferencesStore";
 import { touchChildLastActiveAt } from "../lib/activityReminders";
@@ -358,12 +359,14 @@ function ProfileAvatar({
   const initial = username.trim().charAt(0).toUpperCase() || "?";
   const [imageFailed, setImageFailed] = useState(false);
   const r = size / 2;
+  const remote = isRemoteAvatarUrl(avatarUrl);
+  const glyph = avatarUrl && !remote ? avatarUrl.trim() : null;
 
   useEffect(() => {
     setImageFailed(false);
   }, [avatarUrl]);
 
-  const showPlaceholder = !avatarUrl || imageFailed;
+  const showPlaceholder = !avatarUrl || (remote && imageFailed);
 
   return (
     <View
@@ -372,7 +375,16 @@ function ProfileAvatar({
         { width: size, height: size, borderRadius: r, backgroundColor: colors.avatarBg },
       ]}
     >
-      {showPlaceholder ? (
+      {glyph ? (
+        <View
+          style={[
+            styles.profileAvatarPlaceholder,
+            { width: size, height: size, borderRadius: r, backgroundColor: colors.avatarPh },
+          ]}
+        >
+          <Text style={{ fontSize: Math.round(size * 0.45), lineHeight: Math.round(size * 0.52) }}>{glyph}</Text>
+        </View>
+      ) : showPlaceholder ? (
         <View
           style={[
             styles.profileAvatarPlaceholder,
@@ -390,7 +402,7 @@ function ProfileAvatar({
         </View>
       ) : (
         <Image
-          source={{ uri: avatarUrl }}
+          source={{ uri: avatarUrl as string }}
           style={{ width: size, height: size, borderRadius: r }}
           onError={() => setImageFailed(true)}
         />
