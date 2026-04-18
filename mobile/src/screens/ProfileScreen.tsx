@@ -5,6 +5,7 @@ import {
   Easing,
   Image,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,8 +13,10 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type { CompositeNavigationProp } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AppIcon } from "../components/AppIcon";
 import { BrandEmptyState } from "../components/BrandEmptyState";
@@ -38,7 +41,7 @@ import type {
   TodayMissionsResponse,
   UserProfileResponse,
 } from "../types/api";
-import type { MainTabParamList } from "../navigation/types";
+import type { MainTabParamList, RootStackParamList } from "../navigation/types";
 import {
   hexWithAlpha,
   levelAccentColor,
@@ -54,6 +57,11 @@ import type { IoniconName } from "../theme/icons";
 import { avatarSize, iconSize, radius, space, typography } from "../theme/tokens";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Profile">;
+
+type ProfileNav = CompositeNavigationProp<
+  BottomTabScreenProps<MainTabParamList, "Profile">["navigation"],
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 /** Misma regla que el servidor (`xpLevel.ts`): 100 XP por nivel. */
 const XP_PER_LEVEL = 100;
@@ -818,6 +826,7 @@ function MissionCard({
 export function ProfileScreen({ route }: Props) {
   const { colors, mode } = useTheme();
   const isDark = mode === "dark";
+  const navigation = useNavigation<ProfileNav>();
   const { viewerUserId: authViewerId, token } = useAuth();
   const { readOnlyMode } = useScreenTime();
   const userId =
@@ -989,6 +998,36 @@ export function ProfileScreen({ route }: Props) {
         level={user.level}
         experience={user.experience}
       />
+
+      <Pressable
+        onPress={() => navigation.navigate("AchievementSystem")}
+        style={({ pressed }) => [
+          {
+            marginHorizontal: space.md,
+            marginBottom: space.md,
+            padding: space.md,
+            borderRadius: radius.cardSm,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: space.md,
+            borderWidth: 1,
+            borderColor: colors.borderSubtle,
+            backgroundColor: colors.card,
+          },
+          pressed ? { opacity: 0.92 } : null,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Abrir mural de logros y colecciones"
+      >
+        <AppIcon name="trophy-outline" color={colors.primary} size="md" />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: colors.text, fontWeight: "900", fontSize: typography.bodyLarge }}>Mural de logros</Text>
+          <Text style={{ color: colors.textMuted, fontWeight: "600", fontSize: typography.secondary, marginTop: 2 }}>
+            Progreso, habilidad, social, especiales y coleccionables · compará con amigos
+          </Text>
+        </View>
+        <AppIcon name="chevron-forward" color={colors.textMuted} size="sm" />
+      </Pressable>
 
       <SectionTitle iconName="analytics-outline" emoji="📊" title="Tu actividad" tintIndex={4} />
       <ProfileActivityStats interests={interests} totalGames={totalGamesPlayed} />

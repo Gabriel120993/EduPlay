@@ -11,7 +11,10 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/register/parent",
   "/api/auth/login",
   "/api/auth/login-child",
+  "/api/auth/login/minor-code",
   "/api/auth/minor/login-with-code",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
   /** Alias de registro (mismo handler que `/api/auth/register`). */
   "/api/parents",
   "/api/parents/",
@@ -19,7 +22,10 @@ const PUBLIC_PATHS = new Set([
   "/auth/register/parent",
   "/auth/login",
   "/auth/login-child",
+  "/auth/login/minor-code",
   "/auth/minor/login-with-code",
+  "/auth/forgot-password",
+  "/auth/reset-password",
 ]);
 
 function isPublicPath(path: string): boolean {

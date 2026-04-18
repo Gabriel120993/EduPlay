@@ -12,6 +12,7 @@ import { VIEWER_USER_ID } from "../config";
 import { useTheme } from "../contexts/ThemeContext";
 import { ExploreScreen } from "../screens/ExploreScreen";
 import { FeedScreen } from "../screens/FeedScreen";
+import { LibraryScreen } from "../screens/LibraryScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
 import { playClick } from "../services/soundManager";
 import { space } from "../theme/tokens";
@@ -150,9 +151,13 @@ export function MainTabNavigator({
                 ? focused
                   ? ("compass" as const)
                   : ("compass-outline" as const)
-                : focused
-                  ? ("person-circle" as const)
-                  : ("person-circle-outline" as const);
+                : route.name === "Library"
+                  ? focused
+                    ? ("library" as const)
+                    : ("library-outline" as const)
+                  : focused
+                    ? ("person-circle" as const)
+                    : ("person-circle-outline" as const);
           return <AppIcon name={iconName} size="lg" color={color} />;
         },
       })}
@@ -172,6 +177,16 @@ export function MainTabNavigator({
         options={{
           title: "Explore",
           tabBarLabel: "Explore",
+          headerShown: false,
+        }}
+        initialParams={sharedInitialParams}
+      />
+      <Tab.Screen
+        name="Library"
+        component={LibraryScreen}
+        options={{
+          title: "Biblioteca",
+          tabBarLabel: "Biblioteca",
           headerShown: false,
         }}
         initialParams={sharedInitialParams}

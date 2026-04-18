@@ -35,7 +35,7 @@ export function QuizResultScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useQuizResultStyles();
-  const { score, total, xpGained, category, difficulty, gameMode } = route.params;
+  const { score, total, xpGained, category, difficulty, gameMode, recommendations } = route.params;
   const message = getQuizFeedbackMessage(score, total);
   const pct = total > 0 ? Math.max(0, Math.min(1, score / total)) : 0;
   const stars = Math.max(1, Math.round(pct * 5));
@@ -145,6 +145,17 @@ export function QuizResultScreen({ route, navigation }: Props) {
       </View>
 
       <Text style={styles.feedbackText}>{message}</Text>
+
+      {recommendations && recommendations.length > 0 ? (
+        <View style={[styles.statsCard, { marginBottom: space.md }]}>
+          <Text style={[styles.statLabel, { marginBottom: space.sm }]}>Recomendaciones</Text>
+          {recommendations.map((line, i) => (
+            <Text key={`rec-${i}`} style={[styles.statHint, { marginBottom: space.xs }]}>
+              • {line}
+            </Text>
+          ))}
+        </View>
+      ) : null}
 
       <View style={styles.statsCard}>
         <View style={styles.statRow}>

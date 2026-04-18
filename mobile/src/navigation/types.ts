@@ -1,5 +1,8 @@
 import type { NavigatorScreenParams } from "@react-navigation/native";
 
+import type { MiniGameId } from "../games/types";
+import type { QuizKnowledgeArea } from "../types/api";
+
 /** Pantallas legales (privacidad / términos). */
 export type LegalDocumentKind = "privacy" | "terms";
 
@@ -14,6 +17,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   Feed: { userId?: string };
   Explore: { userId?: string };
+  Library: { userId?: string };
   Profile: { userId?: string };
 };
 
@@ -26,7 +30,18 @@ export type RootStackParamList = {
     category: "astronomy" | "math" | "science" | "history" | "geography" | "creativity" | "mixed";
     difficulty?: "EASY" | "MEDIUM" | "HARD";
   };
-  Quiz: { category?: string; difficulty?: "EASY" | "MEDIUM" | "HARD" } | undefined;
+  QuizAreas: undefined;
+  Quiz: {
+    category?: string;
+    knowledgeArea?: QuizKnowledgeArea;
+    topicSlug?: string;
+    quizLevel?: 1 | 2 | 3 | 4 | 5;
+    difficulty?: "EASY" | "MEDIUM" | "HARD";
+    /** Segundos por pregunta; `0` = sin temporizador. */
+    timerSeconds?: number;
+    challengeLives?: number;
+    adaptive?: boolean;
+  } | undefined;
   VisualGame: { category?: string; difficulty?: "EASY" | "MEDIUM" | "HARD" };
   QuizResult: {
     score: number;
@@ -36,9 +51,14 @@ export type RootStackParamList = {
     category?: string;
     difficulty?: "EASY" | "MEDIUM" | "HARD";
     gameMode?: "quiz" | "visual";
+    recommendations?: string[];
+    knowledgeArea?: QuizKnowledgeArea;
   };
   ChatInbox: undefined;
   ChatThread: { peerId: string; peerName: string };
+  MiniGamesHub: undefined;
+  MiniGamePlayer: { gameId: MiniGameId; levelIndex?: number };
+  AchievementSystem: undefined;
 };
 
 /** Panel tutor (stack aparte del tab del menor). */
@@ -48,6 +68,7 @@ export type ParentStackParamList = {
   AddMinor: undefined;
   ParentApproval: { parentId?: string } | undefined;
   ParentAnalytics: { parentId?: string };
+  ParentCoach: { parentId?: string };
   Premium: undefined;
   LegalDocument: { kind: LegalDocumentKind };
 };

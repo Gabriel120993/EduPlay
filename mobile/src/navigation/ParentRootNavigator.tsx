@@ -13,6 +13,7 @@ import { ParentScreen } from "../screens/ParentScreen";
 import { AddMinorScreen } from "../screens/AddMinorScreen";
 import { ParentApprovalScreen } from "../screens/ParentApprovalScreen";
 import { PremiumScreen } from "../screens/PremiumScreen";
+import { ParentCoachScreen } from "../screens/ParentCoachScreen";
 
 function legalTitle(kind: "privacy" | "terms"): string {
   return kind === "privacy" ? "Privacidad" : "Términos";
@@ -79,6 +80,14 @@ export function ParentRootNavigator({ onLogout }: { onLogout: () => void }) {
         component={ParentAnalyticsScreen}
         options={{
           headerTitle: () => <AppHeaderBrandTitle detail="Analíticas" />,
+        }}
+      />
+      <Stack.Screen
+        name="ParentCoach"
+        component={ParentCoachScreen}
+        initialParams={{ parentId: parent?.id }}
+        options={{
+          headerTitle: () => <AppHeaderBrandTitle detail="Guía para padres" />,
         }}
       />
       <Stack.Screen

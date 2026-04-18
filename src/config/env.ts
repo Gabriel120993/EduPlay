@@ -107,6 +107,23 @@ const cloudinaryUploadFolder = process.env.CLOUDINARY_UPLOAD_FOLDER?.trim() || "
 /** p. ej. `aws_rek` o `perception_point` si está habilitado en Cloudinary; vacío = sin moderación en subida. */
 const cloudinaryModeration = process.env.CLOUDINARY_MODERATION?.trim() || "";
 
+/** Secreto para endpoints `/api/admin/*` (header `x-admin-secret`). Vacío = rutas admin deshabilitadas. */
+const adminApiSecret = process.env.ADMIN_API_SECRET?.trim() ?? "";
+
+/**
+ * Límites con nombre: estricto (auth / admin), medio (escritura típica), generoso (lectura).
+ * Por defecto, `strict` hereda los mismos valores que login/registro si no definís `RATE_LIMIT_STRICT_*`.
+ */
+const rateLimitStrictWindowMs = Math.max(
+  60_000,
+  Number(process.env.RATE_LIMIT_STRICT_WINDOW_MS) || loginRegisterRateLimitWindowMs
+);
+const rateLimitStrictMax = Math.max(1, Number(process.env.RATE_LIMIT_STRICT_MAX) || loginRegisterRateLimitMax);
+const rateLimitMediumWindowMs = Math.max(10_000, Number(process.env.RATE_LIMIT_MEDIUM_WINDOW_MS) || 60_000);
+const rateLimitMediumMax = Math.max(10, Number(process.env.RATE_LIMIT_MEDIUM_MAX) || 120);
+const rateLimitGenerousWindowMs = Math.max(5_000, Number(process.env.RATE_LIMIT_GENEROUS_WINDOW_MS) || 60_000);
+const rateLimitGenerousMax = Math.max(50, Number(process.env.RATE_LIMIT_GENEROUS_MAX) || 600);
+
 export const env = {
   port,
   nodeEnv,
@@ -137,6 +154,13 @@ export const env = {
   cloudinaryApiSecret,
   cloudinaryUploadFolder,
   cloudinaryModeration,
+  adminApiSecret,
+  rateLimitStrictWindowMs,
+  rateLimitStrictMax,
+  rateLimitMediumWindowMs,
+  rateLimitMediumMax,
+  rateLimitGenerousWindowMs,
+  rateLimitGenerousMax,
 } as const;
 
 export function isCloudinaryConfigured(): boolean {

@@ -10,7 +10,9 @@ import { gameResultRouter } from "./routes/gameResult.routes";
 import { leaderboardRouter } from "./routes/leaderboard.routes";
 import { requireAuth } from "./middlewares/auth.middleware";
 import { requireApprovedChildAccount } from "./middlewares/childAccountApproved.middleware";
+import { errorHandlerMiddleware, notFoundHandler } from "./middlewares/errorHandler.middleware";
 import { apiGeneralLimiter, authenticatedUserRateLimiter } from "./middlewares/rateLimit.middleware";
+import { requestLoggerMiddleware } from "./middlewares/requestLogger.middleware";
 import { postRouter } from "./routes/post.routes";
 import { reactionRouter } from "./routes/reaction.routes";
 import { userAchievementRouter } from "./routes/userAchievement.routes";
@@ -26,6 +28,7 @@ export function createApp() {
   app.use(securityHeadersMiddleware);
   app.use(cors());
   app.use(express.json({ limit: "512kb" }));
+  app.use(requestLoggerMiddleware);
 
   app.get("/", (_req, res) => {
     res.json({
@@ -58,6 +61,9 @@ export function createApp() {
   app.use("/reactions", reactionRouter);
   app.use("/user-achievements", userAchievementRouter);
   app.use("/api", apiRouter);
+
+  app.use(notFoundHandler);
+  app.use(errorHandlerMiddleware);
 
   return app;
 }

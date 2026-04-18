@@ -13,6 +13,13 @@ import {
   unblockUserForChild,
 } from "../controllers/parent.controller";
 import {
+  getParentMinorWeeklyReports,
+  getParentSettingsBundle,
+  listPendingApprovals,
+  putParentSettingsBundle,
+  respondToApproval,
+} from "../controllers/parentsApi.controller";
+import {
   getParentModerationReports,
   patchParentModerationReport,
   postParentApprovePostModeration,
@@ -59,3 +66,9 @@ parentRouter.post(
   authWriteLimiter,
   postParentApprovePostModeration
 );
+
+parentRouter.get("/:id/approvals", listPendingApprovals);
+parentRouter.post("/:id/approvals/:approvalId/respond", authWriteLimiter, respondToApproval);
+parentRouter.get("/:id/reports", getParentMinorWeeklyReports);
+parentRouter.get("/:id/settings", getParentSettingsBundle);
+parentRouter.put("/:id/settings", authWriteLimiter, putParentSettingsBundle);

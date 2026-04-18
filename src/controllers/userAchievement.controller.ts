@@ -57,6 +57,11 @@ export async function createUserAchievement(req: Request, res: Response): Promis
           badgeColor: true,
           badgeIcon: true,
           rarity: true,
+          systemKind: true,
+          hidden: true,
+          collectionKey: true,
+          slug: true,
+          sortOrder: true,
         },
       }),
     ]);

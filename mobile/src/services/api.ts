@@ -28,8 +28,11 @@ import type {
   RecommendationsResponse,
   TodayMissionsResponse,
   ParentChildAnalyticsResponse,
+  ParentCoachPayload,
   UserNotificationPreferences,
   UserProfileResponse,
+  AchievementCompareResponse,
+  AchievementSystemOverviewResponse,
 } from "../types/api";
 
 export type ReactionType = PostReactionType;
@@ -307,17 +310,26 @@ export async function completeEducationalContent(
 }
 
 export async function getQuizQuestions(params: {
-  category: string;
-  difficulty: "EASY" | "MEDIUM" | "HARD";
+  category?: string;
+  area?: string;
+  difficulty?: "EASY" | "MEDIUM" | "HARD";
+  topicSlug?: string;
+  quizLevel?: number;
+  questionType?: string;
   excludeIds?: string[];
+  adaptive?: boolean;
+  limit?: number;
 }): Promise<QuizQuestionItem[]> {
-  const query: Record<string, string> = {
-    category: params.category,
-    difficulty: params.difficulty,
-  };
-  if (params.excludeIds?.length) {
-    query.excludeIds = params.excludeIds.join(",");
-  }
+  const query: Record<string, string> = {};
+  if (params.category) query.category = params.category;
+  if (params.area) query.area = params.area;
+  if (params.difficulty) query.difficulty = params.difficulty;
+  if (params.topicSlug) query.topicSlug = params.topicSlug;
+  if (params.quizLevel != null) query.quizLevel = String(params.quizLevel);
+  if (params.questionType) query.questionType = params.questionType;
+  if (params.excludeIds?.length) query.excludeIds = params.excludeIds.join(",");
+  if (params.adaptive) query.adaptive = "1";
+  if (params.limit != null) query.limit = String(params.limit);
   const { data } = await api.get<{ questions: QuizQuestionItem[] }>("/api/quiz", { params: query });
   return data.questions;
 }
@@ -352,6 +364,8 @@ export type QuizCompleteResponse = {
   levelUp?: boolean;
   newLevel?: number;
   unlockedAchievements?: QuizAchievementUnlockApi[];
+  quizCoins?: number;
+  coinsEarned?: number;
 };
 
 export async function completeQuizSession(payload: {
@@ -361,12 +375,40 @@ export async function completeQuizSession(payload: {
   total: number;
   /** `visual` registra el resultado en un juego `Visual · …` y post de juego visual. */
   mode?: "quiz" | "visual";
+  knowledgeArea?: string;
+  wrongQuestionIds?: string[];
 }): Promise<QuizCompleteResponse> {
   const { data } = await api.post<QuizCompleteResponse>("/api/quiz/complete", {
     ...payload,
     mode: payload.mode ?? "quiz",
   });
   queueCelebrationsAfterQuizComplete(data);
+  return data;
+}
+
+export async function unlockQuizHintApi(questionId: string): Promise<{ hintText: string; coinsRemaining: number }> {
+  const { data } = await api.post<{ hintText: string; coinsRemaining: number }>("/api/quiz/hint", { questionId });
+  return data;
+}
+
+export async function getQuizWalletApi(): Promise<{ coins: number }> {
+  const { data } = await api.get<{ coins: number }>("/api/quiz/wallet");
+  return data;
+}
+
+export type FriendWeekXpRow = {
+  rank: number;
+  userId: string;
+  username: string;
+  realName: string;
+  avatarUrl: string | null;
+  xpThisWeek: number;
+};
+
+export async function getFriendsWeekXpRanking(): Promise<{ weekStartUtc: string; users: FriendWeekXpRow[] }> {
+  const { data } = await api.get<{ weekStartUtc: string; users: FriendWeekXpRow[] }>("/api/quiz/friends-week", {
+    params: { limit: 8 },
+  });
   return data;
 }
 
@@ -385,6 +427,31 @@ export async function getExploreRecommendations(userId: string): Promise<Explore
 
 export async function getUserProfile(userId: string): Promise<UserProfileResponse> {
   const { data } = await api.get<UserProfileResponse>(`/api/users/${userId}/profile`);
+  return data;
+}
+
+export async function getAchievementSystemOverview(userId: string): Promise<AchievementSystemOverviewResponse> {
+  const { data } = await api.get<AchievementSystemOverviewResponse>("/achievements/system/overview", {
+    params: { userId },
+  });
+  return data;
+}
+
+export async function getAchievementSystemCompare(userId: string, peerId: string): Promise<AchievementCompareResponse> {
+  const { data } = await api.get<AchievementCompareResponse>("/achievements/system/compare", {
+    params: { userId, peerId },
+  });
+  return data;
+}
+
+export async function patchAchievementProfileVisibility(
+  userId: string,
+  publicAchievements: boolean
+): Promise<{ achievementsPublicOnProfile: boolean }> {
+  const { data } = await api.patch<{ achievementsPublicOnProfile: boolean }>("/achievements/system/profile-visibility", {
+    userId,
+    public: publicAchievements,
+  });
   return data;
 }
 
@@ -492,6 +559,13 @@ export async function postParentPushToken(parentId: string, token: string | null
 export async function getParentChildAnalytics(parentId: string): Promise<ParentChildAnalyticsResponse> {
   const { data } = await api.get<ParentChildAnalyticsResponse>(
     `/api/analytics/parent/${encodeURIComponent(parentId)}`
+  );
+  return data;
+}
+
+export async function getParentCoach(parentId: string): Promise<ParentCoachPayload> {
+  const { data } = await api.get<ParentCoachPayload>(
+    `/api/coach/parent/${encodeURIComponent(parentId)}`
   );
   return data;
 }

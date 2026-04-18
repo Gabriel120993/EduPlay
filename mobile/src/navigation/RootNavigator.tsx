@@ -4,9 +4,13 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { ContentDetailScreen } from "../screens/ContentDetailScreen";
 import { GameCategoryScreen } from "../screens/GameCategoryScreen";
+import { QuizAreasScreen } from "../screens/QuizAreasScreen";
 import { QuizResultScreen } from "../screens/QuizResultScreen";
 import { QuizScreen } from "../screens/QuizScreen";
 import { VisualGameScreen } from "../screens/VisualGameScreen";
+import { AchievementSystemScreen } from "../screens/AchievementSystemScreen";
+import { MiniGamePlayerScreen } from "../screens/MiniGamePlayerScreen";
+import { MiniGamesHubScreen } from "../screens/MiniGamesHubScreen";
 import { ChatInboxScreen } from "../screens/ChatInboxScreen";
 import { ChatThreadScreen } from "../screens/ChatThreadScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
@@ -85,6 +89,17 @@ export function RootNavigator({ onLogout }: { onLogout: () => void }) {
         }}
       />
       <Stack.Screen
+        name="QuizAreas"
+        component={QuizAreasScreen}
+        options={{
+          headerShown: true,
+          title: "Quizzes por área",
+          headerStyle: { backgroundColor: colors.headerBg },
+          headerTintColor: colors.primary,
+          headerTitleStyle: { color: colors.headerTint, fontWeight: "700" },
+        }}
+      />
+      <Stack.Screen
         name="GameCategory"
         component={GameCategoryScreen}
         options={{
@@ -140,6 +155,9 @@ export function RootNavigator({ onLogout }: { onLogout: () => void }) {
           headerTitleStyle: { color: colors.headerTint, fontWeight: "700" },
         }}
       />
+      <Stack.Screen name="MiniGamesHub" component={MiniGamesHubScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="MiniGamePlayer" component={MiniGamePlayerScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="AchievementSystem" component={AchievementSystemScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }

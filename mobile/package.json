@@ -23,6 +23,7 @@
     "expo-av": "^16.0.8",
     "expo-constants": "55.0.10-canary-20260328-bdc6273",
     "expo-device": "55.0.11-canary-20260328-bdc6273",
+    "expo-haptics": "~55.0.14",
     "expo-image": "55.0.7-canary-20260328-bdc6273",
     "expo-in-app-purchases": "^14.5.0",
     "expo-linear-gradient": "55.0.10-canary-20260328-bdc6273",

@@ -15,8 +15,14 @@ function utcDayEndExclusive(d = new Date()): Date {
   return new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate() + 1, 0, 0, 0, 0));
 }
 
+/** Soporta rutas con `:id` o `:parentId` (REST). */
+export function parentResourceId(req: Request): string | undefined {
+  const raw = req.params.parentId ?? req.params.id;
+  return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
+}
+
 export async function getParentDashboard(req: Request, res: Response): Promise<void> {
-  const parentId = req.params.id?.trim();
+  const parentId = parentResourceId(req);
   if (!parentId) {
     res.status(400).json({ error: "id del padre/tutor es obligatorio." });
     return;
@@ -284,7 +290,7 @@ export async function getParentDashboard(req: Request, res: Response): Promise<v
 
 /** Aprueba la cuenta del menor: podrá iniciar sesión y usar la API como hijo. */
 export async function approveChildAccount(req: Request, res: Response): Promise<void> {
-  const parentId = req.params.id?.trim();
+  const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
     res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
@@ -321,7 +327,7 @@ export async function approveChildAccount(req: Request, res: Response): Promise<
 }
 
 export async function patchChildParentSettings(req: Request, res: Response): Promise<void> {
-  const parentId = req.params.id?.trim();
+  const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
     res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
@@ -458,7 +464,7 @@ const CONTENT_FILTER_LEVELS = new Set<string>(["LOW", "MEDIUM", "HIGH"]);
 
 /** PATCH controles avanzados: límite de pantalla y filtro de contenido (requiere premium en ruta). */
 export async function patchChildParentAdvancedSettings(req: Request, res: Response): Promise<void> {
-  const parentId = req.params.id?.trim();
+  const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
     res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
@@ -558,7 +564,7 @@ const CHILD_CHAT_MONITOR_LIMIT_MAX = 200;
 
 /** Supervisión: mensajes donde el hijo es emisor o receptor (incluye bloqueados y texto de auditoría). */
 export async function getChildChatMessages(req: Request, res: Response): Promise<void> {
-  const parentId = req.params.id?.trim();
+  const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
     res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
@@ -663,7 +669,7 @@ export async function getChildChatMessages(req: Request, res: Response): Promise
 }
 
 export async function postParentPushToken(req: Request, res: Response): Promise<void> {
-  const parentId = req.params.id?.trim();
+  const parentId = parentResourceId(req);
   if (!parentId) {
     res.status(400).json({ error: "id del padre/tutor es obligatorio." });
     return;
@@ -721,7 +727,7 @@ export async function postParentPushToken(req: Request, res: Response): Promise<
 
 /** Amigos aceptados del menor (vista tutor). */
 export async function getChildFriendsForParent(req: Request, res: Response): Promise<void> {
-  const parentId = req.params.id?.trim();
+  const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
     res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
@@ -789,7 +795,7 @@ export async function getChildFriendsForParent(req: Request, res: Response): Pro
 }
 
 export async function listChildBlockedUsers(req: Request, res: Response): Promise<void> {
-  const parentId = req.params.id?.trim();
+  const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
     res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
@@ -845,7 +851,7 @@ export async function listChildBlockedUsers(req: Request, res: Response): Promis
 }
 
 export async function postBlockUserForChild(req: Request, res: Response): Promise<void> {
-  const parentId = req.params.id?.trim();
+  const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
     res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
@@ -934,7 +940,7 @@ export async function postBlockUserForChild(req: Request, res: Response): Promis
 }
 
 export async function unblockUserForChild(req: Request, res: Response): Promise<void> {
-  const parentId = req.params.id?.trim();
+  const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   const blockedUserId = req.params.blockedUserId?.trim();
   if (!parentId || !childId || !blockedUserId) {

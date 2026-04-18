@@ -69,6 +69,17 @@ export type EducationalContentItem = {
   createdAt: string;
 };
 
+export type QuizQuestionType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "ORDER";
+
+export type QuizKnowledgeArea =
+  | "mathematics"
+  | "natural_sciences"
+  | "social_sciences"
+  | "language"
+  | "art_culture"
+  | "logic_thinking"
+  | "emotions_values";
+
 export type QuizQuestionItem = {
   id: string;
   question: string;
@@ -77,6 +88,14 @@ export type QuizQuestionItem = {
   category: string;
   difficulty: Difficulty;
   createdAt: string;
+  quizLevel?: number;
+  knowledgeArea?: QuizKnowledgeArea;
+  topicSlug?: string;
+  questionType?: QuizQuestionType;
+  explanation?: string;
+  hintCost?: number;
+  readingPassage?: string | null;
+  orderTapSequence?: number[] | null;
 };
 
 export type VisualQuestionItem = {
@@ -190,6 +209,76 @@ export type UserProfileResponse = {
   interests?: ProfileInterestItem[];
   recentPosts: unknown[];
   achievements: ProfileAchievementItem[];
+};
+
+export type AchievementSystemKindApi = "PROGRESS" | "SKILL" | "SOCIAL" | "SPECIAL" | "COLLECTIBLE";
+
+export type LevelTierApi = {
+  tierName: string;
+  tierBand: "bronce" | "plata" | "oro" | "diamante" | "leyenda";
+  minLevel: number;
+  maxLevel: number | null;
+  badgeStyle: "bronze" | "silver" | "gold" | "diamond" | "legend_animated";
+};
+
+export type AchievementSystemItemApi = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  badge: BadgeApi;
+  icon: string;
+  color: string;
+  systemKind: AchievementSystemKindApi;
+  collectionKey: string | null;
+  slug: string | null;
+  hidden: boolean;
+  unlocked: boolean;
+  obtainedAt: string | null;
+  displayTitle: string;
+  displayDescription: string;
+  certificateUrl: string | null;
+};
+
+export type AchievementSystemOverviewResponse = {
+  level: number;
+  levelTier: LevelTierApi;
+  achievementsPublicOnProfile: boolean;
+  stats: {
+    unlockedTotal: number;
+    catalogTotal: number;
+    byKind: Partial<
+      Record<
+        AchievementSystemKindApi,
+        {
+          unlocked: number;
+          total: number;
+        }
+      >
+    >;
+  };
+  collections: Array<{
+    key: string;
+    label: string;
+    unlocked: number;
+    total: number;
+    complete: boolean;
+    certificateUrl: string;
+  }>;
+  exhibition: {
+    publicProfileToggle: boolean;
+    friendCompare: boolean;
+    trophyWall: boolean;
+    downloadableCertificates: Array<{ collectionKey: string; url: string | null }>;
+  };
+  items: AchievementSystemItemApi[];
+};
+
+export type AchievementCompareResponse = {
+  catalogTotal: number;
+  you: { userId: string; unlocked: number };
+  peer: { userId: string; username: string; level: number; unlocked: number };
+  delta: number;
 };
 
 export type TodayMissionItem = {
@@ -489,4 +578,69 @@ export type ParentChildChatMessageRow = {
 export type ParentChildChatMessagesResponse = {
   childId: string;
   messages: ParentChildChatMessageRow[];
+};
+
+export type ParentCoachArticle = {
+  id: string;
+  title: string;
+  excerpt: string;
+  readMinutes: number;
+  tags: string[];
+};
+
+export type ParentCoachVideo = {
+  id: string;
+  title: string;
+  durationMinutes: number;
+  psychologist: string;
+  url: string;
+};
+
+export type ParentCoachTip = {
+  id: string;
+  text: string;
+  applicableToday: boolean;
+};
+
+export type ParentCoachActivityIdea = {
+  childId: string;
+  childName: string;
+  learnedThisWeek: string;
+  activity: string;
+  offlineHint: string;
+};
+
+export type ParentCoachConversationGuide = {
+  id: string;
+  topic: string;
+  prompts: string[];
+};
+
+export type ParentCoachAlert = {
+  id: string;
+  severity: "info" | "watch" | "early";
+  message: string;
+  childId?: string;
+  childName?: string;
+};
+
+export type ParentCoachResource = {
+  id: string;
+  title: string;
+  type: "article" | "video" | "tip";
+  reason: string;
+  relevanceScore: number;
+};
+
+export type ParentCoachPayload = {
+  understandingYourChild: {
+    articles: ParentCoachArticle[];
+    videos: ParentCoachVideo[];
+    tips: ParentCoachTip[];
+  };
+  activitiesTogether: ParentCoachActivityIdea[];
+  conversations: ParentCoachConversationGuide[];
+  alerts: ParentCoachAlert[];
+  personalizedResources: ParentCoachResource[];
+  meta: { generatedAt: string; personalizationNote: string };
 };

@@ -1,6 +1,8 @@
+// EduPlay — esquema PostgreSQL completo (IDs UUID).
+// Conserva modelos usados por la API actual y extiende gamificación, contenido, social y operaciones.
+
 generator client {
   provider = "prisma-client-js"
-  /// Fuera de node_modules para evitar EPERM al renombrar el query engine en Windows (IDE/antivirus).
   output   = "../.prisma-client"
 }
 
@@ -9,25 +11,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------------------------------------------------------------------------
+// Cuentas: tutor (Parent) y menores (User)
+// ---------------------------------------------------------------------------
+
 model Parent {
-  id             String           @id @default(uuid())
-  email          String           @unique
-  password       String
-  /// Funciones premium (analíticas agregadas, controles parentales avanzados en API).
-  isPremium      Boolean          @default(false)
-  /// Fin de acceso premium (prueba o suscripción); null = sin caducidad por fecha o no aplicable.
-  premiumUntil   DateTime?
-  /// Token Expo Push del tutor (misma app; avisos p. ej. nuevo amigo).
-  expoPushToken  String?          @db.Text
-  children       User[]
-  childSettings  ParentSettings[]
+  id              String                    @id @default(uuid())
+  email           String                    @unique
+  password        String
+  isPremium       Boolean                   @default(false)
+  premiumUntil    DateTime?
+  expoPushToken   String?                   @db.Text
+  children        User[]
+  childSettings   ParentSettings[]
   iapTransactions IapProcessedTransaction[]
-  userBlocks     ParentUserBlock[]
-  familyEvents   ParentFamilyEvent[]
-  createdAt      DateTime         @default(now())
+  userBlocks      ParentUserBlock[]
+  familyEvents    ParentFamilyEvent[]
+  createdAt       DateTime                  @default(now())
 }
 
-/// Transacciones IAP ya aplicadas (idempotencia; evita duplicar premium por el mismo cobro).
 model IapProcessedTransaction {
   id         String   @id @default(uuid())
   platform   String
@@ -41,69 +43,81 @@ model IapProcessedTransaction {
 }
 
 model User {
-  id               String   @id @default(uuid())
-  username         String   @unique
+  id               String     @id @default(uuid())
+  username         String     @unique
   realName         String
   type             UserType   @default(minor)
   status           UserStatus @default(active)
-  /// Hash bcrypt; si es null el menor no puede iniciar sesión por usuario/contraseña.
   passwordHash     String?
   age              Int
   avatarUrl        String?
   profileImageUrl  String?
-  level            Int      @default(1)
-  experience       Int      @default(0)
+
+  /// Gamificación base (legacy + mural de perfil).
+  level       Int @default(1)
+  experience  Int @default(0)
+  /// Monedas (pistas, tienda suave); nombre histórico `quizCoins` en producto.
+  quizCoins   Int @default(0)
+  /// Racha genérica de actividad diaria (app).
+  activityStreakDays    Int       @default(0)
+  lastActivityStreakUtc DateTime? @db.Date
 
   parentId String
   parent   Parent @relation(fields: [parentId], references: [id])
 
-  /// Ajustes parentales para este menor (como hijo); como mucho una fila por `childId`.
   parentSettings ParentSettings? @relation("ChildParentSettings")
-
-  screenTime ScreenTime?
+  screenTime     ScreenTime?
 
   posts            Post[]
   achievements     UserAchievement[]
   gameResults      GameResult[]
   reactions        Reaction[]
   interests        UserInterest[]
-  userMissions          UserMission[]
-  xpGainLedgers         XpGainLedger[]
-  analyticsEvents       AnalyticsEvent[]
+  userMissions     UserMission[]
+  xpGainLedgers    XpGainLedger[]
+  analyticsEvents  AnalyticsEvent[]
   dailyChallengeBonuses DailyChallengeBonus[]
+  gamifiedChallenges    UserGamifiedChallenge[]
+  thematicMissionProgress UserThematicMissionProgress[]
+  thematicMissionVotes    ThematicMissionVote[]
 
-  /// Cuando el menor completó el onboarding en la app (intereses + primera acción).
-  onboardingCompletedAt   DateTime?
-  /// PLAY_GAME | FOLLOW_USERS
+  streaks               UserStreak[]
+  gamificationSnapshots UserGamificationSnapshot?
+  notifications         AppNotification[]
+  miniGameSessions      MiniGameSession[]
+  studyGroupMemberships StudyGroupMember[]
+  studyGroupMessages    StudyGroupMessage[]
+  liveEventAttendees    LiveEventAttendee[]
+
+  onboardingCompletedAt DateTime?
   onboardingFirstAction   String?
 
-  /// Token Expo Push (`ExponentPushToken[...]`) para notificaciones; null si no registrado.
   expoPushToken String? @db.Text
 
-  /// Preferencias de notificaciones (menor; persistidas en servidor).
-  notificationsEnabled          Boolean @default(true)
-  notificationSoundsEnabled     Boolean @default(true)
+  notificationsEnabled        Boolean @default(true)
+  notificationSoundsEnabled   Boolean @default(true)
+  achievementsPublicOnProfile Boolean @default(true)
 
   chatSent     ChatMessage[] @relation("ChatSent")
   chatReceived ChatMessage[] @relation("ChatReceived")
-
-  /// Hilos 1:1; convención: `user1Id` antes que `user2Id` en orden lexicográfico para respetar `@@unique`.
-  chatsAsUser1 Chat[] @relation("ChatThreadUser1")
-  chatsAsUser2 Chat[] @relation("ChatThreadUser2")
+  chatsAsUser1 Chat[]        @relation("ChatThreadUser1")
+  chatsAsUser2 Chat[]        @relation("ChatThreadUser2")
   messagesSent     Message[] @relation("DmMessageSender")
   messagesReceived Message[] @relation("DmMessageReceiver")
 
   reportsFiled   ContentReport[] @relation("UserReportsFiled")
   reportsAgainst ContentReport[] @relation("UserReportsAgainst")
 
-  /// Bloqueos definidos por el tutor: este menor no puede ser amigo de `blockedUserId`.
   parentBlocksAsChild   ParentUserBlock[] @relation("ParentBlockChild")
-  /// Este usuario fue bloqueado por el tutor de otro menor (referencia inversa).
   parentBlockedAsTarget ParentUserBlock[] @relation("ParentBlockBlockedTarget")
 
   mediaUploads UserMediaUpload[]
 
-  /// El tutor aprobó la cuenta en el panel (`POST .../approve-account`); null = menor vinculado pero bloqueado hasta aprobación.
+  quizAreaSkills    UserQuizAreaSkill[]
+  quizFlashcards    UserQuizFlashcard[]
+  quizDailyProgress QuizDailyProgress[]
+  quizStreakState   UserQuizStreak?
+
   parentAccountApprovedAt DateTime?
 
   parentProfile ParentProfile?
@@ -114,29 +128,58 @@ model User {
   activityApprovalsAsParent    ActivityApproval[]    @relation("ActivityApprovalParent")
   activityApprovalsAsMinor     ActivityApproval[]    @relation("ActivityApprovalMinor")
 
+  quizAttempts QuizAttempt[]
+  quizSessions QuizSession[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([parentId])
+  @@index([type, status])
 }
 
-/// Archivo subido a almacenamiento en la nube (p. ej. Cloudinary); vinculación segura al crear un post.
+/// Snapshot opcional para auditoría / analytics de gamificación.
+model UserGamificationSnapshot {
+  userId           String   @id
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalXpEarned    Int      @default(0)
+  totalCoinsSpent  Int      @default(0)
+  lastLevelUpAt    DateTime?
+  updatedAt        DateTime @updatedAt
+}
+
+/// Rachas tipadas (quiz diario, login, misión, etc.).
+model UserStreak {
+  id            String     @id @default(uuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind          StreakKind
+  currentCount  Int        @default(0)
+  bestCount     Int        @default(0)
+  lastEventDate DateTime?  @db.Date
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([userId, kind])
+  @@index([userId, kind])
+}
+
 model UserMediaUpload {
-  id                  String    @id @default(uuid())
-  userId              String
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  url                 String    @db.Text
-  resourceType        String    @db.VarChar(16)
-  publicId            String    @unique @db.VarChar(512)
-  moderationFlagged   Boolean   @default(false)
-  moderationNote      String?   @db.VarChar(500)
-  consumedAt          DateTime?
-  createdAt           DateTime  @default(now())
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url               String    @db.Text
+  resourceType      String    @db.VarChar(16)
+  publicId          String    @unique @db.VarChar(512)
+  moderationFlagged Boolean   @default(false)
+  moderationNote    String?   @db.VarChar(500)
+  consumedAt        DateTime?
+  createdAt         DateTime  @default(now())
 
   post Post?
 
   @@index([userId, createdAt])
 }
 
-/// El tutor impide relación de amistad entre su hijo (`childId`) y otro usuario (`blockedUserId`).
 model ParentUserBlock {
   id            String   @id @default(uuid())
   parentId      String
@@ -151,7 +194,6 @@ model ParentUserBlock {
   @@index([parentId])
 }
 
-/// Novedades familiares para el panel del tutor (y opcionalmente push).
 model ParentFamilyEvent {
   id         String   @id @default(uuid())
   parentId   String
@@ -166,13 +208,17 @@ model ParentFamilyEvent {
   @@index([parentId, createdAt])
 }
 
-/// Registro de XP ganada (para ranking semanal y auditoría).
+// ---------------------------------------------------------------------------
+// XP y economía virtual
+// ---------------------------------------------------------------------------
+
 model XpGainLedger {
   id        String       @id @default(uuid())
   userId    String
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount    Int
   source    XpGainSource
+  metadata  Json?
   createdAt DateTime     @default(now())
 
   @@index([userId, createdAt])
@@ -183,9 +229,17 @@ enum XpGainSource {
   GAME_RESULT
   MISSION
   ACHIEVEMENT
+  CHALLENGE
+  QUIZ
+  MINI_GAME
+  LIVE_EVENT
+  CONTENT
 }
 
-/// Definición de misión diaria (plantilla).
+// ---------------------------------------------------------------------------
+// Misiones diarias (plantillas) + instancias por día
+// ---------------------------------------------------------------------------
+
 model Mission {
   id           String           @id @default(uuid())
   title        String
@@ -196,25 +250,21 @@ model Mission {
   userMissions UserMission[]
 }
 
-/// Progreso de un usuario en una misión para un día concreto.
 model UserMission {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  missionId  String
-  mission    Mission  @relation(fields: [missionId], references: [id], onDelete: Cascade)
-  progress   Int      @default(0)
-  completed  Boolean  @default(false)
-  /// XP otorgado al completar la misión (null = aún no se concedió recompensa).
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  missionId       String
+  mission         Mission   @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  progress        Int       @default(0)
+  completed       Boolean   @default(false)
   rewardXpGranted Int?
-  /// Día calendario (UTC) al que aplica esta instancia de misión.
-  date       DateTime @db.Date
+  date            DateTime  @db.Date
 
   @@unique([userId, missionId, date])
   @@index([userId, date])
 }
 
-/// Bonus extra al completar las 3 misiones del reto diario el mismo día (UTC).
 model DailyChallengeBonus {
   id        String   @id @default(uuid())
   userId    String
@@ -227,103 +277,365 @@ model DailyChallengeBonus {
   @@index([userId, date])
 }
 
-/// Intereses del usuario por categoría (juegos / logros); se crea la fila al primer evento.
-model UserInterest {
-  id       String          @id @default(uuid())
-  userId   String
-  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category ContentCategory
-  score    Int             @default(0)
-
-  @@unique([userId, category])
+enum ChallengeBucket {
+  DAILY
+  WEEKLY
+  SPECIAL
 }
 
-model Post {
+model UserGamifiedChallenge {
+  id              String          @id @default(uuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bucket          ChallengeBucket
+  periodKey       String          @db.VarChar(64)
+  challengeSlug   String          @db.VarChar(64)
+  title           String
+  description     String          @db.Text
+  target          Int
+  progress        Int             @default(0)
+  completed       Boolean         @default(false)
+  completedAt     DateTime?
+  rewardsGranted  Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([userId, bucket, periodKey, challengeSlug])
+  @@index([userId, bucket, periodKey])
+}
+
+model UserThematicMissionProgress {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  missionSlug      String    @db.VarChar(128)
+  thematicMissionId String?
+  thematicMission  ThematicMission? @relation(fields: [thematicMissionId], references: [id], onDelete: SetNull)
+  currentStepIndex Int       @default(0)
+  completed        Boolean   @default(false)
+  bestScore        Int?
+  attemptCount     Int       @default(1)
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([userId, missionSlug])
+  @@index([userId])
+  @@index([thematicMissionId])
+}
+
+/// Catálogo persistido (opcional; puede sincronizarse con seed/código).
+model ThematicMission {
+  id          String   @id @default(uuid())
+  slug        String   @unique @db.VarChar(128)
+  title       String
+  theme       String
+  narrative   String   @db.Text
+  reward      String
+  stepCount   Int
+  seasonMonth String?  @db.VarChar(7)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  progressRows UserThematicMissionProgress[]
+}
+
+model ThematicMissionVote {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  missionSlug String   @db.VarChar(128)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, missionSlug])
+  @@index([missionSlug])
+}
+
+// ---------------------------------------------------------------------------
+// Contenido educativo: categorías → materias → temas → ítems
+// ---------------------------------------------------------------------------
+
+model EducationalCategory {
+  id        String   @id @default(uuid())
+  slug      String   @unique @db.VarChar(64)
+  name      String
+  icon      String?  @db.VarChar(64)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  subjects EducationalSubject[]
+
+  @@index([sortOrder])
+}
+
+model EducationalSubject {
   id         String   @id @default(uuid())
-  content    String?
-  imageUrl   String?
-  /// URL de video (p. ej. Cloudinary); no usar junto con `imageUrl` en el mismo post manual.
-  videoUrl   String?  @db.Text
-  /// Resultado de moderación automática (Cloudinary u otro): ocultar en feeds públicos salvo al autor.
-  mediaModerationFlagged Boolean @default(false)
-  mediaModerationNote    String?  @db.VarChar(500)
+  categoryId String
+  category   EducationalCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  slug       String   @db.VarChar(80)
+  name       String
+  sortOrder  Int      @default(0)
 
-  /// Si el medio provino de `UserMediaUpload`, referencia opcional para auditoría.
-  mediaUploadId String?         @unique
-  mediaUpload   UserMediaUpload? @relation(fields: [mediaUploadId], references: [id], onDelete: SetNull)
+  topics EducationalTopic[]
 
-  /// Categoría para ranking/intereses: en GAME_RESULT/ACHIEVEMENT se copia del juego o logro; en POST es opcional.
-  category   ContentCategory?
-  type       PostType
-  visibility Visibility
-
-  userId String
-  user   User @relation(fields: [userId], references: [id])
-
-  /// Un resultado de juego genera como máximo un post de actividad (índice único en BD).
-  gameResultId String? @unique
-  gameResult   GameResult? @relation(fields: [gameResultId], references: [id], onDelete: SetNull)
-
-  /// Un desbloqueo de logro genera como máximo un post de actividad (índice único en BD).
-  userAchievementId String? @unique
-  userAchievement   UserAchievement? @relation(fields: [userAchievementId], references: [id], onDelete: SetNull)
-
-  reactions Reaction[]
-
-  /// Si el tutor aprueba visibilidad pese a `mediaModerationFlagged`, el post vuelve a los feeds públicos.
-  parentModerationVisibleAt   DateTime?
-  parentModerationVisibleById String?   @db.VarChar(36)
-
-  contentReports ContentReport[]
-
-  createdAt DateTime @default(now())
+  @@unique([categoryId, slug])
+  @@index([categoryId, sortOrder])
 }
 
-model Reaction {
-  id     String       @id @default(uuid())
-  type   ReactionType
+model EducationalTopic {
+  id        String   @id @default(uuid())
+  subjectId String
+  subject   EducationalSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  slug      String   @db.VarChar(96)
+  name      String
+  summary   String?  @db.Text
+  sortOrder Int      @default(0)
 
-  userId String
-  user   User @relation(fields: [userId], references: [id])
+  contents EducationalContent[]
+  quizzes  Quiz[]
 
-  postId String
-  post   Post @relation(fields: [postId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@unique([userId, postId])
+  @@unique([subjectId, slug])
+  @@index([subjectId, sortOrder])
 }
 
-model Achievement {
+model EducationalContent {
   id          String            @id @default(uuid())
   title       String
   description String
-  iconUrl     String?
-  category    ContentCategory
-  badgeColor  String            @default("#6366f1")
-  badgeIcon   String            @default("badge")
-  rarity      AchievementRarity @default(COMMON)
+  content     String            @db.Text
+  /// Tipo de recurso pedagógico.
+  contentType EducationalContentType @default(READING)
+  category    String
+  difficulty  Difficulty
+  imageUrl    String?
+  topicId     String?
+  topic       EducationalTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  /// Metadatos (duración video, materiales experimento, etc.).
+  meta        Json?
+  published   Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @default(now()) @updatedAt
 
-  users UserAchievement[]
+  @@index([topicId])
+  @@index([contentType, published])
 }
 
-model UserAchievement {
-  id            String       @id @default(uuid())
+enum EducationalContentType {
+  VIDEO
+  READING
+  EXPERIMENT
+  INTERACTIVE
+  WORKSHEET
+  AUDIO
+}
 
+// ---------------------------------------------------------------------------
+// Quizzes agrupados + preguntas
+// ---------------------------------------------------------------------------
+
+model Quiz {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @default("") @db.Text
+  topicId     String?
+  topic       EducationalTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  /// Legacy / feed: alineado con ContentCategory cuando no hay topic.
+  legacyCategory ContentCategory?
+  difficulty  Difficulty @default(MEDIUM)
+  questionCount Int      @default(0)
+  published   Boolean  @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+  sessions  QuizSession[]
+
+  @@index([topicId])
+  @@index([published])
+}
+
+model QuizQuestion {
+  id         String     @id @default(uuid())
+  quizId     String?
+  quiz       Quiz?      @relation(fields: [quizId], references: [id], onDelete: SetNull)
+  question   String
+  options    Json
+  correct    Int
+  category   String
+  difficulty Difficulty
+  quizLevel  Int        @default(2)
+  knowledgeArea QuizKnowledgeArea @default(mathematics)
+  topicSlug  String     @default("general") @db.VarChar(120)
+  questionType QuizQuestionType @default(MULTIPLE_CHOICE)
+  explanation String    @default("") @db.Text
+  hintText   String?    @db.Text
+  hintCost   Int        @default(5)
+  readingPassage String? @db.Text
+  orderTapSequence Json?
+  createdAt  DateTime   @default(now())
+
+  flashcards UserQuizFlashcard[]
+
+  @@index([quizId])
+  @@index([category])
+}
+
+/// Intento / sesión de quiz (puntuación agregada).
+model QuizAttempt {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score       Int
+  maxScore    Int
+  correctCount Int
+  durationMs  Int?
+  finishedAt  DateTime @default(now())
+
+  @@index([userId, finishedAt])
+  @@index([quizId])
+}
+
+/// Sesión REST de quiz (respuestas parciales antes de finalizar).
+model QuizSession {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId     String
+  quiz       Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers    Json      @default("[]")
+  finished   Boolean   @default(false)
+  score      Int       @default(0)
+  maxScore   Int       @default(0)
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([userId, startedAt])
+  @@index([quizId])
+}
+
+model UserQuizAreaSkill {
+  id            String           @id @default(uuid())
   userId        String
-  user          User         @relation(fields: [userId], references: [id])
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  area          QuizKnowledgeArea
+  adaptiveLevel Int              @default(2)
+  lastCorrect   Int              @default(0)
+  lastWrong     Int              @default(0)
+  updatedAt     DateTime         @updatedAt
 
-  achievementId String
-  achievement   Achievement  @relation(fields: [achievementId], references: [id])
-
-  obtainedAt DateTime @default(now())
-
-  activityPost Post?
-
-  /// Un usuario no puede desbloquear el mismo logro dos veces → un solo post automático por evento.
-  @@unique([userId, achievementId])
+  @@unique([userId, area])
+  @@index([userId])
 }
 
+model UserQuizFlashcard {
+  id           String       @id @default(uuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  easeFactor   Float        @default(2.5)
+  intervalDays Float        @default(0)
+  repetitions  Int          @default(0)
+  nextReviewAt DateTime
+  createdAt    DateTime     @default(now())
+
+  @@unique([userId, questionId])
+  @@index([userId, nextReviewAt])
+}
+
+model QuizDailyProgress {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day        DateTime @db.Date
+  bestScore  Int      @default(0)
+  attempts   Int      @default(0)
+
+  @@unique([userId, day])
+  @@index([userId, day])
+}
+
+model UserQuizStreak {
+  userId               String    @id
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  streakDays           Int       @default(0)
+  lastQualifyingDayUtc DateTime? @db.Date
+}
+
+model VisualQuestion {
+  id         String     @id @default(uuid())
+  imageUrl   String
+  question   String
+  options    Json
+  correct    Int
+  category   String
+  difficulty Difficulty
+  createdAt  DateTime   @default(now())
+
+  @@index([category])
+}
+
+enum QuizKnowledgeArea {
+  mathematics
+  natural_sciences
+  social_sciences
+  language
+  art_culture
+  logic_thinking
+  emotions_values
+}
+
+enum QuizQuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  ORDER
+}
+
+// ---------------------------------------------------------------------------
+// Minijuegos (catálogo) + sesiones de juego
+// ---------------------------------------------------------------------------
+
+model MiniGame {
+  id          String          @id @default(uuid())
+  slug        String          @unique @db.VarChar(64)
+  name        String
+  description String          @default("") @db.Text
+  category    ContentCategory
+  difficulty  Difficulty      @default(MEDIUM)
+  /// Configuración (niveles, assets, reglas).
+  config      Json            @default("{}")
+  isActive    Boolean         @default(true)
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  sessions MiniGameSession[]
+
+  @@index([isActive, sortOrder])
+}
+
+model MiniGameSession {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  miniGameId String
+  miniGame   MiniGame @relation(fields: [miniGameId], references: [id], onDelete: Cascade)
+  score      Int
+  durationMs Int?
+  levelIndex Int?
+  metadata   Json?
+  startedAt  DateTime @default(now())
+  endedAt    DateTime?
+
+  @@index([userId, endedAt])
+  @@index([miniGameId])
+}
+
+/// Modelo legacy de juego (resultados); mantener por compatibilidad con posts / feeds.
 model Game {
   id         String          @id @default(uuid())
   name       String
@@ -336,95 +648,102 @@ model Game {
 model GameResult {
   id     String @id @default(uuid())
   score  Int
-
   userId String
-  user   User @relation(fields: [userId], references: [id])
-
+  user   User   @relation(fields: [userId], references: [id])
   gameId String
-  game   Game @relation(fields: [gameId], references: [id])
+  game   Game   @relation(fields: [gameId], references: [id])
 
   createdAt DateTime @default(now())
 
-  /// Como máximo un post automático por fila (vinculado por Post.gameResultId @unique).
   activityPost Post?
+
+  @@index([userId, createdAt])
+  @@index([gameId])
 }
 
+// ---------------------------------------------------------------------------
+// Social: amigos, grupos de estudio, chat 1:1 y grupal
+// ---------------------------------------------------------------------------
+
 model Friend {
-  id                       String       @id @default(uuid())
-  status                   FriendStatus
-  requiresParentApproval   Boolean      @default(true)
-  parentApproved           Boolean      @default(false)
-
-  userId   String
-  friendId String
-
-  createdAt DateTime @default(now())
+  id                     String       @id @default(uuid())
+  status                 FriendStatus
+  requiresParentApproval Boolean      @default(true)
+  parentApproved         Boolean      @default(false)
+  userId                 String
+  friendId               String
+  createdAt              DateTime     @default(now())
 
   @@unique([userId, friendId])
   @@index([userId, createdAt])
+  @@index([friendId])
 }
 
-model ScreenTime {
-  id                String   @id @default(uuid())
-  dailyLimitMinutes Int      @map("dailyLimitMinutes")
-  usedTodaySeconds  Int      @default(0) @map("usedTodaySeconds")
-  lastReset         DateTime
+model StudyGroup {
+  id          String   @id @default(uuid())
+  name        String
+  description String   @default("") @db.Text
+  ownerUserId String
+  inviteCode  String?  @unique @db.VarChar(16)
+  maxMembers  Int      @default(12)
+  isOpen      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  userId String @unique
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members  StudyGroupMember[]
+  messages StudyGroupMessage[]
+
+  @@index([ownerUserId])
 }
 
-/// Preferencias del padre/madre tutor sobre un hijo concreto. `childId` único ⇒ un tutor por menor (en esta tabla).
-model ParentSettings {
-  id                   String              @id @default(uuid())
-  parentId             String
-  parent               Parent              @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  childId              String              @unique
-  child                User                @relation("ChildParentSettings", fields: [childId], references: [id], onDelete: Cascade)
+model StudyGroupMember {
+  id       String         @id @default(uuid())
+  groupId  String
+  group    StudyGroup     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     StudyGroupRole @default(MEMBER)
+  joinedAt DateTime       @default(now())
 
-  /// Minutos de pantalla permitidos por día.
-  dailyScreenTimeLimit Int                 @default(120)
-  allowPosting         Boolean             @default(true)
-  allowFriends         Boolean             @default(true)
-  /// Si es false, el menor no puede enviar ni recibir mensajes de chat (solo amigos).
-  chatEnabled          Boolean             @default(true)
-  /// Si es false, el tutor no puede listar el historial de chat del menor por API (supervisión opcional).
-  parentChatSupervisionEnabled Boolean   @default(true)
-  /// Push y novedades cuando el menor tiene un amigo aceptado (nuevo contacto).
-  notifyParentNewContact       Boolean   @default(true)
-  /// Push y novedades por mensaje bloqueado o marcado por el filtro de chat.
-  notifyParentSuspiciousChat   Boolean   @default(true)
-  contentFilterLevel   ContentFilterLevel  @default(MEDIUM)
-
-  @@index([parentId])
+  @@unique([groupId, userId])
+  @@index([userId])
 }
 
-/// Mensaje 1:1 entre menores; solo si son amigos ACCEPTED y el tutor lo permite.
+model StudyGroupMessage {
+  id        String   @id @default(uuid())
+  groupId   String
+  group     StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body      String   @db.Text
+  moderated Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([groupId, createdAt])
+  @@index([senderId])
+}
+
 model ChatMessage {
   id          String   @id @default(uuid())
   senderId    String
   recipientId String
-  /// Texto entregado al destinatario (vacío si `blocked`).
   body        String   @db.Text
   blocked     Boolean  @default(false)
   blockReason String?  @db.VarChar(200)
-  /// Texto original para supervisión parental cuando hubo bloqueo.
   auditPlain  String?  @db.Text
-  /// Entregado al destinatario pero marcado para revisión (p. ej. enlace con filtro medio).
   moderationFlagged Boolean @default(false)
   createdAt   DateTime @default(now())
 
   sender    User @relation("ChatSent", fields: [senderId], references: [id], onDelete: Cascade)
   recipient User @relation("ChatReceived", fields: [recipientId], references: [id], onDelete: Cascade)
 
+  contentReports ContentReport[]
+
   @@index([senderId, createdAt])
   @@index([recipientId, createdAt])
   @@index([senderId, recipientId, createdAt])
-
-  contentReports ContentReport[]
 }
 
-/// Conversación 1:1 entre dos usuarios (metadatos del hilo). Complementa `ChatMessage` usado por la API actual.
 model Chat {
   id        String   @id @default(uuid())
   user1Id   String
@@ -439,14 +758,13 @@ model Chat {
   @@index([user2Id])
 }
 
-/// Mensaje directo entre usuarios (modelo genérico; distinto de `ChatMessage` del producto).
 model Message {
-  id          String   @id @default(uuid())
-  senderId    String
-  receiverId  String
-  content     String   @db.Text
-  createdAt   DateTime @default(now())
-  isFlagged   Boolean  @default(false)
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  content    String   @db.Text
+  createdAt  DateTime @default(now())
+  isFlagged  Boolean  @default(false)
 
   sender   User @relation("DmMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User @relation("DmMessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
@@ -455,35 +773,122 @@ model Message {
   @@index([receiverId, createdAt])
 }
 
-/// Denuncia de contenido o usuario; visible al tutor de menores implicados.
+// ---------------------------------------------------------------------------
+// Feed, reacciones, logros y coleccionables
+// ---------------------------------------------------------------------------
+
+model Post {
+  id                     String   @id @default(uuid())
+  content                String?
+  imageUrl               String?
+  videoUrl                 String?  @db.Text
+  mediaModerationFlagged Boolean  @default(false)
+  mediaModerationNote    String?  @db.VarChar(500)
+  mediaUploadId          String?  @unique
+  mediaUpload            UserMediaUpload? @relation(fields: [mediaUploadId], references: [id], onDelete: SetNull)
+  category               ContentCategory?
+  type                   PostType
+  visibility             Visibility
+  userId                 String
+  user                   User     @relation(fields: [userId], references: [id])
+  gameResultId           String?  @unique
+  gameResult             GameResult? @relation(fields: [gameResultId], references: [id], onDelete: SetNull)
+  userAchievementId      String?  @unique
+  userAchievement        UserAchievement? @relation(fields: [userAchievementId], references: [id], onDelete: SetNull)
+  parentModerationVisibleAt   DateTime?
+  parentModerationVisibleById String?   @db.VarChar(36)
+
+  reactions Reaction[]
+  contentReports ContentReport[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+model Reaction {
+  id        String       @id @default(uuid())
+  type      ReactionType
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  postId    String
+  post      Post         @relation(fields: [postId], references: [id])
+  createdAt DateTime     @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model Achievement {
+  id            String                @id @default(uuid())
+  title         String
+  description   String
+  iconUrl       String?
+  category      ContentCategory
+  badgeColor    String                @default("#6366f1")
+  badgeIcon     String                @default("badge")
+  rarity        AchievementRarity     @default(COMMON)
+  systemKind    AchievementSystemKind @default(PROGRESS)
+  hidden        Boolean               @default(false)
+  collectionKey String?               @db.VarChar(64)
+  slug          String?               @unique @db.VarChar(96)
+  sortOrder     Int                   @default(0)
+
+  users UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  obtainedAt    DateTime    @default(now())
+  activityPost  Post?
+
+  @@unique([userId, achievementId])
+  @@index([achievementId])
+}
+
+model UserInterest {
+  id       String          @id @default(uuid())
+  userId   String
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category ContentCategory
+  score    Int             @default(0)
+
+  @@unique([userId, category])
+}
+
+// ---------------------------------------------------------------------------
+// Moderación y reportes
+// ---------------------------------------------------------------------------
+
 model ContentReport {
-  id         String              @id @default(uuid())
-  targetType ContentReportTarget
-  reason     String?             @db.VarChar(500)
-  status     ContentReportStatus @default(OPEN)
-  /// Nota del tutor al cerrar o escalar.
-  resolutionNote String?         @db.VarChar(500)
-
-  reporterUserId String
-  reporter       User   @relation("UserReportsFiled", fields: [reporterUserId], references: [id], onDelete: Cascade)
-
-  postId String?
-  post   Post? @relation(fields: [postId], references: [id], onDelete: SetNull)
-
-  reportedUserId String?
-  reportedUser   User? @relation("UserReportsAgainst", fields: [reportedUserId], references: [id], onDelete: SetNull)
-
-  chatMessageId String?
-  chatMessage   ChatMessage? @relation(fields: [chatMessageId], references: [id], onDelete: SetNull)
-
-  reviewedByParentId String?   @db.VarChar(36)
-  reviewedAt         DateTime?
+  id               String              @id @default(uuid())
+  targetType       ContentReportTarget
+  reason           String?             @db.VarChar(500)
+  status           ContentReportStatus @default(OPEN)
+  resolutionNote   String?             @db.VarChar(500)
+  priority         Int                 @default(0)
+  reporterUserId   String
+  reporter         User                @relation("UserReportsFiled", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  postId           String?
+  post             Post?               @relation(fields: [postId], references: [id], onDelete: SetNull)
+  reportedUserId   String?
+  reportedUser     User?               @relation("UserReportsAgainst", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  chatMessageId    String?
+  chatMessage      ChatMessage?        @relation(fields: [chatMessageId], references: [id], onDelete: SetNull)
+  reviewedByParentId String?          @db.VarChar(36)
+  reviewedAt       DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status, createdAt])
   @@index([reporterUserId, createdAt])
+  @@index([priority, status])
 }
 
 model ModerationLog {
@@ -491,130 +896,95 @@ model ModerationLog {
   flagged  Boolean
   reason   String?
   reviewed Boolean @default(false)
-
-  postId String
+  postId   String
 }
 
-enum AchievementRarity {
-  COMMON
-  RARE
-  EPIC
-  LEGENDARY
+// ---------------------------------------------------------------------------
+// Eventos en vivo
+// ---------------------------------------------------------------------------
+
+model LiveEvent {
+  id          String          @id @default(uuid())
+  title       String
+  description String          @default("") @db.Text
+  startsAt    DateTime
+  endsAt      DateTime
+  streamUrl   String?         @db.Text
+  status      LiveEventStatus @default(SCHEDULED)
+  hostLabel   String?
+  coverUrl    String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  attendees LiveEventAttendee[]
+
+  @@index([startsAt, endsAt])
+  @@index([status])
 }
 
-enum PostType {
-  POST
-  ACHIEVEMENT
-  GAME_RESULT
+model LiveEventAttendee {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt  DateTime @default(now())
+  watchMs   Int?
+
+  @@unique([eventId, userId])
+  @@index([userId])
 }
 
-enum Visibility {
-  PUBLIC
-  FRIENDS
+// ---------------------------------------------------------------------------
+// Notificaciones in-app
+// ---------------------------------------------------------------------------
+
+model AppNotification {
+  id        String              @id @default(uuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationKind
+  title     String
+  body      String              @db.Text
+  data      Json                @default("{}")
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }
 
-enum ReactionType {
-  LIKE
-  CLAP
-  STAR
+// ---------------------------------------------------------------------------
+// Perfiles, aprobaciones, analítica
+// ---------------------------------------------------------------------------
+
+model ParentSettings {
+  id                           String             @id @default(uuid())
+  parentId                     String
+  parent                       Parent             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  childId                      String             @unique
+  child                        User               @relation("ChildParentSettings", fields: [childId], references: [id], onDelete: Cascade)
+  dailyScreenTimeLimit         Int                @default(120)
+  allowPosting                 Boolean            @default(true)
+  allowFriends                 Boolean            @default(true)
+  chatEnabled                  Boolean            @default(true)
+  parentChatSupervisionEnabled Boolean            @default(true)
+  notifyParentNewContact       Boolean            @default(true)
+  notifyParentSuspiciousChat   Boolean            @default(true)
+  contentFilterLevel           ContentFilterLevel @default(MEDIUM)
+
+  @@index([parentId])
 }
 
-enum FriendStatus {
-  PENDING
-  AWAITING_PARENT
-  ACCEPTED
-  REJECTED
+model ScreenTime {
+  id                String   @id @default(uuid())
+  dailyLimitMinutes Int      @map("dailyLimitMinutes")
+  usedTodaySeconds  Int      @default(0) @map("usedTodaySeconds")
+  lastReset         DateTime
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-enum ContentReportTarget {
-  POST
-  USER
-  CHAT_MESSAGE
-}
-
-enum ContentReportStatus {
-  OPEN
-  DISMISSED
-  ESCALATED
-}
-
-enum MissionType {
-  PLAY_GAMES
-  EARN_XP
-  COMPLETE_ACHIEVEMENT
-  READ_CONTENT
-  CORRECT_ANSWERS
-}
-
-/// Categorías educativas canónicas (mismo valor en juego, logro, post, misión e intereses).
-enum ContentCategory {
-  math
-  astronomy
-  science
-  geography
-  education
-  history
-  puzzle
-  sports
-  creativity
-}
-
-enum ContentFilterLevel {
-  LOW
-  MEDIUM
-  HIGH
-}
-
-enum UserType {
-  parent
-  minor
-  admin
-}
-
-enum UserStatus {
-  active
-  inactive
-  suspended
-}
-
-enum VerificationStatus {
-  pending
-  verified
-  rejected
-}
-
-enum VerificationMethod {
-  email
-  phone
-  id_document
-}
-
-enum SubscriptionTier {
-  free
-  basic
-  premium
-}
-
-enum ParentChildRelationStatus {
-  active
-  pending
-  blocked
-}
-
-enum ActivityType {
-  friend_request
-  post
-  purchase
-  content_access
-}
-
-enum ActivityApprovalStatus {
-  pending
-  approved
-  rejected
-}
-
-/// Eventos de analítica (app / servidor); `userId` opcional para eventos anónimos o previos al login.
 model AnalyticsEvent {
   id        String   @id @default(uuid())
   userId    String?
@@ -697,39 +1067,166 @@ model ActivityApproval {
   @@index([activityType, status])
 }
 
-model EducationalContent {
-  id          String     @id @default(uuid())
-  title       String
-  description String
-  /// markdown or plain text
-  content     String
-  category    String
-  difficulty  Difficulty
-  imageUrl    String?
-  createdAt   DateTime   @default(now())
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum StreakKind {
+  APP_ACTIVITY
+  QUIZ_DAILY
+  MISSION
+  MINI_GAME
 }
 
-model QuizQuestion {
-  id         String     @id @default(uuid())
-  question   String
-  /// array of strings
-  options    Json
-  /// index of correct answer
-  correct    Int
-  category   String
-  difficulty Difficulty
-  createdAt  DateTime   @default(now())
+enum StudyGroupRole {
+  OWNER
+  MODERATOR
+  MEMBER
 }
 
-model VisualQuestion {
-  id         String     @id @default(uuid())
-  imageUrl   String
-  question   String
-  options    Json
-  correct    Int
-  category   String
-  difficulty Difficulty
-  createdAt  DateTime   @default(now())
+enum LiveEventStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum NotificationKind {
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  PARENT_ALERT
+  CHAT
+  GROUP
+  LIVE_EVENT
+  ACHIEVEMENT
+  MISSION
+  SYSTEM
+}
+
+enum AchievementSystemKind {
+  PROGRESS
+  SKILL
+  SOCIAL
+  SPECIAL
+  COLLECTIBLE
+}
+
+enum AchievementRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum PostType {
+  POST
+  ACHIEVEMENT
+  GAME_RESULT
+}
+
+enum Visibility {
+  PUBLIC
+  FRIENDS
+}
+
+enum ReactionType {
+  LIKE
+  CLAP
+  STAR
+}
+
+enum FriendStatus {
+  PENDING
+  AWAITING_PARENT
+  ACCEPTED
+  REJECTED
+}
+
+enum ContentReportTarget {
+  POST
+  USER
+  CHAT_MESSAGE
+}
+
+enum ContentReportStatus {
+  OPEN
+  DISMISSED
+  ESCALATED
+}
+
+enum MissionType {
+  PLAY_GAMES
+  EARN_XP
+  COMPLETE_ACHIEVEMENT
+  READ_CONTENT
+  CORRECT_ANSWERS
+}
+
+enum ContentCategory {
+  math
+  astronomy
+  science
+  geography
+  education
+  history
+  puzzle
+  sports
+  creativity
+}
+
+enum ContentFilterLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum UserType {
+  parent
+  minor
+  admin
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+}
+
+enum VerificationStatus {
+  pending
+  verified
+  rejected
+}
+
+enum VerificationMethod {
+  email
+  phone
+  id_document
+}
+
+enum SubscriptionTier {
+  free
+  basic
+  premium
+}
+
+enum ParentChildRelationStatus {
+  active
+  pending
+  blocked
+}
+
+enum ActivityType {
+  friend_request
+  post
+  purchase
+  content_access
+}
+
+enum ActivityApprovalStatus {
+  pending
+  approved
+  rejected
 }
 
 enum Difficulty {

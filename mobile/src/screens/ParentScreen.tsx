@@ -841,23 +841,43 @@ export function ParentScreen({ route }: Props) {
           <Text style={{ color: colors.textOnPrimary, fontWeight: "700" }}>➕ Agregar hijo</Text>
         </Pressable>
         {parent?.isPremium ? (
-          <Pressable
-            onPress={() => navigation.navigate("ParentAnalytics", { parentId })}
-            style={styles.analyticsCta}
-            accessibilityRole="button"
-            accessibilityLabel="Ver analíticas familiares"
-          >
-            <Text style={styles.analyticsCtaText}>📊 Ver analíticas</Text>
-          </Pressable>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+            <Pressable
+              onPress={() => navigation.navigate("ParentAnalytics", { parentId })}
+              style={styles.analyticsCta}
+              accessibilityRole="button"
+              accessibilityLabel="Ver analíticas familiares"
+            >
+              <Text style={styles.analyticsCtaText}>📊 Ver analíticas</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => navigation.navigate("ParentCoach", { parentId })}
+              style={styles.analyticsCta}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir guía para padres"
+            >
+              <Text style={styles.analyticsCtaText}>💡 Guía para padres</Text>
+            </Pressable>
+          </View>
         ) : (
-          <Pressable
-            onPress={() => navigation.navigate("Premium")}
-            style={styles.premiumCta}
-            accessibilityRole="button"
-            accessibilityLabel="Conocer EduPlay Premium"
-          >
-            <Text style={styles.premiumCtaText}>✨ Conocer Premium</Text>
-          </Pressable>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+            <Pressable
+              onPress={() => navigation.navigate("Premium")}
+              style={styles.premiumCta}
+              accessibilityRole="button"
+              accessibilityLabel="Conocer EduPlay Premium"
+            >
+              <Text style={styles.premiumCtaText}>✨ Conocer Premium</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => navigation.navigate("ParentCoach", { parentId })}
+              style={styles.analyticsCta}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir guía para padres"
+            >
+              <Text style={styles.analyticsCtaText}>💡 Guía para padres</Text>
+            </Pressable>
+          </View>
         )}
       </View>
 
