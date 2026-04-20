@@ -32,11 +32,12 @@ export function requireAuthenticated(req: Request, res: Response, next: NextFunc
  */
 export function requireRoles(...allowed: AuthRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!req.auth || !req.role) {
+    const resolvedRole: AuthRole | null = req.role ?? (req.auth ? req.auth.kind : null);
+    if (!req.auth || !resolvedRole) {
       res.status(401).json({ error: "No autenticado." });
       return;
     }
-    if (!allowed.includes(req.role)) {
+    if (!allowed.includes(resolvedRole)) {
       res.status(403).json({ error: forbiddenMessage(allowed) });
       return;
     }

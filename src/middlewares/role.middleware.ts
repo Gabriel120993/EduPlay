@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { ActivityType } from "@prisma/client";
 import { env } from "../config/env";
 import { logError } from "../lib/logger";
 import { prisma } from "../lib/prisma";
@@ -7,49 +8,74 @@ import { extractBearerToken } from "./auth.middleware";
 import { requireParent as requireParentRole, requireChild } from "./rbac.middleware";
 
 /**
- * Solo tutores/padres (JWT `typ: parent`).
- * Re-export del RBAC existente con nombre explícito para la capa REST.
+ * Solo tutores/padres activos y verificados.
+ * Mantiene compatibilidad con el middleware legado usado en tests.
  */
-export const requireParent = requireParentRole;
+export async function requireParent(req: Request, res: Response, next: NextFunction): Promise<void> {
+  requireParentRole(req, res, async () => {
+    const auth = req.auth;
+    if (!auth || auth.kind !== "parent") {
+      res.status(401).json({ error: "No autenticado." });
+      return;
+    }
+    try {
+      const row = await prisma.user.findFirst({
+        where: { parentId: auth.parentId, type: "parent" },
+        select: { status: true, parentProfile: { select: { verificationStatus: true } } },
+        orderBy: { createdAt: "asc" },
+      });
+      if (!row || row.status !== "active") {
+        res.status(403).json({ error: "Cuenta de tutor no activa.", code: "PARENT_INACTIVE" });
+        return;
+      }
+      if (row.parentProfile?.verificationStatus !== "verified") {
+        res.status(403).json({ error: "Tutor no verificado.", code: "PARENT_NOT_VERIFIED" });
+        return;
+      }
+      next();
+    } catch (e) {
+      logError("role.requireParent", e);
+      res.status(500).json({ error: "Error al verificar la cuenta del tutor." });
+    }
+  });
+}
 
 /**
  * Solo menores con cuenta aprobada por el tutor (`parentAccountApprovedAt`).
  * Complementa `requireApprovedChildAccount` global cuando usás rutas montadas fuera de esa cadena.
  */
-export function requireMinor() {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const auth = req.auth;
-    if (!auth || auth.kind !== "child") {
-      res.status(403).json({ error: "Esta operación es solo para menores.", code: "FORBIDDEN_NOT_MINOR" });
+export async function requireMinor(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const auth = req.auth;
+  if (!auth || auth.kind !== "child") {
+    res.status(403).json({ error: "Esta operación es solo para menores.", code: "FORBIDDEN_NOT_MINOR" });
+    return;
+  }
+
+  try {
+    const row = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { parentAccountApprovedAt: true, status: true, type: true },
+    });
+    if (!row || row.type !== "minor") {
+      res.status(403).json({ error: "Cuenta de menor inválida.", code: "FORBIDDEN_NOT_MINOR" });
       return;
     }
-
-    try {
-      const row = await prisma.user.findUnique({
-        where: { id: auth.userId },
-        select: { parentAccountApprovedAt: true, status: true, type: true },
-      });
-      if (!row || row.type !== "minor") {
-        res.status(403).json({ error: "Cuenta de menor inválida.", code: "FORBIDDEN_NOT_MINOR" });
-        return;
-      }
-      if (row.status !== "active") {
-        res.status(403).json({ error: "Cuenta inactiva o suspendida.", code: "MINOR_BLOCKED" });
-        return;
-      }
-      if (!row.parentAccountApprovedAt) {
-        res.status(403).json({
-          error: "Tu tutor debe aprobar tu cuenta antes de usar esta función.",
-          code: "CHILD_ACCOUNT_PENDING_APPROVAL",
-        });
-        return;
-      }
-      next();
-    } catch (e) {
-      logError("role.requireMinor", e);
-      res.status(500).json({ error: "Error al verificar el estado de la cuenta." });
+    if (row.status !== "active") {
+      res.status(403).json({ error: "Cuenta inactiva o suspendida.", code: "MINOR_BLOCKED" });
+      return;
     }
-  };
+    if (!row.parentAccountApprovedAt) {
+      res.status(403).json({
+        error: "Tu tutor debe aprobar tu cuenta antes de usar esta función.",
+        code: "CHILD_ACCOUNT_PENDING_APPROVAL",
+      });
+      return;
+    }
+    next();
+  } catch (e) {
+    logError("role.requireMinor", e);
+    res.status(500).json({ error: "Error al verificar el estado de la cuenta." });
+  }
 }
 
 /**
@@ -197,6 +223,149 @@ export function requireSelfOrParent(userIdParam = "userId") {
     }
 
     res.status(403).json({ error: "No autorizado.", code: "FORBIDDEN" });
+  };
+}
+
+/** Compat: menor sobre sí mismo o tutor del menor. */
+export const requireParentOrSelf = requireSelfOrParent("minorId");
+
+/** Compat: usa `minAge`/`category` de body/query para validar acceso de menores. */
+export async function checkContentAccess(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const auth = req.auth;
+  if (!auth || auth.kind !== "child") {
+    next();
+    return;
+  }
+
+  const rawMinAge = req.body?.minAge ?? req.query?.minAge;
+  const minAge =
+    typeof rawMinAge === "number"
+      ? rawMinAge
+      : typeof rawMinAge === "string" && rawMinAge.trim() !== ""
+        ? Number(rawMinAge)
+        : null;
+  const categoryRaw = req.body?.category ?? req.query?.category;
+  const category = typeof categoryRaw === "string" ? categoryRaw.trim().toLowerCase() : "";
+
+  try {
+    const row = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { age: true, minorProfile: true },
+    });
+    if (!row) {
+      res.status(403).json({ error: "Perfil de menor no encontrado.", code: "FORBIDDEN" });
+      return;
+    }
+
+    if (minAge != null && Number.isFinite(minAge) && row.age < minAge) {
+      res.status(403).json({ error: "Este contenido no está recomendado para tu edad.", code: "CONTENT_AGE_RESTRICTED" });
+      return;
+    }
+
+    const blocked =
+      row.minorProfile &&
+      typeof row.minorProfile === "object" &&
+      "contentRestrictions" in row.minorProfile &&
+      row.minorProfile.contentRestrictions &&
+      typeof row.minorProfile.contentRestrictions === "object" &&
+      "blockedCategories" in row.minorProfile.contentRestrictions
+        ? (row.minorProfile.contentRestrictions as { blockedCategories?: unknown }).blockedCategories
+        : null;
+    const blockedCategories = Array.isArray(blocked)
+      ? blocked.map((v) => String(v).trim().toLowerCase()).filter(Boolean)
+      : [];
+    if (category && blockedCategories.includes(category)) {
+      res.status(403).json({ error: "Categoría bloqueada por controles parentales.", code: "CONTENT_CATEGORY_BLOCKED" });
+      return;
+    }
+
+    next();
+  } catch (e) {
+    logError("role.checkContentAccess", e);
+    res.status(500).json({ error: "Error al validar acceso al contenido." });
+  }
+}
+
+function mapLegacyActivityType(action: "make_purchase" | "post_content" | "add_friend"): ActivityType {
+  switch (action) {
+    case "make_purchase":
+      return ActivityType.purchase;
+    case "add_friend":
+      return ActivityType.friend_request;
+    default:
+      return ActivityType.post;
+  }
+}
+
+/** Compat: bloquea por flags de perfil y luego exige aprobación parental según configuración. */
+export function requireApprovalFor(action: "make_purchase" | "post_content" | "add_friend") {
+  const mappedAction = mapLegacyActivityType(action);
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const auth = req.auth;
+    if (!auth || auth.kind !== "child") {
+      next();
+      return;
+    }
+    try {
+      const row = await prisma.user.findUnique({
+        where: { id: auth.userId },
+        select: { minorProfile: true },
+      });
+      const profile =
+        row && row.minorProfile && typeof row.minorProfile === "object" ? (row.minorProfile as Record<string, unknown>) : null;
+      if (action === "make_purchase" && profile?.canMakePurchases === false) {
+        res.status(403).json({ error: "Tu perfil no permite compras.", code: "PURCHASES_DISABLED" });
+        return;
+      }
+      if (action === "post_content" && profile?.canPostContent === false) {
+        res.status(403).json({ error: "Tu perfil no permite publicar.", code: "POSTING_DISABLED" });
+        return;
+      }
+      if (action === "add_friend" && profile?.canAddFriends === false) {
+        res.status(403).json({ error: "Tu perfil no permite agregar amistades.", code: "FRIENDS_DISABLED" });
+        return;
+      }
+    } catch (e) {
+      logError("role.requireApprovalFor.profile", e);
+      res.status(500).json({ error: "Error al verificar permisos del perfil." });
+      return;
+    }
+
+    try {
+      const relation = await prisma.parentChildRelation.findFirst({
+        where: { childId: auth.userId, status: "active" },
+        select: { approvalRequiredFor: true },
+      });
+      const requiredFor = Array.isArray(relation?.approvalRequiredFor)
+        ? relation.approvalRequiredFor.map((v) => String(v))
+        : [];
+      if (!requiredFor.includes(mappedAction)) {
+        next();
+        return;
+      }
+
+      const approved = await prisma.activityApproval.findFirst({
+        where: {
+          minorId: auth.userId,
+          activityType: mappedAction,
+          status: "approved",
+        },
+        orderBy: { requestedAt: "desc" },
+        select: { id: true },
+      });
+      if (!approved) {
+        res.status(403).json({
+          error: "Esta acción requiere aprobación parental.",
+          code: "PARENTAL_APPROVAL_REQUIRED",
+          action: mappedAction,
+        });
+        return;
+      }
+      next();
+    } catch (e) {
+      logError("role.requireApprovalFor.approval", e);
+      res.status(500).json({ error: "Error al verificar aprobación parental." });
+    }
   };
 }
 
