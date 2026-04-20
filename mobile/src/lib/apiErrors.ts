@@ -5,6 +5,14 @@ import axios from "axios";
  */
 export function formatApiError(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
+    if (!error.response && (error.code === "ERR_NETWORK" || /network error/i.test(error.message))) {
+      return [
+        "No se pudo conectar con el servidor (error de red).",
+        "Verificá que el API esté corriendo y configurá `EXPO_PUBLIC_API_URL` en `mobile/.env`.",
+        "Ejemplo: EXPO_PUBLIC_API_URL=http://localhost:3000",
+      ].join(" ");
+    }
+
     const status = error.response?.status;
     const raw = error.response?.data;
     const serverMsg =

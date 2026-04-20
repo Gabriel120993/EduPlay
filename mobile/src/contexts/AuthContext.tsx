@@ -12,6 +12,7 @@ import {
 import { getStoredAuthJwt, setStoredAuthJwt } from "../lib/authTokenSecure";
 import { clearExpoPushToken } from "../lib/pushTokenStorage";
 import { postExpoPushToken } from "../services/api";
+import { setAnalyticsToken } from "../services/analytics";
 import { clearLocalNotificationSchedules } from "../services/localNotifications";
 
 export type SessionRole = "parent" | "child";
@@ -106,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setParent(null);
     setViewerUserId(null);
     setApiToken(null);
+    setAnalyticsToken(null);
     await clearPersistedSession();
     await clearExpoPushToken();
     await clearLocalNotificationSchedules();
@@ -155,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
         setToken(jwt);
         setApiToken(jwt);
+        setAnalyticsToken(jwt);
 
         const me = await fetchAuthMe();
         if (!mounted) return;
@@ -190,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (session: AuthResponse, rememberSession: boolean, emailHint?: string) => {
       setToken(session.token);
       setApiToken(session.token);
+      setAnalyticsToken(session.token);
       setSessionRole("parent");
       setParent(session.parent);
       setViewerUserId(null);
@@ -218,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const session = await loginChild(u, password);
       setToken(session.token);
       setApiToken(session.token);
+      setAnalyticsToken(session.token);
       setSessionRole("child");
       setParent(null);
       setViewerUserId(session.user.id);

@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 type Extra = {
   viewerUserId?: string;
@@ -31,7 +32,18 @@ export const PARENT_USER_ID =
   "";
 
 /** Base URL del API; opcional `EXPO_PUBLIC_API_URL` en `.env`. */
+function inferWebApiBaseUrl(): string {
+  if (Platform.OS !== "web" || typeof window === "undefined") {
+    return "";
+  }
+  const { protocol, hostname } = window.location;
+  if (!hostname) return "";
+  return `${protocol}//${hostname}:3000`;
+}
+
+/** Base URL del API; opcional `EXPO_PUBLIC_API_URL` en `.env`. */
 export const API_BASE_URL =
   getExtra().apiUrl?.trim() ||
   process.env.EXPO_PUBLIC_API_URL?.trim() ||
+  inferWebApiBaseUrl() ||
   "http://localhost:3000";
