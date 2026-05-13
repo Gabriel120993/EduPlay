@@ -3,6 +3,8 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,12 +19,17 @@ import { PARENT_USER_ID } from "../config";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { formatApiError } from "../lib/apiErrors";
+import { showToast } from "../lib/toastBus";
 import type { ParentStackParamList } from "../navigation/types";
 import { getParentCoach } from "../services/api";
-import type { ParentCoachPayload } from "../types/api";
+import type { ParentCoachArticle, ParentCoachPayload, ParentCoachResource } from "../types/api";
 import { space, typography } from "../theme/tokens";
 
 type Props = NativeStackScreenProps<ParentStackParamList, "ParentCoach">;
+
+type ReaderSheet =
+  | { kind: "article"; title: string; body: string; readMinutes: number }
+  | null;
 
 function severityStyle(
   severity: ParentCoachPayload["alerts"][0]["severity"],
@@ -45,6 +52,7 @@ export function ParentCoachScreen({ route }: Props) {
   const [data, setData] = useState<ParentCoachPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reader, setReader] = useState<ReaderSheet>(null);
 
   const load = useCallback(async () => {
     if (!parentId) {
@@ -76,13 +84,50 @@ export function ParentCoachScreen({ route }: Props) {
 
   const openVideo = useCallback((url: string, title: string) => {
     void Linking.openURL(url).catch(() => {
-      Alert.alert("Enlace", `No se pudo abrir el enlace.\n${title}`);
+      const msg = `No se pudo abrir el enlace.\n${title}`;
+      if (Platform.OS === "web" && typeof window !== "undefined" && typeof window.alert === "function") {
+        window.alert(msg);
+        return;
+      }
+      Alert.alert("Enlace", msg);
     });
   }, []);
 
-  const showArticle = useCallback((title: string, excerpt: string, minutes: number) => {
-    Alert.alert(title, `${excerpt}\n\nLectura aprox.: ${minutes} min.`);
+  const openArticleReader = useCallback((article: ParentCoachArticle) => {
+    const full = article.body?.trim();
+    const body =
+      full && full.length > 0
+        ? full
+        : `${article.excerpt}\n\n(Actualizá el servidor EduPlay para ver el texto completo de esta nota.)`;
+    setReader({ kind: "article", title: article.title, body, readMinutes: article.readMinutes });
   }, []);
+
+  const openPersonalizedResource = useCallback(
+    (r: ParentCoachResource, payload: ParentCoachPayload) => {
+      if (r.type === "video") {
+        const url =
+          r.openUrl?.trim() ||
+          payload.understandingYourChild.videos.find((v) => v.id === r.curatedVideoId)?.url?.trim();
+        if (url) {
+          openVideo(url, r.title);
+          return;
+        }
+        showToast("No hay enlace de video disponible para este recurso.", "error");
+        return;
+      }
+      if (r.type === "article") {
+        const article = payload.understandingYourChild.articles.find((a) => a.id === r.curatedArticleId);
+        if (article) {
+          openArticleReader(article);
+          return;
+        }
+        showToast("No se encontró el artículo enlazado.", "error");
+        return;
+      }
+      showToast("Este tipo de recurso se muestra arriba en tips y conversaciones.", "error");
+    },
+    [openArticleReader, openVideo]
+  );
 
   if (!parentId) {
     return (
@@ -117,7 +162,8 @@ export function ParentCoachScreen({ route }: Props) {
   }
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+    <>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.screenTitle}>Guía para padres</Text>
       <Text style={styles.screenHint}>
         Contenido curado por psicólogos infantiles y pedagogos, adaptado a la actividad en la app.
@@ -131,13 +177,13 @@ export function ParentCoachScreen({ route }: Props) {
         <Pressable
           key={a.id}
           style={styles.card}
-          onPress={() => showArticle(a.title, a.excerpt, a.readMinutes)}
+          onPress={() => openArticleReader(a)}
         >
           <Text style={styles.cardTitle}>{a.title}</Text>
           <Text style={styles.cardBody} numberOfLines={3}>
             {a.excerpt}
           </Text>
-          <Text style={styles.cardMeta}>{a.readMinutes} min de lectura · Tocá para leer resumen</Text>
+          <Text style={styles.cardMeta}>{a.readMinutes} min de lectura · Tocá para leer contenido</Text>
         </Pressable>
       ))}
 
@@ -200,16 +246,60 @@ export function ParentCoachScreen({ route }: Props) {
       <Text style={[styles.sectionTitle, styles.sectionSpaced]}>Recursos sugeridos para vos</Text>
       <Text style={styles.sectionSub}>Ordenados por relevancia según patrones de la semana.</Text>
       {data.personalizedResources.map((r) => (
-        <View key={r.id} style={styles.card}>
+        <Pressable
+          key={r.id}
+          style={styles.card}
+          onPress={() => openPersonalizedResource(r, data)}
+        >
           <Text style={styles.cardTitle}>
             {r.type === "video" ? "🎬 " : "📄 "}
             {r.title}
           </Text>
           <Text style={styles.cardMeta}>Relevancia: {r.relevanceScore}</Text>
           <Text style={styles.cardBody}>{r.reason}</Text>
-        </View>
+          <Text style={styles.cardFoot}>
+            {r.type === "video" ? "Tocá para abrir el video (navegador)" : "Tocá para leer en la app"}
+          </Text>
+        </Pressable>
       ))}
-    </ScrollView>
+      </ScrollView>
+
+      <Modal
+        visible={reader != null}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setReader(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={styles.modalDismiss} onPress={() => setReader(null)} accessibilityLabel="Cerrar lectura" />
+          <View style={[styles.modalSheet, { borderColor: colors.borderSubtle, backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {reader?.kind === "article" ? reader.title : ""}
+              </Text>
+              <Pressable
+                onPress={() => setReader(null)}
+                style={styles.modalCloseHit}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+              >
+                <Text style={[styles.modalCloseText, { color: colors.link }]}>Cerrar</Text>
+              </Pressable>
+            </View>
+            {reader?.kind === "article" ? (
+              <>
+                <Text style={[styles.modalMeta, { color: colors.textMuted }]}>
+                  Lectura aprox.: {reader.readMinutes} min
+                </Text>
+                <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
+                  <Text style={[styles.modalBody, { color: colors.textSecondary }]}>{reader.body}</Text>
+                </ScrollView>
+              </>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -257,6 +347,7 @@ function createStyles(c: import("../theme/appTheme").AppColors) {
     cardTitle: { fontSize: typography.bodyLarge, fontWeight: "800", color: c.text },
     cardBody: { marginTop: 6, fontSize: typography.body, color: c.textSecondary, lineHeight: 22 },
     cardMeta: { marginTop: 8, fontSize: typography.secondary, color: c.textMuted, fontWeight: "600" },
+    cardFoot: { marginTop: 10, fontSize: typography.secondary, color: c.link, fontWeight: "700" },
     highlight: {
       marginTop: 10,
       fontSize: typography.body,
@@ -283,5 +374,26 @@ function createStyles(c: import("../theme/appTheme").AppColors) {
     alertText: { fontSize: typography.body, fontWeight: "600", lineHeight: 22 },
     retryBtn: { marginTop: space.md, padding: space.sm },
     retryText: { color: c.link, fontWeight: "800", fontSize: typography.bodyLarge },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "#000000aa",
+      justifyContent: "flex-end",
+      padding: space.md,
+    },
+    modalDismiss: { ...StyleSheet.absoluteFillObject },
+    modalSheet: {
+      maxHeight: 560,
+      borderRadius: space.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      padding: space.md,
+      overflow: "hidden",
+    },
+    modalHeader: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
+    modalTitle: { flex: 1, fontSize: typography.bodyLarge, fontWeight: "900", lineHeight: 24 },
+    modalCloseHit: { paddingVertical: 4, paddingHorizontal: 6 },
+    modalCloseText: { fontWeight: "800" },
+    modalMeta: { marginTop: 6, fontSize: typography.secondary, fontWeight: "600" },
+    modalScroll: { marginTop: 10, maxHeight: 460 },
+    modalBody: { fontSize: typography.body, lineHeight: 24, fontWeight: "500" },
   });
 }

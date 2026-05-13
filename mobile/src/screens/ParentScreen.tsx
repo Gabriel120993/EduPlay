@@ -103,8 +103,10 @@ function ChildPanel({
   const styles = useParentStyles();
   const { colors, mode } = useTheme();
   const isDark = mode === "dark";
-  const limitSec = Math.max(1, row.dailyScreenLimitMinutes * 60);
-  const pct = Math.min(100, Math.round((row.timeSpentTodaySeconds / limitSec) * 100));
+  const limitMin = row.dailyScreenLimitMinutes;
+  const unlimited = limitMin === 0;
+  const limitSec = unlimited ? 1 : Math.max(1, limitMin * 60);
+  const pct = unlimited ? 0 : Math.min(100, Math.round((row.timeSpentTodaySeconds / limitSec) * 100));
   const [chatLog, setChatLog] = useState<ParentChildChatMessageRow[] | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [childFriends, setChildFriends] = useState<ParentChildFriendEntry[] | null>(null);
@@ -115,6 +117,24 @@ function ChildPanel({
   const [blockingBusy, setBlockingBusy] = useState(false);
   const patchInFlightRef = useRef(false);
   const blockSubmitLockRef = useRef(false);
+
+  const saveScreenTimeLimit = async (next: number) => {
+    if (patchInFlightRef.current) return;
+    patchInFlightRef.current = true;
+    const key = `${row.child.id}:screenTime`;
+    setBusyKey(key);
+    try {
+      const res = await patchChildParentSettings(parentId, row.child.id, { dailyScreenTimeLimit: next });
+      onSettingsChange(row.child.id, { dailyScreenTimeLimit: res.dailyScreenTimeLimit });
+      await onRefreshQuiet();
+      showToast("Tiempo de pantalla actualizado.", "success");
+    } catch (e) {
+      showToast(formatApiError(e, "No se pudo guardar el límite."), "error");
+    } finally {
+      patchInFlightRef.current = false;
+      setBusyKey(null);
+    }
+  };
 
   const pendingFriends = row.pendingFriendApprovals ?? [];
   const accountPending = row.child.parentAccountApprovedAt == null;
@@ -138,6 +158,23 @@ function ChildPanel({
   };
 
   const confirmDeleteChildAccount = () => {
+    if (Platform.OS === "web" && typeof window !== "undefined" && typeof window.confirm === "function") {
+      const ok1 = window.confirm(
+        `¿Eliminar cuenta del menor?\n\nSe borrarán de forma permanente la cuenta de ${row.child.realName} (@${row.child.username}), publicaciones, progreso y datos asociados.`
+      );
+      if (!ok1) return;
+      const ok2 = window.confirm(
+        "Confirmación final\n\nEsta acción no se puede deshacer. ¿Eliminar la cuenta ahora?"
+      );
+      if (!ok2) return;
+      void runDeleteChildAccount();
+      return;
+    }
+    if (Platform.OS === "web") {
+      showToast("No se pudo abrir el diálogo de confirmación del navegador.", "error");
+      return;
+    }
+
     Alert.alert(
       "Eliminar cuenta del menor",
       `Se borrarán de forma permanente la cuenta de ${row.child.realName} (@${row.child.username}), publicaciones, progreso y datos asociados.`,
@@ -244,6 +281,7 @@ function ChildPanel({
         parentChatSupervisionEnabled: res.parentChatSupervisionEnabled,
         notifyParentNewContact: res.notifyParentNewContact,
         notifyParentSuspiciousChat: res.notifyParentSuspiciousChat,
+        dailyScreenTimeLimit: res.dailyScreenTimeLimit,
       });
       if (field === "parentChatSupervisionEnabled" && !value) {
         setChatLog(null);
@@ -392,14 +430,62 @@ function ChildPanel({
       ) : null}
 
       <Text style={styles.sectionLabel}>Tiempo de pantalla hoy</Text>
+      {unlimited ? (
+        <Text style={[styles.subHint, { marginBottom: 8 }]}>Sin límite · el uso de hoy es solo informativo</Text>
+      ) : null}
       <View style={styles.timeRow}>
         <Text style={styles.timeUsed}>{formatUsedTime(row.timeSpentTodaySeconds)}</Text>
-        <Text style={styles.timeLimit}>de {row.dailyScreenLimitMinutes} min</Text>
+        <Text style={styles.timeLimit}>{unlimited ? "sin tope" : `de ${row.dailyScreenLimitMinutes} min`}</Text>
       </View>
-      <View style={styles.progressTrack} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: pct }}>
-        <View style={[styles.progressFill, { width: `${pct}%` }]} />
+      {!unlimited ? (
+        <>
+          <View style={styles.progressTrack} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: pct }}>
+            <View style={[styles.progressFill, { width: `${pct}%` }]} />
+          </View>
+          <Text style={styles.progressHint}>{pct}% del límite diario (UTC)</Text>
+        </>
+      ) : null}
+
+      <Text style={[styles.sectionLabel, styles.sectionSpaced]}>Límite diario (UTC)</Text>
+      <Text style={styles.subHint}>Activá ilimitado o elegí un tope rápido (15–1440 min también desde la API).</Text>
+      <View style={styles.toggleRow}>
+        <View style={styles.toggleLabels}>
+          <Text style={styles.toggleTitle}>Uso ilimitado</Text>
+          <Text style={styles.toggleSub}>Sin modo lectura por tiempo de pantalla</Text>
+        </View>
+        <Switch
+          value={unlimited}
+          onValueChange={(v) => {
+            void saveScreenTimeLimit(v ? 0 : Math.max(15, row.settings.dailyScreenTimeLimit || 60));
+          }}
+          disabled={busyKey != null}
+          trackColor={{ false: colors.border, true: colors.primarySoft }}
+          thumbColor={Platform.OS === "android" ? (unlimited ? colors.primary : colors.card) : undefined}
+        />
       </View>
-      <Text style={styles.progressHint}>{pct}% del límite diario</Text>
+      {!unlimited ? (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+          {([30, 60, 90, 120] as const).map((m) => (
+            <Pressable
+              key={m}
+              onPress={() => void saveScreenTimeLimit(m)}
+              disabled={busyKey != null}
+              style={[
+                {
+                  paddingVertical: 10,
+                  paddingHorizontal: 14,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                },
+                { borderColor: colors.borderSubtle, backgroundColor: colors.card },
+                limitMin === m && { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+              ]}
+            >
+              <Text style={{ color: colors.text, fontWeight: "700" }}>{m} min</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       <Text style={[styles.sectionLabel, styles.sectionSpaced]}>Actividad</Text>
       <Text style={styles.subHint}>Misiones hechas hoy: {row.missionsCompletedToday}</Text>

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Dimensions, Modal, Pressable, ScrollView, Share, Switch, Text, TextInput, View } from "react-native";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Dimensions, Pressable, ScrollView, Share, Switch, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
@@ -8,6 +8,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AppIcon } from "../components/AppIcon";
 import { BrandLogo } from "../components/BrandLogo";
+import { ContentCard, type ContentCardCategory, type ContentCardDifficulty } from "../components/ContentCard";
 import { APP_TAGLINE, appTaglineSubtitle } from "../constants/brand";
 import { useTheme } from "../contexts/ThemeContext";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
@@ -41,6 +42,25 @@ type SectionTab = "docs" | "stories" | "experiments" | "facts";
 type TabNav = BottomTabNavigationProp<MainTabParamList>;
 type RootNav = NativeStackNavigationProp<RootStackParamList>;
 
+function libraryDifficulty(raw: Difficulty): ContentCardDifficulty {
+  if (raw === "avanzado") return "hard";
+  if (raw === "medio") return "medium";
+  return "easy";
+}
+
+function libraryCategory(raw: SubjectTag): ContentCardCategory {
+  const map: Record<SubjectTag, ContentCardCategory> = {
+    ciencia: "ciencias",
+    historia: "historia",
+    naturaleza: "ciencias",
+    cuerpo_humano: "ciencias",
+    espacio: "ciencias",
+    tecnologia: "ciencias",
+    culturas: "historia",
+  };
+  return map[raw];
+}
+
 function matchesSearch(text: string, q: string): boolean {
   if (!q.trim()) return true;
   return text.toLowerCase().includes(q.trim().toLowerCase());
@@ -63,8 +83,6 @@ export function LibraryScreen() {
   const [offlineDocs, setOfflineDocs] = useState<string[]>([]);
   const [subtitlesDefault, setSubtitlesDefault] = useState(true);
   const [factIndex, setFactIndex] = useState(0);
-  const [dictOpen, setDictOpen] = useState(false);
-  const [dictWord, setDictWord] = useState<string | null>(null);
 
   const width = Dimensions.get("window").width;
   const cardW = Math.min(width - screenEdge.horizontal * 2, 360);
@@ -215,141 +233,53 @@ export function LibraryScreen() {
   );
 
   const renderDoc = ({ item }: { item: MiniDocumentary }) => {
-    const fav = favorites.videos.includes(item.id);
-    const off = offlineDocs.includes(item.id);
     return (
-      <View
-        style={{
-          marginHorizontal: screenEdge.horizontal,
-          marginBottom: space.md,
-          padding: space.md,
-          borderRadius: radius.cardSm,
-          backgroundColor: colors.card,
-          borderWidth: 1,
-          borderColor: colors.borderSubtle,
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: space.md }}>
-          <Text style={{ fontSize: 36 }}>{item.thumbnailEmoji}</Text>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ color: colors.text, fontWeight: "900", fontSize: typography.bodyLarge }} numberOfLines={2}>
-              {item.title}
-            </Text>
-            <Text style={{ color: colors.textSecondary, marginTop: 4, fontWeight: "600" }} numberOfLines={2}>
-              {item.synopsis}
-            </Text>
-            <Text style={{ color: colors.textMuted, marginTop: 6, fontSize: typography.secondary, fontWeight: "700" }}>
-              {SUBJECT_LABELS[item.subject]} · {item.ageBand} años · {item.durationMin} min · Subtítulos: {item.hasSubtitles ? "opcionales" : "no"}
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm, marginTop: space.md }}>
-              <Pressable
-                onPress={() => void toggleFavVideo(item.id)}
-                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-                accessibilityRole="button"
-                accessibilityLabel={fav ? "Quitar de favoritos" : "Guardar en favoritos"}
-              >
-                <AppIcon name={fav ? "heart" : "heart-outline"} size="sm" color={colors.primary} />
-                <Text style={{ color: colors.link, fontWeight: "800" }}>Favorito</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => void toggleOfflineDoc(item.id)}
-                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-                accessibilityRole="button"
-                accessibilityLabel={off ? "Quitar descarga offline" : "Descargar para offline"}
-              >
-                <AppIcon name={off ? "checkmark-circle" : "cloud-download-outline"} size="sm" color={colors.link} />
-                <Text style={{ color: colors.link, fontWeight: "800" }}>{off ? "En biblioteca offline" : "Descargar"}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </View>
+      <ContentCard
+        id={item.id}
+        title={`${item.thumbnailEmoji} ${item.title}`}
+        description={`${item.synopsis} Subtítulos: ${item.hasSubtitles ? "opcionales" : "no"}.`}
+        type="video"
+        category={libraryCategory(item.subject)}
+        difficulty={libraryDifficulty(item.difficulty)}
+        duration={item.durationMin}
+        xpReward={12}
+        isNew={item.isNew}
+        onFavorite={() => void toggleFavVideo(item.id)}
+        style={{ marginHorizontal: screenEdge.horizontal, marginBottom: space.md }}
+      />
     );
   };
 
   const renderStory = ({ item }: { item: (typeof INTERACTIVE_STORIES)[number] }) => {
-    const fav = favorites.stories.includes(item.id);
     return (
-      <Pressable
-        onPress={() => {
-          setDictWord("palabra");
-          setDictOpen(true);
-        }}
-        style={{
-          marginHorizontal: screenEdge.horizontal,
-          marginBottom: space.md,
-          padding: space.md,
-          borderRadius: radius.cardSm,
-          backgroundColor: colors.cardElevated,
-          borderWidth: 1,
-          borderColor: colors.borderSubtle,
-        }}
-      >
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <View style={{ flex: 1, paddingRight: space.sm }}>
-            <Text style={{ color: colors.text, fontWeight: "900", fontSize: typography.bodyLarge }}>{item.title}</Text>
-            <Text style={{ color: colors.primary, fontWeight: "800", marginTop: 4, fontSize: typography.secondary }}>{item.genre}</Text>
-            <Text style={{ color: colors.textSecondary, marginTop: 6, fontWeight: "600" }}>{item.blurb}</Text>
-            <Text style={{ color: colors.textMuted, marginTop: 8, fontSize: typography.secondary, fontWeight: "700" }}>
-              Preguntas cada {item.comprehensionEveryPages} páginas · {item.pages} páginas · Diccionario: tocá el cuento
-            </Text>
-            <Text style={{ color: colors.textMuted, marginTop: 4, fontSize: typography.secondary, fontWeight: "700" }}>
-              Modos: leer solo · leer con audio
-            </Text>
-          </View>
-          <Pressable onPress={() => void toggleFavStory(item.id)} accessibilityRole="button">
-            <AppIcon name={fav ? "heart" : "heart-outline"} size="md" color={colors.primary} />
-          </Pressable>
-        </View>
-      </Pressable>
+      <ContentCard
+        id={item.id}
+        title={item.title}
+        description={`${item.blurb} ${item.genre} · ${item.pages} páginas.`}
+        type="reading"
+        category={libraryCategory(item.subject)}
+        difficulty={libraryDifficulty(item.difficulty)}
+        duration={Math.max(5, Math.round(item.pages / 2))}
+        xpReward={15}
+        isNew={item.isNew}
+        onFavorite={() => void toggleFavStory(item.id)}
+        style={{ marginHorizontal: screenEdge.horizontal, marginBottom: space.md }}
+      />
     );
   };
 
   const renderExperiment = ({ item }: { item: (typeof HOME_EXPERIMENTS)[number] }) => (
-    <View
-      style={{
-        marginHorizontal: screenEdge.horizontal,
-        marginBottom: space.md,
-        padding: space.md,
-        borderRadius: radius.cardSm,
-        backgroundColor: colors.card,
-        borderWidth: 1,
-        borderColor: colors.borderSubtle,
-      }}
-    >
-      <Text style={{ color: colors.text, fontWeight: "900", fontSize: typography.bodyLarge }}>{item.title}</Text>
-      <Text style={{ color: colors.textSecondary, marginTop: 6, fontWeight: "600" }}>Materiales: {item.materialsSummary}</Text>
-      <Text style={{ color: colors.textMuted, marginTop: 6, fontSize: typography.secondary, fontWeight: "700" }}>
-        {item.stepsCount} pasos · {item.demoVideoLabel}
-      </Text>
-      <View style={{ marginTop: space.sm, padding: space.sm, borderRadius: radius.cardSm, backgroundColor: colors.warnBannerBg, borderWidth: 1, borderColor: colors.warnBannerBorder }}>
-        <Text style={{ color: colors.warnBannerText, fontWeight: "800" }}>Preguntá a tu padre o madre: supervisión obligatoria.</Text>
-      </View>
-      <Text style={{ color: colors.textBody, marginTop: space.sm, fontWeight: "600" }}>Ciencia: {item.scienceExplanation}</Text>
-      <Text style={{ color: colors.textMuted, marginTop: space.sm, fontSize: typography.secondary, fontWeight: "600" }}>
-        Galería: {item.galleryNote}
-      </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: space.sm }}>
-        {[1, 2, 3].map((i) => (
-          <View
-            key={i}
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 12,
-              marginRight: space.sm,
-              backgroundColor: colors.ghostBg,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: colors.borderSubtle,
-            }}
-          >
-            <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: "800", textAlign: "center" }}>Aprobación{"\n"}tutor</Text>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
+    <ContentCard
+      id={item.id}
+      title={item.title}
+      description={`Materiales: ${item.materialsSummary}. ${item.scienceExplanation}`}
+      type="learn"
+      category={libraryCategory(item.subject)}
+      difficulty={libraryDifficulty(item.difficulty)}
+      duration={Math.max(8, item.stepsCount * 3)}
+      xpReward={18}
+      style={{ marginHorizontal: screenEdge.horizontal, marginBottom: space.md }}
+    />
   );
 
   const factData = filteredFacts;
@@ -409,7 +339,9 @@ export function LibraryScreen() {
             <Text style={{ alignSelf: "center", color: colors.textMuted, fontWeight: "800", marginHorizontal: space.sm }}>|</Text>
             <Text style={{ alignSelf: "center", color: colors.textMuted, fontWeight: "800", marginRight: space.sm }}>Materia</Text>
             {chip(subject === "all", "Todas", () => setSubject("all"))}
-            {(Object.keys(SUBJECT_LABELS) as SubjectTag[]).map((s) => chip(subject === s, SUBJECT_LABELS[s], () => setSubject(s)))}
+            {(Object.keys(SUBJECT_LABELS) as SubjectTag[]).map((s) => (
+              <Fragment key={s}>{chip(subject === s, SUBJECT_LABELS[s], () => setSubject(s))}</Fragment>
+            ))}
           </ScrollView>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: screenEdge.horizontal, paddingBottom: space.md }}>
             <Text style={{ alignSelf: "center", color: colors.textMuted, fontWeight: "800", marginRight: space.sm }}>Duración</Text>
@@ -522,20 +454,6 @@ export function LibraryScreen() {
           </View>
         ) : null}
       </ScrollView>
-
-      <Modal visible={dictOpen} transparent animationType="fade" onRequestClose={() => setDictOpen(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: colors.modalOverlay, justifyContent: "center", padding: space.lg }} onPress={() => setDictOpen(false)}>
-          <Pressable style={{ borderRadius: radius.sheet, backgroundColor: colors.modalCard, padding: space.lg }} onPress={(e) => e.stopPropagation()}>
-            <Text style={{ color: colors.text, fontWeight: "900", fontSize: typography.title }}>Diccionario</Text>
-            <Text style={{ color: colors.textSecondary, marginTop: space.sm, fontWeight: "600" }}>
-              Tocá una palabra desconocida en el cuento para ver definición simple, sinónimos y ejemplo. (Demo: “{dictWord}”)
-            </Text>
-            <Pressable onPress={() => setDictOpen(false)} style={{ marginTop: space.lg, alignSelf: "flex-end" }}>
-              <Text style={{ color: colors.link, fontWeight: "900" }}>Cerrar</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }

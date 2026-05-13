@@ -9,6 +9,8 @@ const PUBLIC_PATHS = new Set([
   "/api/content-categories",
   "/api/auth/register",
   "/api/auth/register/parent",
+  /** Alta menor: JWT lo valida `validateJwtMiddleware` en la ruta; no exigir `req.auth` aquí. */
+  "/api/auth/register/minor",
   "/api/auth/login",
   "/api/auth/login-child",
   "/api/auth/login/minor-code",
@@ -20,6 +22,7 @@ const PUBLIC_PATHS = new Set([
   "/api/parents/",
   "/auth/register",
   "/auth/register/parent",
+  "/auth/register/minor",
   "/auth/login",
   "/auth/login-child",
   "/auth/login/minor-code",

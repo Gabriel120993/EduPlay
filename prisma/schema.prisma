@@ -131,11 +131,27 @@ model User {
   quizAttempts QuizAttempt[]
   quizSessions QuizSession[]
 
+  /** Uso de pantalla por día civil (UTC); el límite sigue en ParentSettings.dailyScreenTimeLimit (0 = ilimitado). */
+  dailyTimeUsages DailyTimeUsage[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   @@index([parentId])
   @@index([type, status])
+}
+
+model DailyTimeUsage {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        DateTime @db.Date
+  usedSeconds Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }
 
 /// Snapshot opcional para auditoría / analytics de gamificación.
@@ -399,6 +415,39 @@ model EducationalTopic {
   @@index([subjectId, sortOrder])
 }
 
+/// Recurso multimedia curado (imagen, audio, video, ícono) con variantes de tamaño y metadatos de licencia.
+model EducationalAsset {
+  id        String @id @default(uuid())
+  type      String @db.VarChar(16)
+  category  String @db.VarChar(64)
+  name      String @db.VarChar(120)
+  title     String
+  description String? @db.Text
+
+  urlSmall  String @db.Text
+  urlMedium String @db.Text
+  urlLarge  String @db.Text
+
+  source    String  @db.VarChar(32)
+  sourceUrl String? @db.Text
+  license   String  @db.VarChar(32)
+
+  tags String[] @default([])
+
+  usedInQuizzes Int @default(0)
+  usedInContent Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  visualQuestions VisualQuestion[]
+  heroForContents EducationalContent[]
+  quizImageQuestions QuizQuestion[] @relation("QuizQuestionImageAsset")
+
+  @@unique([category, name])
+  @@index([category])
+  @@index([tags], type: Gin)
+}
+
 model EducationalContent {
   id          String            @id @default(uuid())
   title       String
@@ -409,6 +458,9 @@ model EducationalContent {
   category    String
   difficulty  Difficulty
   imageUrl    String?
+  /// Imagen principal curada (sustituye o refina `imageUrl` en API si está definida).
+  heroImageAssetId String?
+  heroImageAsset   EducationalAsset? @relation(fields: [heroImageAssetId], references: [id], onDelete: SetNull)
   topicId     String?
   topic       EducationalTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
   /// Metadatos (duración video, materiales experimento, etc.).
@@ -419,6 +471,7 @@ model EducationalContent {
 
   @@index([topicId])
   @@index([contentType, published])
+  @@index([heroImageAssetId])
 }
 
 enum EducationalContentType {
@@ -474,12 +527,16 @@ model QuizQuestion {
   hintCost   Int        @default(5)
   readingPassage String? @db.Text
   orderTapSequence Json?
+  /// Imagen de la pregunta (p. ej. bandera); `options` / `correct` siguen siendo texto + índice.
+  imageAssetId String?
+  imageAsset   EducationalAsset? @relation("QuizQuestionImageAsset", fields: [imageAssetId], references: [id], onDelete: SetNull)
   createdAt  DateTime   @default(now())
 
   flashcards UserQuizFlashcard[]
 
   @@index([quizId])
   @@index([category])
+  @@index([imageAssetId])
 }
 
 /// Intento / sesión de quiz (puntuación agregada).
@@ -569,6 +626,8 @@ model UserQuizStreak {
 model VisualQuestion {
   id         String     @id @default(uuid())
   imageUrl   String
+  imageAssetId String?
+  imageAsset   EducationalAsset? @relation(fields: [imageAssetId], references: [id], onDelete: SetNull)
   question   String
   options    Json
   correct    Int
@@ -577,6 +636,7 @@ model VisualQuestion {
   createdAt  DateTime   @default(now())
 
   @@index([category])
+  @@index([imageAssetId])
 }
 
 enum QuizKnowledgeArea {

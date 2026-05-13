@@ -98,6 +98,10 @@ export function checkTimeLimit() {
         return;
       }
 
+      if (peek.isUnlimited) {
+        next();
+        return;
+      }
       const limitSec = peek.dailyLimitMinutes * 60;
       if (peek.usedTodaySeconds >= limitSec) {
         res.status(429).json({

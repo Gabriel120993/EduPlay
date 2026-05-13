@@ -23,6 +23,52 @@ function childUserId(req: Request, res: Response): string | null {
   return auth.userId;
 }
 
+/** Misiones disponibles desde BD para feed/recomendaciones. */
+export async function getAvailableMissions(req: Request, res: Response): Promise<void> {
+  const auth = req.auth;
+  if (!auth || auth.kind !== "child") {
+    res.status(403).json({ error: "Esta operación es solo para menores." });
+    return;
+  }
+
+  try {
+    const [missions, progressRows] = await Promise.all([
+      prisma.thematicMission.findMany({
+        where: { isActive: true },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }),
+      prisma.userThematicMissionProgress.findMany({ where: { userId: auth.userId } }),
+    ]);
+    const progressBySlug = new Map(progressRows.map((row) => [row.missionSlug, row]));
+    res.json({
+      missions: missions.map((mission) => {
+        const progress = progressBySlug.get(mission.slug);
+        return {
+          id: mission.id,
+          slug: mission.slug,
+          title: mission.title,
+          theme: mission.theme,
+          narrative: mission.narrative,
+          reward: mission.reward,
+          stepCount: mission.stepCount,
+          progress: progress
+            ? {
+                percentage: Math.round((progress.currentStepIndex / Math.max(1, mission.stepCount)) * 100),
+                completed: progress.completed,
+                currentStepIndex: progress.currentStepIndex,
+                lastSeenAt: progress.updatedAt.toISOString(),
+              }
+            : null,
+        };
+      }),
+    });
+  } catch (err) {
+    logError("missions.available", err);
+    res.status(500).json({ error: "Error al cargar misiones disponibles." });
+  }
+}
+
 function serializeMissionBase(def: ThematicMissionDef, now: Date) {
   const totalSteps = thematicMissionStepCount(def);
   return {

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { logError } from "../lib/logger";
 import { prisma } from "../lib/prisma";
+import { pickImageUrl } from "../lib/imageProxyUrl";
 import { formatZodError, uuidSchema } from "../lib/validation/schemas";
 
 function requireChild(req: Request, res: Response): string | null {
@@ -13,15 +14,25 @@ function requireChild(req: Request, res: Response): string | null {
   return auth.userId;
 }
 
-function stripQuestion<T extends { correct: number }>(q: T): Omit<T, "correct"> {
-  const { correct: _c, ...rest } = q;
-  return rest;
-}
-
 const listQuerySchema = z.object({
   topicId: uuidSchema.optional(),
   difficulty: z.enum(["EASY", "MEDIUM", "HARD"]).optional(),
+  category: z.string().trim().min(1).max(64).optional(),
 });
+
+function mapQuizCategory(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  const map: Record<string, string> = {
+    astronomy: "astronomy",
+    math: "math",
+    science: "science",
+    history: "history",
+    geography: "geography",
+    creativity: "creativity",
+    mixed: "mixed",
+  };
+  return map[raw.trim().toLowerCase()] ?? raw.trim().toLowerCase();
+}
 
 /** GET /api/quizzes */
 export async function listQuizzes(req: Request, res: Response): Promise<void> {
@@ -36,6 +47,7 @@ export async function listQuizzes(req: Request, res: Response): Promise<void> {
         published: true,
         ...(parsed.data.topicId ? { topicId: parsed.data.topicId } : {}),
         ...(parsed.data.difficulty ? { difficulty: parsed.data.difficulty as never } : {}),
+        ...(parsed.data.category ? { legacyCategory: mapQuizCategory(parsed.data.category) as never } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: 80,
@@ -98,14 +110,23 @@ export async function getQuizQuestions(req: Request, res: Response): Promise<voi
   try {
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },
-      include: { questions: { orderBy: { createdAt: "asc" } } },
+      include: {
+        questions: {
+          orderBy: { createdAt: "asc" },
+          include: { imageAsset: { select: { id: true, urlMedium: true } } },
+        },
+      },
     });
     if (!quiz || !quiz.published) {
       res.status(404).json({ error: "Quiz no encontrado." });
       return;
     }
     res.json({
-      questions: quiz.questions.map((q) => stripQuestion(q)),
+      questions: quiz.questions.map((q) => {
+        const { correct: _c, imageAsset, ...rest } = q;
+        const imageUrl = pickImageUrl(imageAsset, imageAsset?.urlMedium ?? null);
+        return { ...rest, imageUrl };
+      }),
     });
   } catch (e) {
     logError("quizzesApi.questions", e);

@@ -147,14 +147,19 @@ export function ToastHost() {
     [hide, iconRotate, opacity, scale, shakeX, translateY]
   );
 
+  const showRef = useRef(show);
+  showRef.current = show;
+
   useEffect(() => {
-    setToastListener((msg, v, vis) => show(msg, v, vis));
+    setToastListener((msg, v, vis) => {
+      showRef.current(msg, v, vis);
+    });
     return () => {
       setToastListener(null);
       if (hideTimer.current) clearTimeout(hideTimer.current);
       iconLoopRef.current?.stop();
     };
-  }, [show]);
+  }, []);
 
   const bottom = insets.bottom + TAB_BAR_EXTRA;
   const isAchievement = visual === "achievement";

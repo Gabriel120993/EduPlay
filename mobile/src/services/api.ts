@@ -1,8 +1,16 @@
 import axios from "axios";
 
 import { API_BASE_URL } from "../config";
+import { learnMarkdownForTopicSlug } from "../data/learnBodies";
+import { educationalMetaToMarkdown } from "../lib/educationalMetaMarkdown";
 import { queueCelebrationsAfterContentLearn, queueCelebrationsAfterQuizComplete } from "../lib/celebrationQueue";
 import { tryAlertMissionCompletions } from "../lib/missionCompletionFeedback";
+import {
+  FALLBACK_CONTENT,
+  findFallbackEducationalContentById,
+  fallbackQuestionsByCategory,
+  fallbackQuizzesByCategory,
+} from "./educationalFallbacks";
 import type {
   ChatConversationsResponse,
   ChatThreadResponse,
@@ -96,6 +104,8 @@ export type AuthChildSummary = {
 export type AuthMeParentResponse = {
   role: "parent";
   parent: AuthResponse["parent"];
+  /** Fila `User` del tutor (`type === "parent"`) para onboarding y rutas `/api/users/:id/...`. */
+  parentUser: { id: string } | null;
   children: AuthChildSummary[];
 };
 
@@ -239,12 +249,20 @@ export async function patchMinorApproval(
 export type OnboardingStatusResponse = {
   completed: boolean;
   firstAction: string | null;
+  /** `User.type` (Prisma: parent | minor | admin). */
+  userType?: string | null;
+  /** Cantidad de filas en `UserInterest` (relación 1:N del `User`). */
+  interestCount?: number;
+  /** Menores (`User.type === minor`) bajo el mismo `Parent` que el usuario consultado. */
+  hasMinors?: boolean;
 };
 
 export type FirstActionChoice = "PLAY_GAME" | "FOLLOW_USERS";
 
 export async function getOnboardingStatus(userId: string): Promise<OnboardingStatusResponse> {
-  const { data } = await api.get<OnboardingStatusResponse>(`/api/users/${userId}/onboarding`);
+  const { data } = await api.get<OnboardingStatusResponse>(
+    `/api/users/${encodeURIComponent(userId)}/onboarding`
+  );
   return data;
 }
 
@@ -252,7 +270,15 @@ export async function postOnboardingPreferences(
   userId: string,
   payload: { interests: string[]; firstAction: FirstActionChoice }
 ): Promise<void> {
-  await api.post(`/api/users/${userId}/onboarding`, payload);
+  await api.post(`/api/users/${encodeURIComponent(userId)}/onboarding`, payload);
+}
+
+/** Onboarding del tutor: sin intereses; `firstAction` fijo en servidor. */
+export async function postParentOnboardingComplete(parentUserId: string): Promise<void> {
+  await api.post(`/api/users/${encodeURIComponent(parentUserId)}/onboarding`, {
+    interests: [],
+    firstAction: "ADD_MINOR",
+  });
 }
 
 export async function getPosts(userId: string): Promise<FeedPost[]> {
@@ -277,13 +303,187 @@ export async function getEducationalContent(params?: {
   category?: string;
   difficulty?: "EASY" | "MEDIUM" | "HARD";
 }): Promise<EducationalContentItem[]> {
-  const { data } = await api.get<{ content: EducationalContentItem[] }>("/api/content", { params });
-  return data.content;
+  try {
+    const { data } = await api.get<{ content: EducationalContentItem[] }>("/api/content", { params });
+    const content = data.content ?? [];
+    if (content.length > 0) return content;
+  } catch {
+    // Fallback local para que EduPlay nunca vuelva a mostrar placeholders.
+  }
+  return FALLBACK_CONTENT.filter((item) => {
+    if (params?.category && item.category !== params.category) return false;
+    if (params?.difficulty && item.difficulty !== params.difficulty) return false;
+    return true;
+  });
+}
+
+export type QuizListItem = {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  questionCount: number;
+  topicId: string | null;
+  published: boolean;
+};
+
+export async function getQuizzes(params?: {
+  difficulty?: "EASY" | "MEDIUM" | "HARD";
+  topicId?: string;
+  category?: string;
+}): Promise<QuizListItem[]> {
+  try {
+    const { data } = await api.get<{ quizzes: QuizListItem[] }>("/api/quizzes", { params });
+    const quizzes = data.quizzes ?? [];
+    if (quizzes.length > 0) return quizzes;
+  } catch {
+    // Fallback local con contenido curado.
+  }
+  return fallbackQuizzesByCategory(params?.category)
+    .filter((quiz) => (params?.difficulty ? quiz.difficulty === params.difficulty : true))
+    .map(({ questions: _questions, category: _category, ...quiz }) => quiz);
+}
+
+type ApiEducationalContentDetail = Omit<EducationalContentItem, "content" | "contentType"> & {
+  content?: string;
+  body?: string;
+  meta?: unknown;
+  topic?: {
+    id?: string;
+    slug?: string;
+    name?: string;
+    subject?: string;
+    category?: string;
+  } | null;
+  /** Detalle del feed: `serializeContent` usa `type`. */
+  type?: EducationalContentItem["contentType"];
+  contentType?: EducationalContentItem["contentType"];
+  kind?: string;
+  badge?: string;
+  icon?: string;
+  color?: string;
+  progress?: unknown;
+};
+
+function resolveEducationalBody(row: ApiEducationalContentDetail): string {
+  const direct = String(row.content ?? row.body ?? "").trim();
+  if (direct.length > 0) return direct;
+  const slug = typeof row.topic?.slug === "string" ? row.topic.slug.trim() : "";
+  const fromTopic = slug ? learnMarkdownForTopicSlug(slug).trim() : "";
+  if (fromTopic.length > 0) return fromTopic;
+  return educationalMetaToMarkdown(row.meta);
 }
 
 export async function getEducationalContentById(contentId: string): Promise<EducationalContentItem> {
-  const { data } = await api.get<{ content: EducationalContentItem }>(`/api/content/${contentId}`);
-  return data.content;
+  try {
+    const { data } = await api.get<{ content: ApiEducationalContentDetail }>(`/api/content/${contentId}`);
+    const row = data.content;
+    const text = resolveEducationalBody(row);
+    const contentType = row.contentType ?? row.type;
+    return {
+      id: row.id,
+      title: row.title ?? "",
+      description: row.description ?? "",
+      content: text,
+      topicSlug: row.topic?.slug ?? undefined,
+      meta: row.meta,
+      contentType,
+      category: row.category ?? "",
+      difficulty: row.difficulty ?? "EASY",
+      imageUrl: row.imageUrl ?? null,
+      createdAt: row.createdAt ?? new Date(0).toISOString(),
+    };
+  } catch {
+    const fb = findFallbackEducationalContentById(contentId);
+    if (fb) return fb;
+    throw new Error("No se pudo cargar el contenido educativo.");
+  }
+}
+
+export type ApiContentProgress = {
+  percentage: number;
+  completed: boolean;
+  lastSeenAt?: string | null;
+};
+
+export type ApiRecommendedContentCard = {
+  id: string;
+  title: string;
+  description: string;
+  badge?: "APRENDER" | "CUESTIONARIO" | "JUEGO" | "MISIÓN";
+  type?: string;
+  category: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  thumbnail?: string | null;
+  imageUrl?: string | null;
+  progress?: ApiContentProgress | null;
+};
+
+function contentToRecommendedCard(item: EducationalContentItem): ApiRecommendedContentCard {
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    badge: item.contentType === "INTERACTIVE" ? "JUEGO" : "APRENDER",
+    type: item.contentType ?? "READING",
+    category: item.category,
+    difficulty: item.difficulty,
+    thumbnail: item.imageUrl,
+    imageUrl: item.imageUrl,
+    progress: null,
+  };
+}
+
+export type ContentRecommendedResponse = {
+  contents: ApiRecommendedContentCard[];
+  message?: string;
+  suggestion?: string;
+};
+
+export async function getContentRecommended(): Promise<ContentRecommendedResponse> {
+  try {
+    const { data } = await api.get<ContentRecommendedResponse>("/api/content/recommended");
+    const contents = data.contents ?? [];
+    if (contents.length > 0) return { ...data, contents };
+  } catch {
+    // Fallback local con tarjetas reales.
+  }
+  return { contents: FALLBACK_CONTENT.map(contentToRecommendedCard) };
+}
+
+export type ContentFeedResponse = {
+  continue: ApiRecommendedContentCard | null;
+  recommendations: ApiRecommendedContentCard[];
+  message?: string;
+  suggestion?: string;
+};
+
+export async function getContentFeed(): Promise<ContentFeedResponse> {
+  try {
+    const { data } = await api.get<ContentFeedResponse>("/api/content/feed");
+    const recommendations = data.recommendations ?? [];
+    if (recommendations.length > 0 || data.continue) return { ...data, recommendations };
+  } catch {
+    // Fallback local con tarjetas reales.
+  }
+  const recommendations = FALLBACK_CONTENT.map(contentToRecommendedCard);
+  return { continue: recommendations[0] ?? null, recommendations };
+}
+
+export type ApiAvailableMission = {
+  id: string;
+  slug: string;
+  title: string;
+  theme: string;
+  narrative: string;
+  reward: string;
+  stepCount: number;
+  progress?: ApiContentProgress | null;
+};
+
+export async function getAvailableMissions(): Promise<ApiAvailableMission[]> {
+  const { data } = await api.get<{ missions: ApiAvailableMission[] }>("/api/missions/available");
+  return data.missions ?? [];
 }
 
 export async function completeEducationalContent(
@@ -330,8 +530,18 @@ export async function getQuizQuestions(params: {
   if (params.excludeIds?.length) query.excludeIds = params.excludeIds.join(",");
   if (params.adaptive) query.adaptive = "1";
   if (params.limit != null) query.limit = String(params.limit);
-  const { data } = await api.get<{ questions: QuizQuestionItem[] }>("/api/quiz", { params: query });
-  return data.questions;
+  try {
+    const { data } = await api.get<{ questions: QuizQuestionItem[] }>("/api/quiz", { params: query });
+    const questions = (data.questions ?? []).map((q) => {
+      const extra = q as QuizQuestionItem & { image_url?: string };
+      const raw = (extra.imageUrl ?? extra.image_url ?? "").trim();
+      return raw ? { ...q, imageUrl: raw } : { ...q, imageUrl: undefined };
+    });
+    if (questions.length > 0) return questions;
+  } catch {
+    // Fallback local con preguntas curadas.
+  }
+  return fallbackQuestionsByCategory(params.category, params.limit);
 }
 
 export async function getVisualQuestions(params: {
@@ -577,6 +787,8 @@ export type PatchChildParentSettingsBody = {
   parentChatSupervisionEnabled?: boolean;
   notifyParentNewContact?: boolean;
   notifyParentSuspiciousChat?: boolean;
+  /** 0 = ilimitado; si no es 0, entre 15 y 1440 (validación en servidor). */
+  dailyScreenTimeLimit?: number;
 };
 
 export type PatchChildParentSettingsResponse = {
@@ -587,6 +799,7 @@ export type PatchChildParentSettingsResponse = {
   parentChatSupervisionEnabled: boolean;
   notifyParentNewContact: boolean;
   notifyParentSuspiciousChat: boolean;
+  dailyScreenTimeLimit: number;
 };
 
 export async function patchChildParentSettings(
@@ -633,6 +846,7 @@ export type ScreenTimeResponse = {
   limitExceeded: boolean;
   remainingSeconds: number;
   lastReset: string;
+  isUnlimited?: boolean;
 };
 
 export async function getScreenTime(userId: string): Promise<ScreenTimeResponse> {

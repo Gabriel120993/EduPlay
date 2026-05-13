@@ -12,11 +12,28 @@
     "test:db": "vitest run --config vitest.db.config.ts",
     "start": "node -r tsconfig-paths/register dist/index.js",
     "db:seed": "prisma db seed",
+    "db:seed:safe": "cross-env SEED_SKIP_DB_CLEAR=1 prisma db seed",
+    "db:seed:educational": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/seed-educational.ts",
+    "db:seed:images": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/seed-images.ts",
+    "db:repair:wikimedia-widths": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/rewrite-wikimedia-widths.ts",
+    "db:repair:asset-urls": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/repair-broken-asset-urls.ts",
+    "db:prefetch:images": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/prefetch-asset-images.ts",
+    "db:sync:visual-imageurls": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/sync-visual-question-imageurls.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "db:repair-checksums": "node scripts/prisma-repair-checksums.mjs && prisma db execute --file scripts/_repair_checksums.sql --schema prisma/schema.prisma"
+    "db:repair-checksums": "node scripts/prisma-repair-checksums.mjs && prisma db execute --file scripts/_repair_checksums.sql --schema prisma/schema.prisma",
+    "verify": "node scripts/verify-installation.mjs",
+    "check-env": "node scripts/check-env.mjs",
+    "shortcut": "node scripts/run-shortcut.cjs",
+    "shortcut:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-shortcut.ps1",
+    "shortcut:unix": "bash scripts/create-shortcut.sh",
+    "shortcut:mac": "bash scripts/create-shortcut-mac.sh",
+    "shortcut:linux": "bash scripts/create-shortcut-linux.sh"
+  },
+  "prisma": {
+    "seed": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
@@ -43,6 +60,7 @@
     "@types/multer": "^2.1.0",
     "@types/node": "^22.9.0",
     "@types/supertest": "^7.2.0",
+    "cross-env": "^7.0.3",
     "prisma": "^6.0.0",
     "supertest": "^7.2.2",
     "testcontainers": "^11.14.0",

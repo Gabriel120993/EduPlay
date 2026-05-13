@@ -12,11 +12,21 @@ import { AppState, type AppStateStatus, StyleSheet, View } from "react-native";
 
 import { getScreenTime, postScreenTimeTick } from "../services/api";
 
+export type ScreenTimeMetrics = {
+  dailyLimitMinutes: number;
+  usedTodaySeconds: number;
+  remainingSeconds: number;
+};
+
 export type ScreenTimeContextValue = {
   /** Límite diario alcanzado (modo lectura: sin publicar, reaccionar, juegos interactivos, etc.). */
   limitExceeded: boolean;
   /** Igual que `limitExceeded` cuando el tracking está activo; alias semántico. */
   readOnlyMode: boolean;
+  /** Tutor configuró tiempo ilimitado (`dailyScreenTimeLimit === 0`). */
+  isUnlimited: boolean;
+  /** Última lectura del API (GET o tick); null hasta la primera carga. */
+  metrics: ScreenTimeMetrics | null;
   enabled: boolean;
   refresh: () => Promise<void>;
 };
@@ -87,12 +97,20 @@ function useScreenTimeSession(
 export function ScreenTimeProvider({ userId, children }: { userId: string; children: ReactNode }) {
   const enabled = Boolean(userId.trim());
   const [limitExceeded, setLimitExceeded] = useState(false);
+  const [isUnlimited, setIsUnlimited] = useState(false);
+  const [metrics, setMetrics] = useState<ScreenTimeMetrics | null>(null);
 
   const refresh = useCallback(async () => {
     if (!enabled) return;
     try {
       const s = await getScreenTime(userId);
       setLimitExceeded(s.limitExceeded);
+      setIsUnlimited(Boolean(s.isUnlimited));
+      setMetrics({
+        dailyLimitMinutes: s.dailyLimitMinutes,
+        usedTodaySeconds: s.usedTodaySeconds,
+        remainingSeconds: s.remainingSeconds,
+      });
     } catch {
       /* sin bloquear la app si el API falla */
     }
@@ -104,6 +122,12 @@ export function ScreenTimeProvider({ userId, children }: { userId: string; child
       try {
         const s = await postScreenTimeTick(userId, deltaSeconds);
         setLimitExceeded(s.limitExceeded);
+        setIsUnlimited(Boolean(s.isUnlimited));
+        setMetrics({
+          dailyLimitMinutes: s.dailyLimitMinutes,
+          usedTodaySeconds: s.usedTodaySeconds,
+          remainingSeconds: s.remainingSeconds,
+        });
       } catch {
         /* red de tick: no bloquear uso; el próximo GET/refresh sincroniza */
       }
@@ -117,16 +141,18 @@ export function ScreenTimeProvider({ userId, children }: { userId: string; child
 
   useScreenTimeSession(enabled ? userId : null, applyTick);
 
-  const readOnlyMode = enabled && limitExceeded;
+  const readOnlyMode = enabled && limitExceeded && !isUnlimited;
 
   const value = useMemo<ScreenTimeContextValue>(
     () => ({
       limitExceeded,
       readOnlyMode,
+      isUnlimited,
+      metrics,
       enabled,
       refresh,
     }),
-    [limitExceeded, readOnlyMode, enabled, refresh]
+    [limitExceeded, readOnlyMode, isUnlimited, metrics, enabled, refresh]
   );
 
   return (
@@ -142,6 +168,8 @@ export function useScreenTime(): ScreenTimeContextValue {
     return {
       limitExceeded: false,
       readOnlyMode: false,
+      isUnlimited: false,
+      metrics: null,
       enabled: false,
       refresh: async () => {},
     };

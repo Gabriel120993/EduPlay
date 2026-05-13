@@ -12,12 +12,15 @@ import {
   Text,
   TextInput,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp, BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ContinueLearningSection } from "../components/ContinueLearningSection";
+import { ContentCard, type ContentCardCategory, type ContentCardDifficulty } from "../components/ContentCard";
 import { AnimatedFeedItem } from "../components/AnimatedFeedItem";
 import { AppIcon } from "../components/AppIcon";
 import { BrandEmptyState } from "../components/BrandEmptyState";
@@ -26,6 +29,7 @@ import { FeedPostTypeLabel } from "../components/FeedPostTypeLabel";
 import { PostCategoryTag } from "../components/PostCategoryTag";
 import { PostReactionBar } from "../components/PostReactionBar";
 import { ReadOnlyBanner } from "../components/ReadOnlyBanner";
+import { TimeUsageBar } from "../components/TimeUsageBar";
 import { VIEWER_USER_ID } from "../config";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -33,7 +37,17 @@ import { usePostOnboarding } from "../contexts/PostOnboardingContext";
 import { READ_ONLY_TOAST_MSG, useScreenTime } from "../contexts/ScreenTimeContext";
 import { showToast } from "../lib/toastBus";
 import { trackEvent } from "../services/analytics";
-import { createReaction, createUserPost, getPosts, getUserRecommendations, type ReactionType } from "../services/api";
+import {
+  createReaction,
+  createUserPost,
+  getAvailableMissions,
+  getContentFeed,
+  getContentRecommended,
+  getPosts,
+  type ApiRecommendedContentCard,
+  type ContentFeedResponse,
+  type ReactionType,
+} from "../services/api";
 import { getRarityBadgeVisual } from "../lib/achievementRarityUi";
 import {
   categoryDisplayLabel,
@@ -42,7 +56,7 @@ import {
   getCategoryUi,
 } from "../lib/contentCategoryUi";
 import { bumpReactionOptimistic, getReactionCounts } from "../lib/reactionCounts";
-import type { FeedPost, RecommendationsResponse } from "../types/api";
+import type { FeedPost } from "../types/api";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
 import { evaluateFeedInactivityReminder, touchChildLastActiveAt } from "../lib/activityReminders";
 import {
@@ -66,43 +80,221 @@ const FEED_LOAD_ERROR_MSG = "No se pudo cargar el feed";
 const CREATE_POST_ERROR_MSG = "Error al publicar";
 const RETRY_HINT_MSG = "Intentalo de nuevo";
 
-const MAX_RECOMMENDED_POSTS_IN_FEED = 5;
+type FeedRecommendationCard = {
+  id: string;
+  title: string;
+  description: string;
+  type: "learn" | "quiz" | "game" | "mission" | "video" | "reading";
+  category: ContentCardCategory;
+  difficulty: ContentCardDifficulty;
+  duration?: number;
+  progress?: number;
+  xpReward: number;
+  thumbnail?: string;
+  isNew?: boolean;
+  isCompleted?: boolean;
+  contentId?: string;
+};
+
+const FALLBACK_RECOMMENDATIONS: FeedRecommendationCard[] = [
+  {
+    id: "fallback-astronauta",
+    title: "🚀 Misión: Astronauta por un Día",
+    description: "Explora el sistema solar",
+    type: "learn",
+    category: "ciencias",
+    difficulty: "easy",
+    duration: 12,
+    xpReward: 20,
+    isNew: true,
+  },
+  {
+    id: "fallback-suma-resta",
+    title: "🔢 Quiz: Suma y Resta Divertida",
+    description: "Matemáticas nivel 1",
+    type: "quiz",
+    category: "matematicas",
+    difficulty: "easy",
+    duration: 5,
+    xpReward: 15,
+  },
+  {
+    id: "fallback-dinosaurios",
+    title: "🦕 Mini Documental: Dinosaurios",
+    description: "Historia prehistórica",
+    type: "video",
+    category: "historia",
+    difficulty: "medium",
+    duration: 8,
+    xpReward: 12,
+  },
+  {
+    id: "fallback-volcan",
+    title: "🧪 Experimento: Volcán Casero",
+    description: "Ciencias naturales",
+    type: "learn",
+    category: "ciencias",
+    difficulty: "medium",
+    duration: 15,
+    xpReward: 18,
+  },
+  {
+    id: "fallback-europa",
+    title: "🌍 Adivina el País: Europa",
+    description: "Geografía visual",
+    type: "game",
+    category: "geografia",
+    difficulty: "medium",
+    duration: 7,
+    xpReward: 15,
+  },
+  {
+    id: "fallback-luna",
+    title: "📖 Cuento: La Aventura de Luna",
+    description: "Comprensión lectora",
+    type: "reading",
+    category: "lenguaje",
+    difficulty: "easy",
+    duration: 10,
+    xpReward: 14,
+  },
+  {
+    id: "fallback-colores",
+    title: "🎨 Quiz: Colores y Mezclas",
+    description: "Arte y creatividad",
+    type: "quiz",
+    category: "arte",
+    difficulty: "easy",
+    duration: 5,
+    xpReward: 15,
+  },
+  {
+    id: "fallback-egipto",
+    title: "🔍 Detective de Historia: Egipto",
+    description: "Historia antigua",
+    type: "game",
+    category: "historia",
+    difficulty: "medium",
+    duration: 10,
+    xpReward: 18,
+  },
+  {
+    id: "fallback-orquesta",
+    title: "🎵 Conoce la Orquesta",
+    description: "Música e instrumentos",
+    type: "learn",
+    category: "arte",
+    difficulty: "easy",
+    duration: 9,
+    xpReward: 12,
+  },
+  {
+    id: "fallback-naturaleza",
+    title: "🌱 Guardián de la Naturaleza",
+    description: "Ecología y medio ambiente",
+    type: "mission",
+    category: "ciencias",
+    difficulty: "medium",
+    duration: 20,
+    xpReward: 25,
+  },
+];
+
+function contentCardDifficulty(raw: string): ContentCardDifficulty {
+  if (raw === "HARD") return "hard";
+  if (raw === "MEDIUM") return "medium";
+  return "easy";
+}
+
+function contentCardCategory(raw: string): ContentCardCategory {
+  const category = raw.toLowerCase();
+  const map: Record<string, ContentCardCategory> = {
+    math: "matematicas",
+    science: "ciencias",
+    history: "historia",
+    geography: "geografia",
+    creativity: "arte",
+    education: "lenguaje",
+  };
+  return map[category] ?? category;
+}
+
+function contentCardType(item: ApiRecommendedContentCard): FeedRecommendationCard["type"] {
+  const badge = item.badge?.toUpperCase();
+  const rawType = item.type?.toUpperCase();
+  if (badge === "CUESTIONARIO") return "quiz";
+  if (badge === "JUEGO") return "game";
+  if (badge === "MISIÓN") return "mission";
+  if (rawType === "VIDEO") return "video";
+  if (rawType === "READING") return "reading";
+  return "learn";
+}
+
+function apiContentToFeedCard(item: ApiRecommendedContentCard, index: number): FeedRecommendationCard {
+  return {
+    id: item.id,
+    contentId: item.id,
+    title: item.title,
+    description: item.description,
+    type: contentCardType(item),
+    category: contentCardCategory(item.category),
+    difficulty: contentCardDifficulty(item.difficulty),
+    duration: item.type === "VIDEO" ? 6 : 8,
+    progress: item.progress?.percentage,
+    xpReward: 10,
+    thumbnail: item.thumbnail ?? item.imageUrl ?? undefined,
+    isNew: index < 3 && !item.progress,
+    isCompleted: item.progress?.completed,
+  };
+}
 
 function RecommendedForYouSection({
-  data,
+  items,
   loading,
   visible,
-  onReact,
   readOnly,
-  pendingKey,
   highlighted,
   onOpenEducational,
 }: {
-  data: RecommendationsResponse | null;
+  items: FeedRecommendationCard[];
   loading: boolean;
   visible: boolean;
-  onReact: (postId: string, type: ReactionType) => void;
   readOnly: boolean;
-  pendingKey: string | null;
   /** Resaltar bloque tras completar onboarding. */
   highlighted?: boolean;
   onOpenEducational?: (contentId: string) => void;
 }) {
   const styles = useFeedStyles();
-  const { colors, mode } = useTheme();
-  const isDark = mode === "dark";
-  if (!visible) return null;
+  const { colors } = useTheme();
+  const [hScrollViewport, setHScrollViewport] = useState(0);
+  const [hScrollContent, setHScrollContent] = useState(0);
+  const [hScrollX, setHScrollX] = useState(0);
 
-  const games = data?.recommendedGames ?? [];
-  const recEdu = data?.recommendedEducationalContent ?? [];
-  const recPosts = (data?.recommendedPosts ?? []).slice(0, MAX_RECOMMENDED_POSTS_IN_FEED);
-  const hasSomething = games.length > 0 || recPosts.length > 0 || recEdu.length > 0;
-  const noFriends =
-    data != null && typeof data.acceptedFriendCount === "number" && data.acceptedFriendCount === 0;
+  const hOverflow = hScrollViewport > 0 && hScrollContent > hScrollViewport + 4;
+  const hMaxScroll = Math.max(1, hScrollContent - hScrollViewport);
+  const hProgress = hOverflow ? Math.min(1, Math.max(0, hScrollX / hMaxScroll)) : 0;
+  const hThumbPct = hOverflow ? Math.max(14, Math.min(100, (hScrollViewport / hScrollContent) * 100)) : 100;
+  const hThumbLeftPct = hOverflow ? hProgress * (100 - hThumbPct) : 0;
+
+  const onRecommendedScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setHScrollX(e.nativeEvent.contentOffset.x);
+    const vw = e.nativeEvent.layoutMeasurement.width;
+    const cw = e.nativeEvent.contentSize.width;
+    if (vw > 0) setHScrollViewport(vw);
+    if (cw > 0) setHScrollContent(cw);
+  }, []);
+
+  useEffect(() => {
+    setHScrollX(0);
+    setHScrollViewport(0);
+    setHScrollContent(0);
+  }, [items]);
+
+  if (!visible) return null;
 
   const highlightRing = highlighted ? styles.recommendedSectionHighlightActive : undefined;
 
-  if (loading && !data) {
+  if (loading && items.length === 0) {
     return (
       <View style={[styles.recommendedSectionOuter, highlightRing]}>
         <View style={[styles.recommendedWrap, styles.recommendedLoadingBox]}>
@@ -113,222 +305,89 @@ function RecommendedForYouSection({
     );
   }
 
-  if (!hasSomething && !noFriends) return null;
+  if (items.length === 0) return null;
 
   return (
     <View style={[styles.recommendedSectionOuter, highlightRing]}>
-      {noFriends ? (
-        <View
-          style={styles.friendsEmptyBanner}
-          accessibilityRole="text"
-          accessibilityLabel="Agregá amigos para ver más contenido"
-        >
-          <Text style={styles.friendsEmptyText}>Agregá amigos para ver más contenido</Text>
-        </View>
-      ) : null}
-      {hasSomething ? (
-    <View style={styles.recommendedWrap} accessibilityRole="summary" accessibilityLabel="Recomendado para vos">
-      <View style={styles.recommendedGlow} pointerEvents="none" />
-      <View style={styles.recommendedInner}>
-        <View style={styles.recommendedTitleRow}>
-          <AppIcon name="sparkles-outline" color={colors.recTitle} size="lg" />
-          <View style={styles.recommendedTitleTextCol}>
-            <Text style={styles.recommendedTitle}>✨ Recomendado para vos</Text>
-            <Text style={styles.recommendedSubtitle}>Basado en tus intereses</Text>
+      <View style={styles.recommendedWrap} accessibilityRole="summary" accessibilityLabel="Recomendado para vos">
+        <View style={styles.recommendedGlow} pointerEvents="none" />
+        <View style={styles.recommendedInner}>
+          <View style={styles.recommendedTitleRow}>
+            <AppIcon name="sparkles-outline" color={colors.recTitle} size="lg" />
+            <View style={styles.recommendedTitleTextCol}>
+              <Text style={styles.recommendedTitle}>✨ Recomendado para vos</Text>
+              <Text style={styles.recommendedSubtitle}>Contenido educativo real para seguir aprendiendo</Text>
+            </View>
           </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator
+            nestedScrollEnabled
+            scrollEventThrottle={16}
+            contentContainerStyle={styles.recGamesScrollContent}
+            onScroll={onRecommendedScroll}
+            onLayout={(e) => {
+              const w = e.nativeEvent.layout.width;
+              if (w > 0) setHScrollViewport(w);
+            }}
+            onContentSizeChange={(w) => {
+              if (w > 0) setHScrollContent(w);
+            }}
+          >
+            {items.map((item) => (
+              <ContentCard
+                key={item.id}
+                {...item}
+                compact
+                onPress={() => {
+                  if (readOnly) {
+                    showToast(READ_ONLY_TOAST_MSG, "error");
+                    return;
+                  }
+                  if (item.contentId) {
+                    onOpenEducational?.(item.contentId);
+                    return;
+                  }
+                  if (item.type === "quiz") {
+                    showToast("Abrí Explorar para jugar este cuestionario.", "success");
+                    return;
+                  }
+                  if (item.type === "mission") {
+                    showToast("Misión disponible en Explorar.", "success");
+                  }
+                }}
+                style={styles.recGameChip}
+              />
+            ))}
+          </ScrollView>
+          {hOverflow ? (
+            <View
+              style={styles.recHorizontalScrollTrack}
+              accessibilityElementsHidden={false}
+              importantForAccessibility="yes"
+              accessibilityRole="scrollbar"
+              accessibilityLabel="Avance horizontal en recomendados"
+              accessibilityValue={{
+                min: 0,
+                max: 100,
+                now: Math.round(hProgress * 100),
+              }}
+            >
+              <View
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  left: `${hThumbLeftPct}%`,
+                  width: `${hThumbPct}%`,
+                  height: "100%",
+                  borderRadius: 2,
+                  backgroundColor: colors.primary,
+                }}
+              />
+            </View>
+          ) : null}
         </View>
-
-        {games.length > 0 ? (
-          <>
-            <Text style={styles.recommendedBlockLabel}>🎮 Juegos</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recGamesScrollContent}
-            >
-              {games.map((g) => {
-                const cat = getCategoryUi(g.category);
-                const chipInner = (
-                  <>
-                    <Text style={styles.recGameName} numberOfLines={2}>
-                      {g.name}
-                    </Text>
-                    <View style={styles.recGameMetaRow}>
-                      {cat ? (
-                        <AppIcon name={cat.icon} color={cat.accent} size="sm" />
-                      ) : null}
-                      <Text style={styles.recGameMeta} numberOfLines={1}>
-                        {cat ? `${cat.label} · ${g.difficulty}` : `${g.category} · ${g.difficulty}`}
-                      </Text>
-                    </View>
-                  </>
-                );
-                return readOnly ? (
-                  <Pressable
-                    key={g.id}
-                    onPress={() => showToast(READ_ONLY_TOAST_MSG, "error")}
-                    style={({ pressed }) => [
-                      styles.recGameChip,
-                      styles.recGameChipReadOnly,
-                      pressed && styles.recGameChipReadOnlyPressed,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Juego no disponible en modo lectura"
-                  >
-                    {chipInner}
-                  </Pressable>
-                ) : (
-                  <View key={g.id} style={styles.recGameChip}>
-                    {chipInner}
-                  </View>
-                );
-              })}
-            </ScrollView>
-          </>
-        ) : null}
-
-        {recEdu.length > 0 ? (
-          <>
-            <Text
-              style={[styles.recommendedBlockLabel, games.length > 0 ? styles.recommendedBlockSpacer : undefined]}
-            >
-              📚 Aprender
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recGamesScrollContent}
-            >
-              {recEdu.map((item) => {
-                const inner = (
-                  <>
-                    <Text style={styles.recGameName} numberOfLines={2}>
-                      {item.title}
-                    </Text>
-                    <View style={styles.recGameMetaRow}>
-                      <Text style={styles.recGameMeta} numberOfLines={1}>
-                        {item.category} · {item.difficulty}
-                      </Text>
-                    </View>
-                  </>
-                );
-                return readOnly ? (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => showToast(READ_ONLY_TOAST_MSG, "error")}
-                    style={({ pressed }) => [
-                      styles.recGameChip,
-                      styles.recGameChipReadOnly,
-                      pressed && styles.recGameChipReadOnlyPressed,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Contenido no disponible en modo lectura"
-                  >
-                    {inner}
-                  </Pressable>
-                ) : (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => onOpenEducational?.(item.id)}
-                    style={({ pressed }) => [styles.recGameChip, pressed && styles.cardPressed]}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Abrir ${item.title}`}
-                  >
-                    {inner}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </>
-        ) : null}
-
-        {recPosts.length > 0 ? (
-          <>
-            <Text
-              style={[
-                styles.recommendedBlockLabel,
-                games.length > 0 || recEdu.length > 0 ? styles.recommendedBlockSpacer : undefined,
-              ]}
-            >
-              📰 Publicaciones
-            </Text>
-            {recPosts.map((item) => {
-              const postReactionBusy = pendingKey?.startsWith(`${item.id}:`) ?? false;
-              const recCat = getCategoryUi(item.category);
-              const chrome = getCategoryChrome(item.category);
-              const rarityVis = item.badge ? getRarityBadgeVisual(item.badge.rarity, isDark) : null;
-              return (
-                <Pressable
-                  key={item.id}
-                  style={({ pressed }) => [{ width: "100%" }, pressed && styles.cardPressed]}
-                  onPress={() => {}}
-                  accessibilityRole="none"
-                >
-                  <View
-                    style={[styles.recPostCard, recCat && { borderLeftWidth: 4, borderLeftColor: chrome.stripe }]}
-                  >
-                  <FeedPostCardHeader
-                    username={item.user.username}
-                    avatarUrl={item.user.avatarUrl}
-                    category={item.category}
-                    feedLabel={item.feedLabel}
-                    postType={item.type}
-                    createdAt={item.createdAt}
-                    createdAtFormatted={item.createdAtFormatted}
-                  />
-                  <View style={styles.recPostBody}>
-                    {item.content ? (
-                      <Text style={styles.recPostContent} numberOfLines={4}>
-                        {item.content}
-                      </Text>
-                    ) : null}
-                    {item.badge && rarityVis ? (
-                      <View style={styles.badgeBlock}>
-                        <View
-                          style={[
-                            styles.badgeIconWrap,
-                            {
-                              borderColor: chrome.ring,
-                              borderWidth: 3,
-                            },
-                          ]}
-                        >
-                          <Text style={styles.badgeIcon}>{item.badge.icon}</Text>
-                        </View>
-                        <View
-                          style={[
-                            styles.rarityPill,
-                            {
-                              borderColor: rarityVis.border,
-                              backgroundColor: rarityVis.softBg,
-                              borderWidth: rarityVis.borderWidth,
-                            },
-                          ]}
-                        >
-                          <Text style={[styles.rarityText, { color: rarityVis.accent }]}>{item.badge.rarity}</Text>
-                        </View>
-                      </View>
-                    ) : null}
-                  </View>
-                  <View style={styles.recPostFooter}>
-                    <PostReactionBar
-                      postId={item.id}
-                      counts={getReactionCounts(item)}
-                      userReaction={item.userReaction ?? null}
-                      pending={postReactionBusy}
-                      readOnly={readOnly}
-                      onReact={onReact}
-                    />
-                  </View>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </>
-        ) : null}
       </View>
-    </View>
-      ) : null}
     </View>
   );
 }
@@ -438,7 +497,8 @@ export function FeedScreen({ route }: Props) {
   const createPostLockRef = useRef(false);
   const reactionInFlightRef = useRef(false);
   const fetchInFlightRef = useRef(false);
-  const [recommendations, setRecommendations] = useState<RecommendationsResponse | null>(null);
+  const [recommendations, setRecommendations] = useState<FeedRecommendationCard[]>(FALLBACK_RECOMMENDATIONS);
+  const [apiContinueItem, setApiContinueItem] = useState<ContentFeedResponse["continue"]>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   /** `null` = todas las categorías. */
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -496,10 +556,22 @@ export function FeedScreen({ route }: Props) {
       showToast(READ_ONLY_TOAST_MSG, "error");
       return;
     }
+    if (apiContinueItem?.id) {
+      openEducationalFromRec(apiContinueItem.id);
+      return;
+    }
     const target = pickMostRecentResumeTarget(continueLearning.game, continueLearning.content);
     if (target === "game") handleResumeLastGame();
     else if (target === "content") handleResumeLastContent();
-  }, [readOnly, continueLearning.game, continueLearning.content, handleResumeLastGame, handleResumeLastContent]);
+  }, [
+    readOnly,
+    apiContinueItem,
+    openEducationalFromRec,
+    continueLearning.game,
+    continueLearning.content,
+    handleResumeLastGame,
+    handleResumeLastContent,
+  ]);
 
   /** Primera vez que el usuario entra al Feed con este `userId` → loader a pantalla completa; después, refresco en silencio. */
   const shouldShowFullScreenLoaderRef = useRef(true);
@@ -587,15 +659,36 @@ export function FeedScreen({ route }: Props) {
 
   const fetchRecommendations = useCallback(async () => {
     if (!userId) {
-      setRecommendations(null);
+      setRecommendations(FALLBACK_RECOMMENDATIONS);
+      setApiContinueItem(null);
       return;
     }
     setRecommendationsLoading(true);
     try {
-      const r = await getUserRecommendations(userId);
-      setRecommendations(r);
+      const [recommended, missions, feed] = await Promise.all([
+        getContentRecommended().catch(() => ({ contents: [] })),
+        getAvailableMissions().catch(() => []),
+        getContentFeed().catch(() => null),
+      ]);
+      const contentCards = recommended.contents.map(apiContentToFeedCard);
+      const missionCards: FeedRecommendationCard[] = missions.slice(0, 4).map((mission) => ({
+        id: `mission-${mission.id}`,
+        title: mission.title.startsWith("🌱") ? mission.title : `🌱 ${mission.title}`,
+        description: mission.theme,
+        type: "mission",
+        category: "ciencias",
+        difficulty: "medium",
+        duration: mission.stepCount * 4,
+        progress: mission.progress?.percentage,
+        xpReward: 25,
+        isCompleted: mission.progress?.completed,
+      }));
+      const merged = [...contentCards, ...missionCards];
+      setRecommendations(merged.length > 0 ? merged : FALLBACK_RECOMMENDATIONS);
+      setApiContinueItem(feed?.continue ?? null);
     } catch {
-      setRecommendations(null);
+      setRecommendations(FALLBACK_RECOMMENDATIONS);
+      setApiContinueItem(null);
     } finally {
       setRecommendationsLoading(false);
     }
@@ -702,8 +795,6 @@ export function FeedScreen({ route }: Props) {
       reactionInFlightRef.current = true;
 
       let snapshotPosts: FeedPost[] | undefined;
-      let snapshotRec: RecommendationsResponse | undefined;
-
       setPosts((prev) => {
         const cur = prev.find((p) => p.id === postId);
         if (!cur) return prev;
@@ -712,21 +803,7 @@ export function FeedScreen({ route }: Props) {
         return prev.map((p) => (p.id === postId ? bumpReactionOptimistic(p, type) : p));
       });
 
-      setRecommendations((prev) => {
-        if (!prev) return prev;
-        const cur = prev.recommendedPosts.find((p) => p.id === postId);
-        if (!cur) return prev;
-        if (cur.userReaction === type) return prev;
-        snapshotRec = prev;
-        return {
-          ...prev,
-          recommendedPosts: prev.recommendedPosts.map((p) =>
-            p.id === postId ? bumpReactionOptimistic(p, type) : p
-          ),
-        };
-      });
-
-      if (snapshotPosts === undefined && snapshotRec === undefined) {
+      if (snapshotPosts === undefined) {
         reactionInFlightRef.current = false;
         return;
       }
@@ -739,7 +816,6 @@ export function FeedScreen({ route }: Props) {
         showToast("Reacción agregada ❤️", "success");
       } catch {
         if (snapshotPosts !== undefined) setPosts(snapshotPosts);
-        if (snapshotRec !== undefined) setRecommendations(snapshotRec);
         showToast("No se pudo enviar la reacción. Intentalo de nuevo.", "error");
       } finally {
         reactionInFlightRef.current = false;
@@ -911,6 +987,7 @@ export function FeedScreen({ route }: Props) {
         contentContainerStyle={filteredPosts.length === 0 ? styles.emptyList : styles.list}
         ListHeaderComponent={
           <View style={styles.listHeader}>
+            {screenTime.enabled ? <TimeUsageBar /> : null}
             {readOnly ? <ReadOnlyBanner /> : null}
             {inactivityReminder.visible && inactivityReminder.text ? (
               <View
@@ -924,6 +1001,7 @@ export function FeedScreen({ route }: Props) {
             <ContinueLearningSection
               game={continueLearning.game}
               content={continueLearning.content}
+              apiItem={apiContinueItem}
               readOnly={readOnly}
               onContinue={handleContinue}
             />
@@ -951,12 +1029,10 @@ export function FeedScreen({ route }: Props) {
               </View>
             ) : null}
             <RecommendedForYouSection
-              data={recommendations}
+              items={recommendations}
               loading={recommendationsLoading}
               visible={Boolean(userId)}
-              onReact={(pid, t) => void onReact(pid, t)}
               readOnly={readOnly}
-              pendingKey={pendingKey}
               highlighted={recommendSectionHighlighted}
               onOpenEducational={openEducationalFromRec}
             />

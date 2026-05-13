@@ -1,5 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   fetchAuthMe,
   isParentMe,
@@ -26,6 +35,8 @@ type SessionMeta = {
   sessionRole: SessionRole;
   parent?: AuthResponse["parent"];
   viewerUserId?: string;
+  /** `User.id` del tutor (`type === parent`) para onboarding / APIs por usuario. */
+  parentUserId?: string;
 };
 
 type AuthContextValue = {
@@ -34,6 +45,8 @@ type AuthContextValue = {
   sessionRole: SessionRole | null;
   /** Cuenta tutor (sesión padre). */
   parent: AuthResponse["parent"] | null;
+  /** Usuario Prisma del tutor (`User` con `type: parent`), para `GET/POST .../users/:id/onboarding`. */
+  parentUserId: string | null;
   /** Usuario menor activo (sesión hijo: feed / perfil / tiempo de pantalla). */
   viewerUserId: string | null;
   login: (email: string, password: string, rememberSession?: boolean) => Promise<void>;
@@ -81,7 +94,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [sessionRole, setSessionRole] = useState<SessionRole | null>(null);
   const [parent, setParent] = useState<AuthResponse["parent"] | null>(null);
+  const [parentUserId, setParentUserId] = useState<string | null>(null);
   const [viewerUserId, setViewerUserId] = useState<string | null>(null);
+
+  const pushLogoutCtxRef = useRef({
+    sessionRole: null as SessionRole | null,
+    viewerUserId: null as string | null,
+    token: null as string | null,
+  });
+  pushLogoutCtxRef.current = { sessionRole, viewerUserId, token };
 
   const mergeLoginHints = useCallback(async (partial: Partial<LoginHints>) => {
     let base: LoginHints = {};
@@ -95,9 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearSession = useCallback(async () => {
-    if (sessionRole === "child" && viewerUserId && token) {
+    const { sessionRole: role, viewerUserId: uid, token: tok } = pushLogoutCtxRef.current;
+    if (role === "child" && uid && tok) {
       try {
-        await postExpoPushToken(viewerUserId, null);
+        await postExpoPushToken(uid, null);
       } catch {
         // best effort: el cierre de sesión sigue aunque falle el API
       }
@@ -105,13 +127,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setSessionRole(null);
     setParent(null);
+    setParentUserId(null);
     setViewerUserId(null);
     setApiToken(null);
     setAnalyticsToken(null);
     await clearPersistedSession();
     await clearExpoPushToken();
     await clearLocalNotificationSchedules();
-  }, [sessionRole, viewerUserId, token]);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -164,8 +187,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (isParentMe(me)) {
           setSessionRole("parent");
           setParent(me.parent);
+          setParentUserId(me.parentUser?.id ?? null);
           setViewerUserId(null);
-          await writeSessionMeta({ sessionRole: "parent", parent: me.parent });
+          await writeSessionMeta({
+            sessionRole: "parent",
+            parent: me.parent,
+            ...(me.parentUser?.id ? { parentUserId: me.parentUser.id } : {}),
+          });
           await mergeLoginHints({ tutorEmail: me.parent.email });
         } else if (me.accountApproved === false) {
           await clearSession();
@@ -173,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setSessionRole("child");
           setParent(null);
+          setParentUserId(null);
           setViewerUserId(me.child.id);
           await writeSessionMeta({ sessionRole: "child", viewerUserId: me.child.id });
           await mergeLoginHints({ childUsername: me.child.username });
@@ -195,11 +224,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setApiToken(session.token);
       setAnalyticsToken(session.token);
       setSessionRole("parent");
-      setParent(session.parent);
       setViewerUserId(null);
+      const me = await fetchAuthMe();
+      if (!isParentMe(me)) {
+        throw new Error("Sesión de tutor inválida.");
+      }
+      setParent(me.parent);
+      setParentUserId(me.parentUser?.id ?? null);
       if (rememberSession) {
         await setStoredAuthJwt(session.token);
-        await writeSessionMeta({ sessionRole: "parent", parent: session.parent });
+        await writeSessionMeta({
+          sessionRole: "parent",
+          parent: me.parent,
+          ...(me.parentUser?.id ? { parentUserId: me.parentUser.id } : {}),
+        });
         if (emailHint?.trim()) await mergeLoginHints({ tutorEmail: emailHint.trim() });
       } else {
         await clearPersistedSession();
@@ -225,6 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAnalyticsToken(session.token);
       setSessionRole("child");
       setParent(null);
+      setParentUserId(null);
       setViewerUserId(session.user.id);
       if (rememberSession) {
         await setStoredAuthJwt(session.token);
@@ -255,9 +294,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const me = await fetchAuthMe();
       if (!isParentMe(me)) return;
       setParent(me.parent);
+      setParentUserId(me.parentUser?.id ?? null);
       const meta = await readSessionMeta();
       if (meta?.sessionRole === "parent") {
-        await writeSessionMeta({ sessionRole: "parent", parent: me.parent });
+        await writeSessionMeta({
+          sessionRole: "parent",
+          parent: me.parent,
+          ...(me.parentUser?.id ? { parentUserId: me.parentUser.id } : {}),
+        });
       }
     } catch {
       // ignore: IAP ya validó en servidor; el próximo /me corregirá
@@ -270,6 +314,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       sessionRole,
       parent,
+      parentUserId,
       viewerUserId,
       login,
       loginAsChild,
@@ -277,7 +322,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       refreshParent,
     }),
-    [loading, token, sessionRole, parent, viewerUserId, login, loginAsChild, register, logout, refreshParent]
+    [loading, token, sessionRole, parent, parentUserId, viewerUserId, login, loginAsChild, register, logout, refreshParent]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

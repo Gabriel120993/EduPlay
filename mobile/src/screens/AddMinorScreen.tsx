@@ -1,7 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
+
+import type { ParentStackParamList } from "../navigation/types";
 import { useTheme } from "../contexts/ThemeContext";
 import { formatApiError } from "../lib/apiErrors";
+import { showToast } from "../lib/toastBus";
 import { registerMinor } from "../services/api";
 
 const AVATARS = ["🐼", "🦊", "🦄", "🐸", "🦁", "🐙"];
@@ -9,6 +14,8 @@ const INTERESTS = ["science", "math", "reading", "art"];
 
 export function AddMinorScreen() {
   const { colors } = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<ParentStackParamList>>();
+  const aliveRef = useRef(true);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [age, setAge] = useState("8");
@@ -18,7 +25,19 @@ export function AddMinorScreen() {
   const [requireAllApprovals, setRequireAllApprovals] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+      setBusy(false);
+    };
+  }, []);
+
   const valid = useMemo(() => username.trim().length >= 3 && password.length >= 6, [password, username]);
+
+  const setBusySafe = (v: boolean) => {
+    if (aliveRef.current) setBusy(v);
+  };
 
   const toggleInterest = (value: string) => {
     setSelectedInterests((prev) => (prev.includes(value) ? prev.filter((i) => i !== value) : [...prev, value]));
@@ -26,7 +45,7 @@ export function AddMinorScreen() {
 
   const onSubmit = async () => {
     if (!valid || busy) return;
-    setBusy(true);
+    setBusySafe(true);
     try {
       const data = await registerMinor({
         username: username.trim(),
@@ -35,16 +54,18 @@ export function AddMinorScreen() {
         avatar,
         interests: selectedInterests,
       });
-      Alert.alert(
-        "Menor creado",
-        `Usuario: ${data.minor.username}\nCódigo de acceso: ${data.accessCode}\nRestricciones: ${
-          strictMode ? "estrictas" : "flexibles"
-        }${requireAllApprovals ? " + aprobación para todo" : ""}`
+      showToast(
+        `Menor creado · usuario ${data.minor.username} · código ${data.accessCode}`,
+        "success",
+        "parentAlert"
       );
+      navigation.goBack();
     } catch (e) {
-      Alert.alert("Error", formatApiError(e, "No se pudo crear el perfil del menor."));
+      const msg = formatApiError(e, "No se pudo crear el perfil del menor.");
+      showToast(msg, "error");
+      void Alert.alert("Error al crear el menor", msg);
     } finally {
-      setBusy(false);
+      setBusySafe(false);
     }
   };
 

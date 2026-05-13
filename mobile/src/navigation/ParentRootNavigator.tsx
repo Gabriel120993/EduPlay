@@ -21,12 +21,14 @@ function legalTitle(kind: "privacy" | "terms"): string {
 
 const Stack = createNativeStackNavigator<ParentStackParamList>();
 
+/** Panel principal del tutor (onboarding se resuelve en App antes de montar este stack). */
 export function ParentRootNavigator({ onLogout }: { onLogout: () => void }) {
   const { parent } = useAuth();
   const { colors } = useTheme();
 
   return (
     <Stack.Navigator
+      initialRouteName="Parent"
       screenOptions={{
         headerStyle: { backgroundColor: colors.headerBg },
         headerTintColor: colors.headerTint,

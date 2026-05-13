@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  getAvailableMissions,
   getThematicMissionsCatalog,
   getThematicMissionsSeasons,
   getThematicMissionsState,
@@ -29,6 +30,7 @@ missionsRouter.patch("/thematic/:slug/progress", requireChild, patchThematicMiss
 missionsRouter.post("/thematic/:slug/restart", requireChild, postThematicMissionRestart);
 missionsRouter.post("/thematic/:slug/vote", requireChild, postThematicMissionVote);
 
+missionsRouter.get("/available", requireChild, getAvailableMissions);
 missionsRouter.get("/", requireChild, listMissionsRest);
 missionsRouter.get("/my-progress", requireChild, getMyMissionsProgress);
 missionsRouter.get("/my-completed", requireChild, getMyMissionsCompleted);

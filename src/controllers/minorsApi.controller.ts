@@ -186,14 +186,12 @@ export async function getMinorTimeUsage(req: Request, res: Response): Promise<vo
 
   try {
     const peek = await peekScreenTimeToday(minorId);
-    const screen = await prisma.screenTime.findUnique({
-      where: { userId: minorId },
-    });
     res.json({
       timeUsage: {
-        dailyLimitMinutes: screen?.dailyLimitMinutes ?? null,
-        usedTodaySeconds: screen?.usedTodaySeconds ?? 0,
-        lastReset: screen?.lastReset?.toISOString() ?? null,
+        dailyLimitMinutes: peek?.dailyLimitMinutes ?? null,
+        usedTodaySeconds: peek?.usedTodaySeconds ?? 0,
+        isUnlimited: peek?.isUnlimited ?? false,
+        lastReset: null,
         peekToday: peek,
       },
     });

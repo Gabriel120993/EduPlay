@@ -9,6 +9,7 @@ import type { Request, Response } from "express";
 import { logError } from "../lib/logger";
 import { prisma } from "../lib/prisma";
 import { sanitizeShortUserText } from "../lib/sanitizeUserInput";
+import { utcDayStart } from "../lib/screenTime";
 import { parseUuidParam } from "../lib/validation/schemas";
 import { XP_PER_LEVEL } from "../lib/xpLevel";
 
@@ -188,7 +189,11 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
         realName: true,
         level: true,
         experience: true,
-        screenTime: { select: { usedTodaySeconds: true } },
+        dailyTimeUsages: {
+          where: { date: utcDayStart() },
+          take: 1,
+          select: { usedSeconds: true },
+        },
         parentSettings: { select: { dailyScreenTimeLimit: true } },
       },
       orderBy: { username: "asc" },
@@ -301,7 +306,7 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
     }
 
     const payload = children.map((c) => {
-      const used = c.screenTime?.usedTodaySeconds ?? 0;
+      const used = c.dailyTimeUsages[0]?.usedSeconds ?? 0;
       const limitMin = c.parentSettings?.dailyScreenTimeLimit ?? 120;
       const xpToNext = Math.max(0, XP_PER_LEVEL - c.experience);
 

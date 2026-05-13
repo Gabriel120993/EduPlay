@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import type { Difficulty, Prisma } from "@prisma/client";
 import { logError } from "../lib/logger";
 import { prisma } from "../lib/prisma";
+import { pickImageUrl } from "../lib/imageProxyUrl";
 
 const VISUAL_SAMPLE_SIZE = 5;
 
@@ -9,6 +10,10 @@ const VISUAL_SAMPLE_SIZE = 5;
 const visualQuestionPublicSelect = {
   id: true,
   imageUrl: true,
+  imageAssetId: true,
+  imageAsset: {
+    select: { id: true, urlSmall: true, urlMedium: true, urlLarge: true },
+  },
   question: true,
   options: true,
   correct: true,
@@ -63,8 +68,13 @@ function optionsAsStrings(options: unknown): string[] {
 
 /**
  * Respuesta JSON por pregunta visual: siempre incluye `imageUrl` junto a `question` y `options`.
- * (Orden de claves alineado con el contrato de la app.)
+ * Si el asset está vinculado, se devuelve la URL del proxy/caché local del API
+ * (evita 429/403 de CDNs externos cuando `<img>` se carga desde el navegador).
  */
+function pickVisualImageUrl(q: VisualQuestionPublic): string {
+  return pickImageUrl(q.imageAsset ?? null, q.imageUrl) ?? "";
+}
+
 function toVisualQuestionResponse(q: VisualQuestionPublic): {
   id: string;
   question: string;
@@ -75,7 +85,7 @@ function toVisualQuestionResponse(q: VisualQuestionPublic): {
   difficulty: Difficulty;
   createdAt: string;
 } {
-  const imageUrl = q.imageUrl.trim();
+  const imageUrl = pickVisualImageUrl(q);
   return {
     id: q.id,
     question: q.question,
@@ -137,7 +147,7 @@ export async function getRandomVisualQuiz(req: Request, res: Response): Promise<
       });
     }
     const picked = shuffleInPlace(pool)
-      .filter((q) => q.imageUrl.trim().length > 0)
+      .filter((q) => pickVisualImageUrl(q).length > 0)
       .slice(0, VISUAL_SAMPLE_SIZE);
 
     const questions = picked.map(toVisualQuestionResponse);

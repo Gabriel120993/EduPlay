@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 
-/** Inicio del día UTC (00:00) para resets diarios. */
+/** Inicio del día UTC (00:00) para resets diarios y clave de `DailyTimeUsage.date`. */
 export function utcDayStart(d = new Date()): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
 }
@@ -11,6 +11,8 @@ export type ScreenTimeState = {
   limitExceeded: boolean;
   remainingSeconds: number;
   lastReset: Date;
+  /** `true` cuando `ParentSettings.dailyScreenTimeLimit === 0`. */
+  isUnlimited: boolean;
 };
 
 const DEFAULT_LIMIT_MINUTES = 120;
@@ -23,47 +25,78 @@ async function resolveDailyLimitMinutes(userId: string): Promise<number> {
     },
   });
   if (!row) return DEFAULT_LIMIT_MINUTES;
-  return row.parentSettings?.dailyScreenTimeLimit ?? DEFAULT_LIMIT_MINUTES;
+  const lim = row.parentSettings?.dailyScreenTimeLimit;
+  if (lim == null) return DEFAULT_LIMIT_MINUTES;
+  return lim;
+}
+
+async function getTodayUsedSeconds(userId: string, day: Date): Promise<number> {
+  const row = await prisma.dailyTimeUsage.findUnique({
+    where: {
+      userId_date: { userId, date: day },
+    },
+    select: { usedSeconds: true },
+  });
+  return row?.usedSeconds ?? 0;
+}
+
+function buildState(
+  limitMin: number,
+  usedSeconds: number,
+  dayStart: Date
+): Omit<ScreenTimeState, never> {
+  const isUnlimited = limitMin === 0;
+  if (isUnlimited) {
+    return {
+      dailyLimitMinutes: 0,
+      usedTodaySeconds: usedSeconds,
+      limitExceeded: false,
+      remainingSeconds: 0,
+      lastReset: dayStart,
+      isUnlimited: true,
+    };
+  }
+  const limitSec = limitMin * 60;
+  const limitExceeded = usedSeconds >= limitSec;
+  const remainingSeconds = Math.max(0, limitSec - usedSeconds);
+  return {
+    dailyLimitMinutes: limitMin,
+    usedTodaySeconds: usedSeconds,
+    limitExceeded,
+    remainingSeconds,
+    lastReset: dayStart,
+    isUnlimited: false,
+  };
 }
 
 /**
- * Solo lectura: tiempo de pantalla del día UTC actual (sin crear ni mutar filas).
+ * Solo lectura: tiempo de pantalla del día UTC actual (sin mutar filas de uso).
  */
 export async function peekScreenTimeToday(userId: string): Promise<{
   usedTodaySeconds: number;
   dailyLimitMinutes: number;
+  isUnlimited: boolean;
 } | null> {
   const row = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       parentSettings: { select: { dailyScreenTimeLimit: true } },
-      screenTime: {
-        select: {
-          usedTodaySeconds: true,
-          dailyLimitMinutes: true,
-          lastReset: true,
-        },
-      },
     },
   });
   if (!row) return null;
-  const limitFromSettings = row.parentSettings?.dailyScreenTimeLimit ?? DEFAULT_LIMIT_MINUTES;
+  const limitMin = row.parentSettings?.dailyScreenTimeLimit ?? DEFAULT_LIMIT_MINUTES;
   const dayStart = utcDayStart();
-  const st = row.screenTime;
-  if (!st || st.lastReset < dayStart) {
-    return {
-      usedTodaySeconds: 0,
-      dailyLimitMinutes: st?.dailyLimitMinutes ?? limitFromSettings,
-    };
-  }
+  const used = await getTodayUsedSeconds(userId, dayStart);
+  const isUnlimited = limitMin === 0;
   return {
-    usedTodaySeconds: st.usedTodaySeconds,
-    dailyLimitMinutes: st.dailyLimitMinutes,
+    usedTodaySeconds: used,
+    dailyLimitMinutes: limitMin,
+    isUnlimited,
   };
 }
 
 /**
- * Obtiene o crea el registro de ScreenTime, aplica reset diario (UTC) y sincroniza el límite con ParentSettings.
+ * Obtiene estado de tiempo de pantalla (día UTC) y sincroniza `ScreenTime` como caché de límite / lastReset.
  */
 export async function getScreenTimeState(userId: string): Promise<ScreenTimeState | null> {
   const userExists = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
@@ -71,49 +104,40 @@ export async function getScreenTimeState(userId: string): Promise<ScreenTimeStat
 
   const limitMin = await resolveDailyLimitMinutes(userId);
   const dayStart = utcDayStart();
+  const usedSeconds = await getTodayUsedSeconds(userId, dayStart);
 
+  const mirrorLimit = limitMin > 0 ? limitMin : DEFAULT_LIMIT_MINUTES;
   let st = await prisma.screenTime.findUnique({ where: { userId } });
-
   if (!st) {
-    st = await prisma.screenTime.create({
+    await prisma.screenTime.create({
       data: {
         userId,
-        dailyLimitMinutes: limitMin,
+        dailyLimitMinutes: mirrorLimit,
         usedTodaySeconds: 0,
         lastReset: dayStart,
       },
     });
   } else if (st.lastReset < dayStart) {
-    st = await prisma.screenTime.update({
+    await prisma.screenTime.update({
       where: { userId },
       data: {
         usedTodaySeconds: 0,
         lastReset: dayStart,
-        dailyLimitMinutes: limitMin,
+        dailyLimitMinutes: mirrorLimit,
       },
     });
-  } else if (st.dailyLimitMinutes !== limitMin) {
-    st = await prisma.screenTime.update({
+  } else if (st.dailyLimitMinutes !== mirrorLimit) {
+    await prisma.screenTime.update({
       where: { userId },
-      data: { dailyLimitMinutes: limitMin },
+      data: { dailyLimitMinutes: mirrorLimit },
     });
   }
 
-  const limitSec = st.dailyLimitMinutes * 60;
-  const limitExceeded = st.usedTodaySeconds >= limitSec;
-  const remainingSeconds = Math.max(0, limitSec - st.usedTodaySeconds);
-
-  return {
-    dailyLimitMinutes: st.dailyLimitMinutes,
-    usedTodaySeconds: st.usedTodaySeconds,
-    limitExceeded,
-    remainingSeconds,
-    lastReset: st.lastReset,
-  };
+  return buildState(limitMin, usedSeconds, dayStart);
 }
 
 /**
- * Suma tiempo de uso (segundos) tras validar usuario y día. `deltaSeconds` acotado en el controlador.
+ * Suma tiempo de uso (segundos) en el registro del día UTC actual.
  */
 export async function addScreenTimeSeconds(userId: string, deltaSeconds: number): Promise<ScreenTimeState | null> {
   if (deltaSeconds <= 0) {
@@ -125,22 +149,23 @@ export async function addScreenTimeSeconds(userId: string, deltaSeconds: number)
 
   await getScreenTimeState(userId);
 
-  const updated = await prisma.screenTime.update({
-    where: { userId },
-    data: {
-      usedTodaySeconds: { increment: deltaSeconds },
+  const limitMin = await resolveDailyLimitMinutes(userId);
+  const dayStart = utcDayStart();
+
+  await prisma.dailyTimeUsage.upsert({
+    where: {
+      userId_date: { userId, date: dayStart },
+    },
+    create: {
+      userId,
+      date: dayStart,
+      usedSeconds: deltaSeconds,
+    },
+    update: {
+      usedSeconds: { increment: deltaSeconds },
     },
   });
 
-  const limitSec = updated.dailyLimitMinutes * 60;
-  const limitExceeded = updated.usedTodaySeconds >= limitSec;
-  const remainingSeconds = Math.max(0, limitSec - updated.usedTodaySeconds);
-
-  return {
-    dailyLimitMinutes: updated.dailyLimitMinutes,
-    usedTodaySeconds: updated.usedTodaySeconds,
-    limitExceeded,
-    remainingSeconds,
-    lastReset: updated.lastReset,
-  };
+  const usedSeconds = await getTodayUsedSeconds(userId, dayStart);
+  return buildState(limitMin, usedSeconds, dayStart);
 }

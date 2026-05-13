@@ -63,6 +63,11 @@ export type EducationalContentItem = {
   title: string;
   description: string;
   content: string;
+  contentType?: "VIDEO" | "READING" | "EXPERIMENT" | "INTERACTIVE" | "WORKSHEET" | "AUDIO";
+  /** Slug del tema EduPlay cuando viene del servidor (fallback de lectura si `content` vacío). */
+  topicSlug?: string | null;
+  /** Datos extras del servidor (capítulos, pasos, materiales…). */
+  meta?: unknown;
   category: string;
   difficulty: Difficulty;
   imageUrl: string | null;
@@ -96,6 +101,8 @@ export type QuizQuestionItem = {
   hintCost?: number;
   readingPassage?: string | null;
   orderTapSequence?: number[] | null;
+  /** Imagen (p. ej. bandera) cuando el backend la resuelve desde `EducationalAsset`. */
+  imageUrl?: string | null;
 };
 
 export type VisualQuestionItem = {
@@ -584,6 +591,8 @@ export type ParentCoachArticle = {
   id: string;
   title: string;
   excerpt: string;
+  /** Texto completo desde el servidor; en clientes antiguos puede faltar — usar extracto como respaldo. */
+  body?: string;
   readMinutes: number;
   tags: string[];
 };
@@ -630,6 +639,9 @@ export type ParentCoachResource = {
   type: "article" | "video" | "tip";
   reason: string;
   relevanceScore: number;
+  curatedArticleId?: string;
+  curatedVideoId?: string;
+  openUrl?: string;
 };
 
 export type ParentCoachPayload = {

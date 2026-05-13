@@ -91,7 +91,7 @@ function ConfettiPiece(
     ]);
     anim.start();
     return () => anim.stop();
-  }, [p.delay, p.duration, p.drift, p.height, rot, x, y]);
+  }, [p.delay, p.duration, p.drift, p.height]);
 
   const spin = rot.interpolate({
     inputRange: [0, 1],
@@ -180,7 +180,7 @@ export function CelebrationHost() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [visible, current, opacity, scale]);
+  }, [visible, current]);
 
   const copy = current ? celebrationCopy(current) : { title: "", subtitle: "" };
 

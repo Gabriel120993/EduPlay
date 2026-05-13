@@ -2,13 +2,15 @@
  * Guía para padres: contenido curado + análisis de patrones de actividad del menor
  * (heurísticas y scoring tipo “ML ligero”, sin modelo externo).
  */
-import { ContentCategory } from "@prisma/client";
+import { ContentCategory, UserType } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 
 export type CoachArticle = {
   id: string;
   title: string;
   excerpt: string;
+  /** Texto completo para leer en la app (párrafos separados por líneas en blanco). */
+  body: string;
   readMinutes: number;
   /** Etiquetas para personalización (pesos). */
   tags: string[];
@@ -57,15 +59,29 @@ export type CoachResource = {
   type: "article" | "video" | "tip";
   reason: string;
   relevanceScore: number;
+  /** Si `type === "article"`, coincide con `CoachArticle.id`. */
+  curatedArticleId?: string;
+  /** Si `type === "video"`, coincide con `CoachVideo.id`. */
+  curatedVideoId?: string;
+  /** Enlace directo (p. ej. YouTube) cuando aplique. */
+  openUrl?: string;
 };
 
-/** Contenido curado (psicología infantil, pedagogía, casos anónimos). */
+/** Contenido curado (orientación práctica familiar; complementa contenidos educativos de la app). */
 export const CURATED_ARTICLES: CoachArticle[] = [
   {
     id: "avoid-subjects",
     title: "Por qué tu hijo evita ciertas materias",
     excerpt:
       "La evitación suele estar ligada a miedo al error o a la carga cognitiva. Separar la identidad del resultado ayuda a volver a intentar.",
+    body:
+      "Cuando un niño o niña dice “odia matemáticas”, muchas veces no está rechazando la materia: está evitando la sensación de quedar mal, de no llegar “a tiempo”, o la vergüenza de equivocarse delante del adulto.\n\n" +
+      "Pasos útiles en casa:\n\n" +
+      "1. Cambiá el foco del resultado al proceso. Por ejemplo: “hoy voy a mirar cómo pensás”, en lugar de “sacaste bien o mal”.\n\n" +
+      "2. Bajá la carga al principio (2–5 minutos) y sumá tiempo solo cuando vuelva el interés.\n\n" +
+      "3. Normalizá el error como dato (“equivocarse muestra qué falta revisar”).\n\n" +
+      "4. Separá descanso y estudio en lugares distintos (micro-rutinas ayudan al cerebro).\n\n" +
+      "En EduPlay, podés acompañar con sesiones cortas y celebrar intentos. Si la evitación es intensa o prolongada, conviene consultar con la escuela o un/a profesional.",
     readMinutes: 4,
     tags: ["avoidance", "math", "anxiety"],
   },
@@ -74,6 +90,14 @@ export const CURATED_ARTICLES: CoachArticle[] = [
     title: "Elogiar el esfuerzo sin crear presión",
     excerpt:
       "Conectar elogios con estrategias concretas (“viste que repasaste antes del quiz”) refuerza conductas repetibles.",
+    body:
+      "El elogio más potente es el específico: describe la conducta que querés que se repita.\n\n" +
+      "Ejemplos que funcionan:\n\n" +
+      "• “Me gustó que volviste a leer la consigna antes de responder: eso te ahorró un error.”\n\n" +
+      "• “Noté que te quedaste un minuto más cuando estaba difícil: eso es perseverancia.”\n\n" +
+      "Evitá elogios globales (“sos un genio”) ligados solo al resultado: suelen generar miedo a decepcionar.\n\n" +
+      "Combiná reconocimiento + siguiente paso pequeño: “bien hecho; mañana probamos una pregunta más”.\n\n" +
+      "Así el esfuerzo se vuelve hábito, no “prueba de valía”.",
     readMinutes: 3,
     tags: ["praise", "motivation"],
   },
@@ -82,6 +106,14 @@ export const CURATED_ARTICLES: CoachArticle[] = [
     title: "Pantallas y sueño: límites que funcionan",
     excerpt:
       "Acuerdos claros + transiciones físicas (apagar en otro cuarto) reducen conflictos más que castigos reactivos.",
+    body:
+      "Las pantallas no son “malas”: el problema suele ser el momento, la duración y la falta de cierre.\n\n" +
+      "Acuerdos que suelen funcionar:\n\n" +
+      "• Regla simple y visible (p. ej. “nada de pantallas 45 min antes de dormir”).\n\n" +
+      "• Aviso de transición (“quedan 5 minutos”) y ritual de cierre (guardar el dispositivo fuera del cuarto).\n\n" +
+      "• Priorizar sueño y desayuno antes que “terminar un nivel” (ayuda a prevenir peleas).\n\n" +
+      "• Coherencia entre adultos: si hoy se flexibiliza, se explica el motivo (“es feriado”) para no confundir.\n\n" +
+      "En EduPlay podés combinar bloques cortos con pausas reales. Si hay peleas diarias, probá bajar 10 minutos el límite y subir calidad (acompañamiento, charla breve después).",
     readMinutes: 5,
     tags: ["screens", "sleep"],
   },
@@ -90,32 +122,42 @@ export const CURATED_ARTICLES: CoachArticle[] = [
     title: "Caso de estudio (anónimo): de “no me gusta leer” a 10 min diarios",
     excerpt:
       "Un pedagogo describe cómo acortaron sesiones, eligieron textos de interés real y celebraron micro-logros.",
+    body:
+      "Una familia llegó con un patrón común: lectura asociada a deberes largos, correcciones inmediatas y comparaciones con un hermano.\n\n" +
+      "Qué cambiaron (en 3 semanas):\n\n" +
+      "1. Meta mínima: 10 minutos, siempre al mismo horario, con luz agradable.\n\n" +
+      "2. Elección real: el niño eligió temas (ciencia ficción, animales) aunque no fueran “libros escolares”.\n\n" +
+      "3. Regla de oro: primero disfrutar; la corrección ortográfica, una vez por semana y en 2 frases.\n\n" +
+      "4. Micro-celebración: stickers en un calendario o foto del “rincón de lectura”.\n\n" +
+      "El aprendizaje no fue lineal: hubo días flojos. La clave fue no convertir el fallo en veredicto (“no servís”), sino en plan (“mañana lo intentamos más temprano”).\n\n" +
+      "En la app, podés apoyar con lecturas cortas y quizzes livianos; el objetivo es constancia, no perfección.",
     readMinutes: 6,
     tags: ["reading", "habits"],
   },
 ];
 
+/** Recursos en video (enlaces públicos; abren en el navegador del dispositivo). */
 export const CURATED_VIDEOS: CoachVideo[] = [
   {
     id: "vid-regulation",
-    title: "Autorregulación emocional en niños de 8 a 12 años",
-    durationMinutes: 3,
-    psychologist: "Dra. Ana M. (infantil)",
-    url: "https://example.com/eduplay/coach/regulacion-emocional",
+    title: "Crianza con conciencia positiva (introducción breve)",
+    durationMinutes: 4,
+    psychologist: "UNICEF · referencia abierta (YouTube)",
+    url: "https://www.youtube.com/watch?v=j3Uf7hgq84g",
   },
   {
     id: "vid-comparison",
-    title: "Cuando comparan a tu hijo con otros",
-    durationMinutes: 2,
-    psychologist: "Lic. Pedro G. (psicopedagogía)",
-    url: "https://example.com/eduplay/coach/comparaciones",
+    title: "Crianza positiva y entornos sin violencia",
+    durationMinutes: 4,
+    psychologist: "UNICEF · referencia abierta (YouTube)",
+    url: "https://www.youtube.com/watch?v=xlgQIc57TP8",
   },
   {
     id: "vid-screens",
-    title: "Uso saludable de pantallas en familia",
-    durationMinutes: 3,
-    psychologist: "Equipo EduPlay · Psicología infantil",
-    url: "https://example.com/eduplay/coach/pantallas-saludables",
+    title: "Pantallas y sueño: ideas para conversar en familia",
+    durationMinutes: 6,
+    psychologist: "Contenido educativo en español · YouTube",
+    url: "https://www.youtube.com/watch?v=n8Fwezsv4Gg",
   },
 ];
 
@@ -134,6 +176,35 @@ export const CURATED_TIPS: CoachTip[] = [
     id: "tip-celebrate",
     text: "Celebrá un intento fallido explícitamente: “me gustó que lo hayas intentado” antes de corregir.",
     applicableToday: true,
+  },
+];
+
+/** Si aún no hay menores vinculados o no hay señales de actividad, igual mostramos propuestas concretas. */
+const DEFAULT_ACTIVITIES_TOGETHER: CoachActivityIdea[] = [
+  {
+    childId: "__default_family",
+    childName: "Tu familia",
+    learnedThisWeek:
+      "Mientras la app aprende del uso del menor, podés empezar con rutinas cortas que refuerzan curiosidad y vínculo.",
+    activity:
+      "Actividad: “museo en casa” — elegir 5 objetos con historia (una foto, un juguete viejo, un mapa) y que cada uno cuente 1 minuto qué recuerda.",
+    offlineHint: "Sin pantallas durante la actividad; después podés buscar en EduPlay un tema relacionado.",
+  },
+  {
+    childId: "__default_walk",
+    childName: "Tu familia",
+    learnedThisWeek: "Conectar el aprendizaje en pantalla con el mundo real mejora retención y motivación.",
+    activity:
+      "Actividad: caminata de 12 minutos contando “3 cosas redondas, 3 azules, 3 que vuelan (aunque sea en la imaginación)”.",
+    offlineHint: "Al volver, elegir un quiz corto en la app sobre observación o categorías.",
+  },
+  {
+    childId: "__default_cook",
+    childName: "Tu familia",
+    learnedThisWeek: "Las matemáticas ganan sentido cuando miden y comparan con objetos reales.",
+    activity:
+      "Actividad: merienda medida — armar una receta simple y que el menor anote cantidades (mitad, doble) con ayuda.",
+    offlineHint: "Si la frustración aparece, bajá el objetivo: solo medir 2 ingredientes ya está bien.",
   },
 ];
 
@@ -262,12 +333,11 @@ type ChildFeatures = {
 
 async function loadChildFeatures(parentId: string): Promise<ChildFeatures[]> {
   const { start, prevStart } = weekBounds();
-  const prevEnd = new Date(start);
   const weekEnd = new Date();
   weekEnd.setUTCHours(23, 59, 59, 999);
 
   const children = await prisma.user.findMany({
-    where: { parentId },
+    where: { parentId, type: UserType.minor },
     select: { id: true, realName: true },
   });
 
@@ -410,6 +480,7 @@ function buildPersonalizedResources(features: ChildFeatures[]): CoachResource[] 
           ? `Relevante según el perfil de ${best.name}.`
           : "Recurso general recomendado.",
       relevanceScore: Math.round(best.score * 10) / 10,
+      curatedArticleId: a.id,
     });
   }
   for (const v of CURATED_VIDEOS) {
@@ -417,8 +488,10 @@ function buildPersonalizedResources(features: ChildFeatures[]): CoachResource[] 
       id: `res-${v.id}`,
       title: v.title,
       type: "video",
-      reason: "Contenido breve de especialistas para ver en familia.",
+      reason: "Video breve para ver juntos (se abre en el navegador).",
       relevanceScore: 1,
+      curatedVideoId: v.id,
+      openUrl: v.url,
     });
   }
   return pool.sort((a, b) => b.relevanceScore - a.relevanceScore).slice(0, 8);
@@ -463,7 +536,7 @@ export async function buildParentCoachPayload(parentId: string): Promise<ParentC
       videos: CURATED_VIDEOS,
       tips: CURATED_TIPS,
     },
-    activitiesTogether: buildActivities(features),
+    activitiesTogether: features.length > 0 ? buildActivities(features) : DEFAULT_ACTIVITIES_TOGETHER,
     conversations: injectInterestInConversations(CONVERSATION_GUIDES, interestLabel),
     alerts: buildAlerts(features),
     personalizedResources: buildPersonalizedResources(features),

@@ -1,7 +1,7 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -22,10 +22,18 @@ import { ParentPushListenerBridge } from "./components/ParentPushListenerBridge"
 import { navigationThemeFrom } from "./navigation/navigationTheme";
 import { parentNavigationRef, rootNavigationRef } from "./navigation/navigationRefs";
 import { AuthNavigator } from "./navigation/AuthNavigator";
+import { ParentOnboardingNavigator } from "./navigation/ParentOnboardingNavigator";
 import { ParentRootNavigator } from "./navigation/ParentRootNavigator";
 import { RootNavigator } from "./navigation/RootNavigator";
+import { OnboardingCompleteScreen } from "./screens/onboarding/OnboardingCompleteScreen";
 import { OnboardingFlow } from "./screens/onboarding/OnboardingFlow";
-import { getOnboardingStatus } from "./services/api";
+import { formatApiError } from "./lib/apiErrors";
+import { showToast } from "./lib/toastBus";
+import {
+  getOnboardingStatus,
+  postParentOnboardingComplete,
+  type OnboardingStatusResponse,
+} from "./services/api";
 import { warmUpAudio } from "./services/soundManager";
 
 function ThemedNavigationContainer({ children }: { children: ReactNode }) {
@@ -65,41 +73,87 @@ function ThemedBootSpinner() {
   );
 }
 
+const ONBOARDING_FALLBACK_OK: OnboardingStatusResponse = {
+  completed: true,
+  firstAction: null,
+  userType: null,
+  interestCount: 0,
+  hasMinors: false,
+};
+
 function AppContent() {
-  const { loading, token, sessionRole, logout, viewerUserId } = useAuth();
-  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const { loading, token, sessionRole, logout, viewerUserId, parentUserId } = useAuth();
+  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatusResponse | null>(null);
+  const [onboardingCheckLoading, setOnboardingCheckLoading] = useState(true);
+  const [minorOnboardingCelebrate, setMinorOnboardingCelebrate] = useState(false);
   const [pendingFeedWelcome, setPendingFeedWelcome] = useState(false);
+  const consumePendingFeedWelcome = useCallback(() => {
+    setPendingFeedWelcome(false);
+  }, []);
+
+  const loadOnboardingStatus = useCallback(async () => {
+    const id = sessionRole === "parent" ? parentUserId : viewerUserId;
+    if (!id) return;
+    try {
+      const s = await getOnboardingStatus(id);
+      setOnboardingStatus(s);
+    } catch {
+      setOnboardingStatus(ONBOARDING_FALLBACK_OK);
+    }
+  }, [sessionRole, parentUserId, viewerUserId]);
 
   useEffect(() => {
     if (!token) {
       setPendingFeedWelcome(false);
+      setMinorOnboardingCelebrate(false);
+      setOnboardingStatus(null);
+      setOnboardingCheckLoading(true);
     }
   }, [token]);
 
   useEffect(() => {
     if (loading) return;
-    if (!token || sessionRole !== "child") {
-      setOnboardingDone(null);
+    if (!token) {
       return;
     }
-    if (!viewerUserId) {
-      setOnboardingDone(true);
+    if (sessionRole === "parent" && !parentUserId) {
+      setOnboardingStatus({
+        completed: true,
+        firstAction: null,
+        userType: "parent",
+        interestCount: 0,
+        hasMinors: false,
+      });
+      setOnboardingCheckLoading(false);
       return;
     }
+    if (sessionRole === "child" && !viewerUserId) {
+      setOnboardingCheckLoading(false);
+      return;
+    }
+    if (sessionRole !== "parent" && sessionRole !== "child") {
+      setOnboardingCheckLoading(false);
+      return;
+    }
+
     let cancelled = false;
-    setOnboardingDone(null);
+    setOnboardingStatus(null);
+    setOnboardingCheckLoading(true);
     (async () => {
       try {
-        const s = await getOnboardingStatus(viewerUserId);
-        if (!cancelled) setOnboardingDone(s.completed);
+        const id = sessionRole === "parent" ? parentUserId! : viewerUserId!;
+        const s = await getOnboardingStatus(id);
+        if (!cancelled) setOnboardingStatus(s);
       } catch {
-        if (!cancelled) setOnboardingDone(true);
+        if (!cancelled) setOnboardingStatus(ONBOARDING_FALLBACK_OK);
+      } finally {
+        if (!cancelled) setOnboardingCheckLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [loading, token, sessionRole, viewerUserId]);
+  }, [loading, token, sessionRole, parentUserId, viewerUserId]);
 
   if (loading) {
     return <ThemedBootSpinner />;
@@ -114,6 +168,44 @@ function AppContent() {
   }
 
   if (sessionRole === "parent") {
+    if (onboardingCheckLoading || onboardingStatus === null) {
+      return <ThemedBootSpinner />;
+    }
+    const st = onboardingStatus;
+    if (st && !st.completed) {
+      const ut = st.userType;
+      const treatAsParentProfile = ut === "parent" || ut == null;
+      if (treatAsParentProfile) {
+        if (st.hasMinors) {
+          return (
+            <OnboardingCompleteScreen
+              variant="parent"
+              onContinue={async () => {
+                if (!parentUserId) return;
+                try {
+                  await postParentOnboardingComplete(parentUserId);
+                  await loadOnboardingStatus();
+                } catch (e) {
+                  showToast(formatApiError(e, "No se pudo sincronizar la cuenta."), "error");
+                }
+              }}
+            />
+          );
+        }
+        return (
+          <ParentNavigationContainer>
+            <PushNotificationSetup />
+            <ParentPushListenerBridge />
+            <ParentIapProvider>
+              <ParentOnboardingNavigator
+                onLogout={() => void logout()}
+                onFinished={() => void loadOnboardingStatus()}
+              />
+            </ParentIapProvider>
+          </ParentNavigationContainer>
+        );
+      }
+    }
     return (
       <ParentNavigationContainer>
         <PushNotificationSetup />
@@ -129,28 +221,43 @@ function AppContent() {
     return <ThemedBootSpinner />;
   }
 
-  if (onboardingDone === null) {
+  if (onboardingCheckLoading || onboardingStatus === null) {
     return <ThemedBootSpinner />;
   }
 
-  if (onboardingDone === false) {
+  if (minorOnboardingCelebrate) {
     return (
-      <OnboardingFlow
-        userId={viewerUserId}
-        onComplete={() => {
+      <OnboardingCompleteScreen
+        variant="child"
+        onContinue={() => {
           setPendingFeedWelcome(true);
-          setOnboardingDone(true);
+          setMinorOnboardingCelebrate(false);
+          void loadOnboardingStatus();
         }}
       />
     );
   }
 
+  const childSt = onboardingStatus;
+  if (childSt && !childSt.completed) {
+    const ut = childSt.userType;
+    const treatAsMinor = ut === "minor" || ut == null;
+    if (treatAsMinor) {
+      return (
+        <OnboardingFlow
+          userId={viewerUserId}
+          onComplete={() => {
+            setMinorOnboardingCelebrate(true);
+            void loadOnboardingStatus();
+          }}
+        />
+      );
+    }
+  }
+
   return (
     <ScreenTimeProvider userId={viewerUserId}>
-      <PostOnboardingProvider
-        pendingFeedWelcome={pendingFeedWelcome}
-        onConsume={() => setPendingFeedWelcome(false)}
-      >
+      <PostOnboardingProvider pendingFeedWelcome={pendingFeedWelcome} onConsume={consumePendingFeedWelcome}>
         <PushNotificationSetup />
         <LocalNotificationScheduler />
         <ChildNavigationContainer>

@@ -42,7 +42,7 @@ export type RootStackParamList = {
     challengeLives?: number;
     adaptive?: boolean;
   } | undefined;
-  VisualGame: { category?: string; difficulty?: "EASY" | "MEDIUM" | "HARD" };
+  VisualGame: { category?: string; difficulty?: "EASY" | "MEDIUM" | "HARD"; gameId?: string };
   QuizResult: {
     score: number;
     total: number;
@@ -59,6 +59,13 @@ export type RootStackParamList = {
   MiniGamesHub: undefined;
   MiniGamePlayer: { gameId: MiniGameId; levelIndex?: number };
   AchievementSystem: undefined;
+};
+
+/** Solo wizard de onboarding tutor (antes del panel principal). */
+export type ParentOnboardingOnlyParamList = {
+  ParentOnboarding: undefined;
+  ParentOnboardingComplete: undefined;
+  AddMinor: undefined;
 };
 
 /** Panel tutor (stack aparte del tab del menor). */

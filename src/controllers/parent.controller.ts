@@ -353,6 +353,7 @@ export async function patchChildParentSettings(req: Request, res: Response): Pro
     parentChatSupervisionEnabled?: boolean;
     notifyParentNewContact?: boolean;
     notifyParentSuspiciousChat?: boolean;
+    dailyScreenTimeLimit?: number;
   } = {};
   if (b.allowPosting !== undefined) {
     if (typeof b.allowPosting !== "boolean") {
@@ -396,11 +397,26 @@ export async function patchChildParentSettings(req: Request, res: Response): Pro
     }
     patch.notifyParentSuspiciousChat = b.notifyParentSuspiciousChat;
   }
+  if (b.dailyScreenTimeLimit !== undefined) {
+    const raw = b.dailyScreenTimeLimit;
+    const n = typeof raw === "number" ? raw : Number(raw);
+    if (!Number.isFinite(n) || !Number.isInteger(n)) {
+      res.status(400).json({ error: "dailyScreenTimeLimit debe ser un entero." });
+      return;
+    }
+    if (n !== 0 && (n < 15 || n > 24 * 60)) {
+      res.status(400).json({
+        error: "dailyScreenTimeLimit: usá 0 para ilimitado, o entre 15 y 1440 minutos por día.",
+      });
+      return;
+    }
+    patch.dailyScreenTimeLimit = n;
+  }
 
   if (Object.keys(patch).length === 0) {
     res.status(400).json({
       error:
-        "Incluí al menos un campo booleano: allowPosting, allowFriends, chatEnabled, parentChatSupervisionEnabled, notifyParentNewContact, notifyParentSuspiciousChat.",
+        "Incluí al menos un campo: allowPosting, allowFriends, chatEnabled, parentChatSupervisionEnabled, notifyParentNewContact, notifyParentSuspiciousChat, dailyScreenTimeLimit.",
     });
     return;
   }
@@ -425,7 +441,7 @@ export async function patchChildParentSettings(req: Request, res: Response): Pro
         id: randomUUID(),
         parentId,
         childId,
-        dailyScreenTimeLimit: 120,
+        dailyScreenTimeLimit: patch.dailyScreenTimeLimit ?? 120,
         allowPosting: patch.allowPosting ?? true,
         allowFriends: patch.allowFriends ?? true,
         chatEnabled: patch.chatEnabled ?? true,
@@ -442,6 +458,7 @@ export async function patchChildParentSettings(req: Request, res: Response): Pro
         parentChatSupervisionEnabled: true,
         notifyParentNewContact: true,
         notifyParentSuspiciousChat: true,
+        dailyScreenTimeLimit: true,
       },
     });
 
@@ -453,6 +470,7 @@ export async function patchChildParentSettings(req: Request, res: Response): Pro
       parentChatSupervisionEnabled: row.parentChatSupervisionEnabled,
       notifyParentNewContact: row.notifyParentNewContact,
       notifyParentSuspiciousChat: row.notifyParentSuspiciousChat,
+      dailyScreenTimeLimit: row.dailyScreenTimeLimit,
     });
   } catch (err) {
     logError("parent", err);
@@ -488,8 +506,10 @@ export async function patchChildParentAdvancedSettings(req: Request, res: Respon
   if (b.dailyScreenTimeLimit !== undefined) {
     const raw = b.dailyScreenTimeLimit;
     const n = typeof raw === "number" ? raw : Number(raw);
-    if (!Number.isFinite(n) || !Number.isInteger(n) || n < 1 || n > 24 * 60) {
-      res.status(400).json({ error: "dailyScreenTimeLimit debe ser un entero entre 1 y 1440 (minutos)." });
+    if (!Number.isFinite(n) || !Number.isInteger(n) || (n !== 0 && (n < 15 || n > 24 * 60))) {
+      res.status(400).json({
+        error: "dailyScreenTimeLimit: usá 0 para ilimitado, o entre 15 y 1440 minutos por día.",
+      });
       return;
     }
     patch.dailyScreenTimeLimit = n;

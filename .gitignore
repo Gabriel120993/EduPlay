@@ -7,3 +7,7 @@ dist/
 *.log
 .DS_Store
 scripts/_repair_checksums.sql
+cache/
+prefetch-run.log
+scripts/shortcuts/*
+!scripts/shortcuts/.gitkeep

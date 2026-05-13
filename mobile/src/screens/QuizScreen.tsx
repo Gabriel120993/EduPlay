@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 
 import { AppIcon } from "../components/AppIcon";
+import { QuizImage } from "../components/QuizImage";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { formatQuizResumeLabel, saveLastPlayedGame } from "../lib/continueLearningStorage";
@@ -44,6 +45,70 @@ const DEFAULT_TIMER = 12;
 const AUTO_NEXT_MS = 1100;
 const AUTO_NEXT_MS_EXPL = 2400;
 const QUIZ_REPEAT_HISTORY_LIMIT = 30;
+
+/** Lectura efectiva cómoda en pantalla (conservadora para niños y textos nuevos). */
+const READ_PASSAGE_WPM = 68;
+
+function approxWordCount(text: string): number {
+  const t = text.trim();
+  if (!t) return 0;
+  return t.split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * Tiempo total con temporizador: lectura (pasaje + consignas largas + vista rápida de opciones)
+ * + ventana configurable para decidir (`routePickSeconds` o `DEFAULT_TIMER`).
+ */
+function computeTimedQuestionBudget(
+  q: QuizQuestionItem,
+  routePickSeconds: number,
+  challengeMode: boolean
+): number {
+  const pickSeconds = routePickSeconds > 0 ? routePickSeconds : DEFAULT_TIMER;
+  const reactionFloor = challengeMode ? Math.max(pickSeconds, 15) : pickSeconds;
+
+  const passageWords = approxWordCount((q.readingPassage ?? "").trim());
+  const stemWords = approxWordCount((q.question ?? "").trim());
+  const stemChars = (q.question ?? "").trim().length;
+  const optionWords = Array.isArray(q.options) ? approxWordCount(q.options.join(" ")) : 0;
+  const optionsSkimCeil = challengeMode ? 26 : 18;
+  const optionsSkim = Math.min(optionsSkimCeil, Math.max(8, Math.ceil(optionWords / 18)));
+  const hasImage = (q.imageUrl ?? "").trim().length > 0;
+  const imageBudget = hasImage ? (challengeMode ? 14 : 12) : 0;
+  const capWithImage = challengeMode ? 200 : 125;
+
+  if (passageWords > 0) {
+    const readPassage = Math.ceil((passageWords / READ_PASSAGE_WPM) * 60) + 16;
+    const stemHeavy =
+      stemWords > 40 ? Math.min(32, Math.ceil((stemWords - 40) / 6) * 2) : stemChars > 220 ? Math.min(30, Math.ceil((stemChars - 220) / 48) * 3) : 0;
+    return Math.min(capWithImage, reactionFloor + readPassage + stemHeavy + optionsSkim + 6 + imageBudget);
+  }
+
+  const stemHeavy =
+    stemWords > 34 ? Math.min(30, Math.ceil((stemWords - 34) / 5) * 2) : stemChars > 150 ? Math.min(26, Math.ceil((stemChars - 150) / 40) * 3) : 0;
+  return Math.min(capWithImage, reactionFloor + stemHeavy + optionsSkim + imageBudget);
+}
+
+/** En desafío, reorganiza opciones para que «siempre clickear el mismo lugar» no sirva. */
+function shuffleChallengeOptions(
+  options: readonly string[],
+  serverCorrectIndex: number
+): { opts: string[]; correctIdx: number } {
+  const opts = [...options];
+  const n = opts.length;
+  if (n <= 1) return { opts, correctIdx: serverCorrectIndex };
+
+  const order = opts.map((_, i) => i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = order[i]!;
+    order[i] = order[j]!;
+    order[j] = tmp;
+  }
+  const shuffled = order.map((oi) => opts[oi]!);
+  const correctIdx = order.indexOf(serverCorrectIndex);
+  return { opts: shuffled, correctIdx };
+}
 
 function quizSeenKey(parts: { category: string; difficulty: QuizDifficulty; area?: string }): string {
   if (parts.area) return `quiz_seen:area:${parts.area}:${parts.difficulty}`;
@@ -144,6 +209,7 @@ export function QuizScreen({ route }: Props) {
 
   const maxLives = params?.challengeLives ?? 0;
   const adaptive = Boolean(params?.adaptive);
+  const challengeMode = maxLives > 0 || category === "mixed";
 
   const storageKey = useMemo(
     () =>
@@ -269,12 +335,28 @@ export function QuizScreen({ route }: Props) {
 
   const current = questions[index];
 
+  const timedQuestionBudget = useMemo(() => {
+    if (!useTimer || !current || qType(current) === "ORDER") return Math.max(1, questionTimerSeconds);
+    return Math.max(1, computeTimedQuestionBudget(current, questionTimerSeconds, challengeMode));
+  }, [useTimer, current, questionTimerSeconds, challengeMode]);
+
   const progress = useMemo(() => (questions.length > 0 ? `${index + 1}/${questions.length}` : "0/0"), [index, questions.length]);
   const progressPct = useMemo(() => (questions.length > 0 ? (index + 1) / questions.length : 0), [index, questions.length]);
   const timerPct = useMemo(
-    () => Math.max(0, Math.min(1, secondsLeft / questionTimerSeconds)),
-    [secondsLeft, questionTimerSeconds]
+    () => Math.max(0, Math.min(1, secondsLeft / timedQuestionBudget)),
+    [secondsLeft, timedQuestionBudget]
   );
+
+  /** Opciones ordenadas como en servidor | barajadas en desafíos (solo choice, no ORDER). Se sincroniza en ref por el timer. */
+  const mcOptionLayout = useMemo(() => {
+    const q = questions[index];
+    if (!q || qType(q) === "ORDER") return { opts: [] as string[], correctIdx: 0 };
+    if (!challengeMode) return { opts: [...q.options], correctIdx: q.correct };
+    return shuffleChallengeOptions(q.options, q.correct);
+  }, [questions, index, challengeMode]);
+
+  const mcOptionLayoutRef = useRef(mcOptionLayout);
+  mcOptionLayoutRef.current = mcOptionLayout;
 
   const finishSession = useCallback(
     (finalScore: number, totalQ: number) => {
@@ -349,7 +431,10 @@ export function QuizScreen({ route }: Props) {
     if (tickRef.current) clearInterval(tickRef.current);
     if (optionIdx !== -1) playClick();
     setSelectedIndex(optionIdx);
-    const gotIt = optionIdx === current.correct;
+    const qtAns = qType(current);
+    const correctSlot =
+      qtAns !== "ORDER" && challengeMode ? mcOptionLayoutRef.current.correctIdx : current.correct;
+    const gotIt = optionIdx === correctSlot;
     Animated.sequence([
       Animated.spring(feedbackScale, { toValue: 1.04, useNativeDriver: true, friction: 5 }),
       Animated.spring(feedbackScale, { toValue: 1, useNativeDriver: true, friction: 5 }),
@@ -414,7 +499,7 @@ export function QuizScreen({ route }: Props) {
     const cur = questions[index];
     if (!cur || qType(cur) === "ORDER" || !useTimer) return;
     if (tickRef.current) clearInterval(tickRef.current);
-    setSecondsLeft(questionTimerSeconds);
+    setSecondsLeft(timedQuestionBudget);
     tickRef.current = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
@@ -431,7 +516,7 @@ export function QuizScreen({ route }: Props) {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
     };
-  }, [loading, questions, index, selectedIndex, useTimer, questionTimerSeconds]);
+  }, [loading, questions, index, selectedIndex, useTimer, timedQuestionBudget]);
 
   useEffect(() => {
     setHintUsedForQuestionId(null);
@@ -483,10 +568,15 @@ export function QuizScreen({ route }: Props) {
   }
 
   const qt = qType(current);
+  const mcShuffledView = qt !== "ORDER" && challengeMode;
+  const mcChoices = qt !== "ORDER" ? (mcShuffledView ? mcOptionLayout.opts : current.options) : [];
+  const mcCorrectDisplayed = qt !== "ORDER" ? (mcShuffledView ? mcOptionLayout.correctIdx : current.correct) : current.correct;
   const answered = selectedIndex != null;
   const explanation = (current.explanation ?? "").trim();
-  const isCorrectAnswer = answered && selectedIndex === current.correct;
-  const isWrongAnswer = answered && selectedIndex !== null && selectedIndex !== current.correct;
+  const isCorrectAnswer =
+    answered &&
+    (qt === "ORDER" ? selectedIndex === current.correct : selectedIndex === mcCorrectDisplayed);
+  const isWrongAnswer = answered && !isCorrectAnswer;
 
   return (
     <View
@@ -532,8 +622,13 @@ export function QuizScreen({ route }: Props) {
       {useTimer && qt !== "ORDER" ? (
         <>
           <Text style={{ color: colors.primary, fontWeight: "700", marginBottom: space.sm }}>
-            Tiempo: {secondsLeft}s
+            Tiempo restante · {secondsLeft}s
           </Text>
+          {current.readingPassage ? (
+            <Text style={{ color: colors.textMuted, fontWeight: "600", marginTop: -4, marginBottom: space.sm, fontSize: 13 }}>
+              El tiempo se ajustó para incluir la lectura del texto.
+            </Text>
+          ) : null}
           <View
             style={{
               height: 6,
@@ -594,6 +689,15 @@ export function QuizScreen({ route }: Props) {
         </Pressable>
       </View>
 
+      {(current.imageUrl ?? "").trim().length > 0 ? (
+        <QuizImage
+          imageUrl={(current.imageUrl ?? "").trim()}
+          recycleKey={current.id}
+          size="medium"
+          style={{ marginBottom: space.md }}
+        />
+      ) : null}
+
       <Animated.View
         style={{
           backgroundColor: colors.card,
@@ -637,8 +741,8 @@ export function QuizScreen({ route }: Props) {
         </View>
       ) : (
         <View style={{ gap: space.sm }}>
-          {current.options.map((opt, optIdx) => {
-            const isCorrect = optIdx === current.correct;
+          {mcChoices.map((opt, optIdx) => {
+            const isCorrect = optIdx === mcCorrectDisplayed;
             const isSelected = selectedIndex === optIdx;
             const bg = answered
               ? isCorrect
@@ -698,7 +802,7 @@ export function QuizScreen({ route }: Props) {
           </Text>
           {isWrongAnswer && qt !== "ORDER" ? (
             <Text style={{ color: colors.text, marginTop: space.xs, fontWeight: "700" }}>
-              {current.options[current.correct] ?? "—"}
+              {mcChoices[mcCorrectDisplayed] ?? "—"}
             </Text>
           ) : null}
           {explanation.length > 0 ? (

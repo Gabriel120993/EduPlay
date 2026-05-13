@@ -6,6 +6,7 @@ import {
   QuizKnowledgeArea,
   QuizQuestionType,
 } from "@prisma/client";
+import { pickImageUrl } from "../lib/imageProxyUrl";
 import { prisma } from "../lib/prisma";
 import { utcWeekRange } from "../lib/xpWeek";
 
@@ -68,6 +69,8 @@ export type QuizQuestionClientDto = {
   readingPassage: string | null;
   orderTapSequence: number[] | null;
   createdAt: string;
+  /** Imagen (p. ej. bandera) desde `EducationalAsset.urlMedium`. */
+  imageUrl: string | null;
 };
 
 function optionsAsStrings(options: unknown): string[] {
@@ -92,6 +95,10 @@ export function shuffleInPlace<T>(items: T[]): T[] {
   return a;
 }
 
+const quizQuestionImageInclude = {
+  imageAsset: { select: { id: true, urlMedium: true } },
+} satisfies Prisma.QuizQuestionInclude;
+
 function toDto(q: {
   id: string;
   question: string;
@@ -108,7 +115,9 @@ function toDto(q: {
   readingPassage: string | null;
   orderTapSequence: unknown;
   createdAt: Date;
+  imageAsset?: { id: string; urlMedium: string } | null;
 }): QuizQuestionClientDto {
+  const imageUrl = pickImageUrl(q.imageAsset ?? null, q.imageAsset?.urlMedium ?? null);
   return {
     id: q.id,
     question: q.question,
@@ -125,6 +134,7 @@ function toDto(q: {
     readingPassage: q.readingPassage,
     orderTapSequence: asOrderSeq(q.orderTapSequence),
     createdAt: q.createdAt.toISOString(),
+    imageUrl,
   };
 }
 
@@ -204,7 +214,7 @@ export async function fetchRandomQuizQuestions(params: FetchRandomQuizParams): P
           quizLevel: levels.length === 1 ? levels[0]! : { in: levels },
         };
 
-  let rows = await prisma.quizQuestion.findMany({ where });
+  let rows = await prisma.quizQuestion.findMany({ where, include: quizQuestionImageInclude });
   if (rows.length < sampleSize && !isMixed && areaFilter) {
     rows = await prisma.quizQuestion.findMany({
       where: {
@@ -212,6 +222,7 @@ export async function fetchRandomQuizQuestions(params: FetchRandomQuizParams): P
         ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
         ...(questionType ? { questionType } : {}),
       },
+      include: quizQuestionImageInclude,
     });
   }
   if (rows.length < sampleSize && !isMixed && category && !areaFilter) {
@@ -221,11 +232,13 @@ export async function fetchRandomQuizQuestions(params: FetchRandomQuizParams): P
         ...(difficulty ? { difficulty } : {}),
         ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
       },
+      include: quizQuestionImageInclude,
     });
   }
   if (rows.length < sampleSize && isMixed && difficulty) {
     rows = await prisma.quizQuestion.findMany({
       where: { difficulty, ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}) },
+      include: quizQuestionImageInclude,
     });
   }
 
@@ -345,6 +358,7 @@ export async function pickDailyChallengeQuestions(userId: string): Promise<{
   const pool = await prisma.quizQuestion.findMany({
     take: 200,
     orderBy: { createdAt: "desc" },
+    include: quizQuestionImageInclude,
   });
   const picked = shuffleInPlace(pool).slice(0, QUIZ_SAMPLE_DEFAULT);
   return {
@@ -446,7 +460,7 @@ export async function listDueFlashcards(userId: string, limit: number): Promise<
     where: { userId, nextReviewAt: { lte: now } },
     take: limit,
     orderBy: { nextReviewAt: "asc" },
-    include: { question: true },
+    include: { question: { include: quizQuestionImageInclude } },
   });
   return cards.map((c) => toDto(c.question));
 }

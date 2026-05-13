@@ -16,12 +16,14 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AppIcon } from "../components/AppIcon";
 import { BrandLogo } from "../components/BrandLogo";
+import { ContentCard, type ContentCardCategory, type ContentCardDifficulty } from "../components/ContentCard";
 import { ContinueLearningSection } from "../components/ContinueLearningSection";
 import { BrandEmptyState } from "../components/BrandEmptyState";
 import { FeedPostTypeLabel } from "../components/FeedPostTypeLabel";
 import { PostCategoryTag } from "../components/PostCategoryTag";
 import { PostReactionBar } from "../components/PostReactionBar";
 import { ReadOnlyBanner } from "../components/ReadOnlyBanner";
+import { TimeUsageBar } from "../components/TimeUsageBar";
 import { APP_TAGLINE, appTaglineSubtitle } from "../constants/brand";
 import { VIEWER_USER_ID } from "../config";
 import { useAuth } from "../contexts/AuthContext";
@@ -46,8 +48,10 @@ import {
   getEducationalContent,
   getExploreFeed,
   getExploreRecommendations,
+  getQuizzes,
   getUserProfile,
   getUserRecommendations,
+  type QuizListItem,
   type ReactionType,
 } from "../services/api";
 import type {
@@ -73,71 +77,234 @@ const QUIZ_GAME_ENTRIES: Array<{
   icon: string;
   title: string;
   description: string;
+  difficulty: ContentCardDifficulty;
+  ageRange?: string;
+  sampleQuestions?: string[];
 }> = [
   {
     category: "mixed",
-    icon: "🎯",
+    icon: "🎲",
     title: "Modo desafío",
     description: "Preguntas mezcladas de todas las categorías.",
+    difficulty: "medium",
   },
   {
     category: "astronomy",
-    icon: "🌌",
-    title: "Quiz de Astronomía",
-    description: "Planetas, estrellas y el sistema solar.",
+    icon: "🪐",
+    title: "Quiz de Astronomía: Planetas y Estrellas",
+    description: "Planetas, estrellas y el sistema solar",
+    difficulty: "easy",
+    ageRange: "5-8 años",
+    sampleQuestions: [
+      "¿Cuál es el planeta más grande del sistema solar? (Júpiter)",
+      "¿Qué planeta es conocido como el planeta rojo? (Marte)",
+      "¿Cuántos planetas hay en el sistema solar? (8)",
+      "¿Qué es una estrella fugaz? (Meteoro)",
+      "¿La Tierra gira alrededor de...? (El Sol)",
+    ],
   },
   {
     category: "math",
-    icon: "➗",
-    title: "Quiz de Matemáticas",
-    description: "Números, operaciones y razonamiento.",
+    icon: "🔢",
+    title: "Quiz de Matemáticas: Sumas y Restas",
+    description: "Números, operaciones y razonamiento",
+    difficulty: "easy",
+    ageRange: "6-9 años",
+    sampleQuestions: [
+      "15 + 7 = ? (22)",
+      "43 - 18 = ? (25)",
+      "¿Cuánto es el doble de 12? (24)",
+      "Si tengo 30 caramelos y doy 12, ¿cuántos me quedan? (18)",
+      "¿Qué número sigue en la serie: 2, 4, 6, 8, ...? (10)",
+    ],
   },
   {
     category: "science",
     icon: "🧪",
-    title: "Quiz de Ciencia",
-    description: "Experimentos, energía y estados de la materia.",
+    title: "Quiz de Ciencia: Estados de la Materia",
+    description: "Experimentos, energía y estados de la materia",
+    difficulty: "easy",
+    ageRange: "7-10 años",
+    sampleQuestions: [
+      "¿En qué estado está el agua cuando hierve? (Gas)",
+      "¿El hielo es agua en estado...? (Sólido)",
+      "¿Qué necesita una planta para hacer fotosíntesis? (Sol, agua, aire)",
+      "¿Cuál es el estado natural del oxígeno? (Gas)",
+      "¿Qué pasa si mezclas aceite y agua? (No se mezclan)",
+    ],
   },
   {
     category: "history",
-    icon: "📜",
-    title: "Quiz de Historia",
-    description: "Civilizaciones, épocas y hechos importantes.",
+    icon: "🏛️",
+    title: "Quiz de Historia: Civilizaciones Antiguas",
+    description: "Civilizaciones, épocas y hechos importantes",
+    difficulty: "medium",
+    ageRange: "9-12 años",
+    sampleQuestions: [
+      "¿Dónde vivían los faraones? (Egipto)",
+      "¿Qué construyeron los romanos para transportar agua? (Acueductos)",
+      "¿Quién fue el primer presidente de Argentina? (Bernardino Rivadavia)",
+      "¿En qué año llegó Cristóbal Colón a América? (1492)",
+      "¿Qué inventaron los egipcios para escribir? (Jeroglíficos)",
+    ],
   },
   {
     category: "geography",
     icon: "🌍",
-    title: "Quiz de Geografía",
-    description: "Países, continentes y mapas.",
+    title: "Quiz de Geografía: Países y Capitales",
+    description: "Países, continentes y mapas",
+    difficulty: "easy",
+    ageRange: "8-11 años",
+    sampleQuestions: [
+      "¿Cuál es la capital de Francia? (París)",
+      "¿En qué continente está Argentina? (América del Sur)",
+      "¿Cuál es el río más largo del mundo? (Nilo / Amazonas)",
+      "¿Cuántos continentes hay? (6 o 7)",
+      "¿Qué país tiene forma de bota? (Italia)",
+    ],
   },
   {
     category: "creativity",
     icon: "🎨",
-    title: "Quiz de Creatividad",
-    description: "Arte, colores e imaginación.",
+    title: "Quiz de Creatividad: Colores y Arte",
+    description: "Arte, colores e imaginación",
+    difficulty: "easy",
+    ageRange: "6-10 años",
+    sampleQuestions: [
+      "¿Qué colores son primarios? (Rojo, azul, amarillo)",
+      "¿Qué color se forma al mezclar azul y amarillo? (Verde)",
+      "¿Quién pintó la Mona Lisa? (Leonardo da Vinci)",
+      "¿Qué artista mexicana se pintaba monos? (Frida Kahlo)",
+      "¿Cuántos colores tiene el arcoíris? (7)",
+    ],
   },
 ];
 
 const VISUAL_GAME_ENTRIES: Array<{
+  gameId: string;
   category: "astronomy" | "geography";
   title: string;
   description: string;
+  levels: number;
+  difficultyLabel: string;
+  xpLabel: string;
+  cardCategory: ContentCardCategory;
+  cardDifficulty: ContentCardDifficulty;
 }> = [
   {
+    gameId: "guess-planet",
     category: "astronomy",
-    title: "Adiviná el planeta 🌌",
-    description: "Mirá la imagen y elegí el planeta correcto.",
+    title: "🪐 Adiviná el planeta",
+    description: "Mirá la imagen y elegí el planeta correcto",
+    levels: 10,
+    difficultyLabel: "FÁCIL",
+    xpLabel: "10 XP por nivel · bonus 50",
+    cardCategory: "ciencias",
+    cardDifficulty: "easy",
   },
   {
+    gameId: "identify-country",
     category: "geography",
-    title: "Identificá el país 🌍",
-    description: "Banderas y mapas: ¿reconocés el lugar?",
+    title: "🗺️ Identificá el país",
+    description: "Banderas y mapas: ¿reconocé el lugar?",
+    levels: 15,
+    difficultyLabel: "FÁCIL a MEDIO",
+    xpLabel: "15 XP por nivel · bonus 100",
+    cardCategory: "geografia",
+    cardDifficulty: "medium",
+  },
+  {
+    gameId: "dino-names",
+    category: "geography",
+    title: "🦕 Dinosaurios: ¿Sabés su nombre?",
+    description: "Imágenes de dinosaurios reales, elegí el nombre correcto",
+    levels: 10,
+    difficultyLabel: "FÁCIL",
+    xpLabel: "12 XP por nivel",
+    cardCategory: "historia",
+    cardDifficulty: "easy",
+  },
+  {
+    gameId: "color-mix",
+    category: "astronomy",
+    title: "🎨 ¿Qué color es?",
+    description: "Mezclas de colores para identificar el resultado",
+    levels: 8,
+    difficultyLabel: "FÁCIL",
+    xpLabel: "10 XP por nivel",
+    cardCategory: "arte",
+    cardDifficulty: "easy",
+  },
+  {
+    gameId: "spot-difference",
+    category: "geography",
+    title: "🔍 Encuentra la Diferencia",
+    description: "Dos imágenes casi iguales, encontrá 5 diferencias",
+    levels: 5,
+    difficultyLabel: "MEDIO",
+    xpLabel: "20 XP por nivel",
+    cardCategory: "arte",
+    cardDifficulty: "medium",
+  },
+  {
+    gameId: "world-puzzle",
+    category: "geography",
+    title: "🧩 Rompecabezas del Mundo",
+    description: "Armá mapas, animales y monumentos en 3 dificultades",
+    levels: 12,
+    difficultyLabel: "4, 9 y 16 piezas",
+    xpLabel: "15 XP por nivel",
+    cardCategory: "geografia",
+    cardDifficulty: "medium",
   },
 ];
 
 const PAGE_SIZE = 15;
 /** Evita disparos múltiples de `onEndReached` seguidos. */
 const LOAD_MORE_THROTTLE_MS = 650;
+
+type ExploreContentCardItem = {
+  id: string;
+  title: string;
+  description: string;
+  type: "learn" | "quiz" | "game" | "mission" | "video" | "reading";
+  category: ContentCardCategory;
+  difficulty: ContentCardDifficulty;
+  duration: number;
+  xpReward: number;
+  progress?: number;
+  isNew?: boolean;
+  isCompleted?: boolean;
+  contentId?: string;
+  quizCategory?: QuizCategory;
+};
+
+const LEARN_FALLBACK_CARDS: ExploreContentCardItem[] = [
+  { id: "learn-sistema-solar", title: "🌌 El Sistema Solar", description: "Video 3 min · Ciencias", type: "video", category: "ciencias", difficulty: "easy", duration: 3, xpReward: 12, isNew: true },
+  { id: "learn-mariposa", title: "🦋 Metamorfosis de la Mariposa", description: "Lectura interactiva · Ciencias", type: "reading", category: "ciencias", difficulty: "easy", duration: 6, xpReward: 14 },
+  { id: "learn-romanos", title: "🏛️ Los Romanos y su Imperio", description: "Documental 5 min · Historia", type: "video", category: "historia", difficulty: "medium", duration: 5, xpReward: 16 },
+  { id: "learn-shakespeare", title: "🎭 Shakespeare para Niños", description: "Cuento adaptado · Lenguaje", type: "reading", category: "lenguaje", difficulty: "medium", duration: 8, xpReward: 15 },
+  { id: "learn-frida", title: "🎨 Frida Kahlo: Vida y Obra", description: "Biografía interactiva · Arte", type: "reading", category: "arte", difficulty: "easy", duration: 7, xpReward: 14, isNew: true },
+  { id: "learn-agua", title: "🌊 El Ciclo del Agua", description: "Experimento virtual · Ciencias", type: "learn", category: "ciencias", difficulty: "easy", duration: 6, xpReward: 13 },
+  { id: "learn-mapamundi", title: "🗺️ Mapamundi Interactivo", description: "Juego de geografía · Geografía", type: "game", category: "geografia", difficulty: "medium", duration: 9, xpReward: 18 },
+  { id: "learn-tablas", title: "🧮 Tablas de Multiplicar", description: "Canción + Quiz · Matemáticas", type: "quiz", category: "matematicas", difficulty: "easy", duration: 5, xpReward: 15 },
+  { id: "learn-selva", title: "🦁 Animales de la Selva", description: "Tarjetas de vocabulario · Ciencias", type: "reading", category: "ciencias", difficulty: "easy", duration: 6, xpReward: 12 },
+  { id: "learn-electricidad", title: "⚡ Grandes Inventos: La Electricidad", description: "Video 4 min · Historia", type: "video", category: "historia", difficulty: "medium", duration: 4, xpReward: 16 },
+];
+
+const QUICK_QUIZ_FALLBACK_CARDS: ExploreContentCardItem[] = [
+  { id: "quick-logica", title: "🧠 Quiz Express: Lógica", description: "5 preguntas · 3 min", type: "quiz", category: "matematicas", difficulty: "medium", duration: 3, xpReward: 15, quizCategory: "mixed", isNew: true },
+  { id: "quick-tablas", title: "🔢 Quiz Express: Tablas", description: "10 preguntas · 5 min", type: "quiz", category: "matematicas", difficulty: "easy", duration: 5, xpReward: 18, quizCategory: "math" },
+  { id: "quick-banderas", title: "🌍 Quiz Express: Banderas", description: "8 preguntas · 4 min", type: "quiz", category: "geografia", difficulty: "medium", duration: 4, xpReward: 16, quizCategory: "geography" },
+  { id: "quick-dinosaurios", title: "🦕 Quiz Express: Dinosaurios", description: "5 preguntas · 3 min", type: "quiz", category: "historia", difficulty: "easy", duration: 3, xpReward: 15, quizCategory: "history" },
+  { id: "quick-arte", title: "🎨 Quiz Express: Arte", description: "5 preguntas · 3 min", type: "quiz", category: "arte", difficulty: "easy", duration: 3, xpReward: 15, quizCategory: "creativity" },
+  { id: "quick-ciencia", title: "🧪 Quiz Express: Ciencia", description: "5 preguntas · 3 min", type: "quiz", category: "ciencias", difficulty: "easy", duration: 3, xpReward: 15, quizCategory: "science" },
+];
+
+function isPlaceholderTitle(text: string): boolean {
+  const lower = text.toLowerCase();
+  return lower.includes("demo de recurso") || lower.includes("demostración de recurso") || lower.includes("demostracion de recurso") || lower.includes("recurso demo");
+}
 function interleaveExploreForYou(
   content: RecommendedEducationalItem[],
   games: RecommendedGameMixItem[]
@@ -165,6 +332,64 @@ function toQuizCategoryFromApi(raw: string): QuizCategory {
 
 function toVisualCategoryFromApi(raw: string): "astronomy" | "geography" {
   return raw.trim().toLowerCase() === "geography" ? "geography" : "astronomy";
+}
+
+function contentCardDifficulty(raw: string): ContentCardDifficulty {
+  if (raw === "HARD" || raw.toLowerCase() === "hard") return "hard";
+  if (raw === "MEDIUM" || raw.toLowerCase() === "medium") return "medium";
+  return "easy";
+}
+
+function contentCardCategory(raw: string): ContentCardCategory {
+  const category = raw.toLowerCase();
+  const map: Record<string, ContentCardCategory> = {
+    math: "matematicas",
+    science: "ciencias",
+    history: "historia",
+    geography: "geografia",
+    creativity: "arte",
+    education: "lenguaje",
+  };
+  return map[category] ?? category;
+}
+
+function contentTypeToCardType(item: EducationalContentItem): ExploreContentCardItem["type"] {
+  if (item.contentType === "VIDEO") return "video";
+  if (item.contentType === "READING") return "reading";
+  if (item.contentType === "INTERACTIVE") return "game";
+  return "learn";
+}
+
+function educationalContentToCard(item: EducationalContentItem, index: number): ExploreContentCardItem {
+  return {
+    id: item.id,
+    contentId: item.id,
+    title: item.title,
+    description: item.description,
+    type: contentTypeToCardType(item),
+    category: contentCardCategory(item.category),
+    difficulty: contentCardDifficulty(item.difficulty),
+    duration: item.contentType === "VIDEO" ? 4 : 8,
+    xpReward: item.difficulty === "HARD" ? 20 : item.difficulty === "MEDIUM" ? 16 : 12,
+    isNew: index < 3,
+  };
+}
+
+function quizToQuickCard(item: QuizListItem, index: number): ExploreContentCardItem {
+  const categories: QuizCategory[] = ["mixed", "math", "geography", "history", "creativity", "science"];
+  const category = categories[index % categories.length] ?? "mixed";
+  return {
+    id: item.id,
+    title: item.title,
+    description: `${item.questionCount} preguntas · ${Math.max(3, Math.ceil(item.questionCount / 2))} min`,
+    type: "quiz",
+    category: contentCardCategory(category),
+    difficulty: contentCardDifficulty(item.difficulty),
+    duration: Math.max(3, Math.ceil(item.questionCount / 2)),
+    xpReward: item.difficulty === "HARD" ? 22 : item.difficulty === "MEDIUM" ? 18 : 15,
+    quizCategory: category,
+    isNew: index < 2,
+  };
 }
 
 function mergeExplorePostsDedupe(existing: FeedPost[], incoming: FeedPost[]): FeedPost[] {
@@ -337,6 +562,7 @@ export function ExploreScreen({ route }: Props) {
 
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [learningContent, setLearningContent] = useState<EducationalContentItem[]>([]);
+  const [quickQuizzes, setQuickQuizzes] = useState<QuizListItem[]>([]);
   const [recommendations, setRecommendations] = useState<RecommendationsResponse | null>(null);
   const [exploreForYou, setExploreForYou] = useState<ExploreRecommendationsResponse | null>(null);
   const [exploreForYouLoading, setExploreForYouLoading] = useState(false);
@@ -415,11 +641,26 @@ export function ExploreScreen({ route }: Props) {
 
   const learnRowsForExplore = useMemo(() => {
     const rec = recommendations?.recommendedEducationalContent ?? [];
-    if (rec.length === 0) return learningContent;
+    const validLearning = learningContent.filter((c) => !isPlaceholderTitle(`${c.title} ${c.description}`));
+    if (rec.length === 0) return validLearning;
     const seen = new Set(rec.map((r) => r.id));
-    const rest = learningContent.filter((c) => !seen.has(c.id));
+    const rest = validLearning.filter((c) => !seen.has(c.id));
     return [...rec, ...rest];
   }, [recommendations?.recommendedEducationalContent, learningContent]);
+
+  const learnCardsForExplore = useMemo<ExploreContentCardItem[]>(() => {
+    const cards = learnRowsForExplore
+      .filter((item) => !isPlaceholderTitle(`${item.title} ${item.description}`))
+      .map((item, index) => educationalContentToCard(item as EducationalContentItem, index));
+    return cards.length > 0 ? cards.slice(0, 10) : LEARN_FALLBACK_CARDS;
+  }, [learnRowsForExplore]);
+
+  const quickQuizCards = useMemo<ExploreContentCardItem[]>(() => {
+    const cards = quickQuizzes
+      .filter((quiz) => !isPlaceholderTitle(`${quiz.title} ${quiz.description}`))
+      .map(quizToQuickCard);
+    return cards.length > 0 ? cards.slice(0, 6) : QUICK_QUIZ_FALLBACK_CARDS;
+  }, [quickQuizzes]);
 
   const exploreForYouMixed = useMemo(() => {
     if (!exploreForYou) return [];
@@ -443,17 +684,27 @@ export function ExploreScreen({ route }: Props) {
       setRecommendations(rec);
       setExploreForYou(forYou);
       try {
-        const contentRows = await getEducationalContent();
+        const [contentRows, quizRows] = await Promise.all([
+          getEducationalContent(),
+          Promise.all(
+            QUIZ_GAME_ENTRIES.filter((entry) => entry.category !== "mixed").map((entry) =>
+              getQuizzes({ category: entry.category }).catch(() => [])
+            )
+          ).then((groups) => groups.flat()),
+        ]);
         setLearningContent(contentRows);
+        setQuickQuizzes(quizRows);
       } catch {
         // No bloquea Explore si falla la sección educativa.
         setLearningContent([]);
+        setQuickQuizzes([]);
       }
     } catch {
       setError("No se pudo cargar Explorar.");
       setPosts([]);
       setHasMore(false);
       setLearningContent([]);
+      setQuickQuizzes([]);
       setRecommendations(null);
       setExploreForYou(null);
     } finally {
@@ -491,10 +742,19 @@ export function ExploreScreen({ route }: Props) {
       setRecommendations(rec);
       setExploreForYou(forYou);
       try {
-        const contentRows = await getEducationalContent();
+        const [contentRows, quizRows] = await Promise.all([
+          getEducationalContent(),
+          Promise.all(
+            QUIZ_GAME_ENTRIES.filter((entry) => entry.category !== "mixed").map((entry) =>
+              getQuizzes({ category: entry.category }).catch(() => [])
+            )
+          ).then((groups) => groups.flat()),
+        ]);
         setLearningContent(contentRows);
+        setQuickQuizzes(quizRows);
       } catch {
         setLearningContent([]);
+        setQuickQuizzes([]);
       }
       void loadContinueLearning().then(setContinueLearning);
     } catch {
@@ -611,9 +871,9 @@ export function ExploreScreen({ route }: Props) {
   }, [tabNavigation]);
 
   const openVisualGame = useCallback(
-    (category: "astronomy" | "geography") => {
+    (category: "astronomy" | "geography", gameId?: string) => {
       const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
-      root?.navigate("VisualGame", { category, difficulty: recommendedDifficulty });
+      root?.navigate("VisualGame", { category, difficulty: recommendedDifficulty, gameId });
     },
     [tabNavigation, recommendedDifficulty]
   );
@@ -738,6 +998,7 @@ export function ExploreScreen({ route }: Props) {
       onEndReachedThreshold={0.4}
       ListHeaderComponent={
         <View style={styles.listHeader}>
+          {screenTime.enabled ? <TimeUsageBar /> : null}
           {readOnly ? <ReadOnlyBanner /> : null}
           <View style={styles.exploreBrandRow} accessibilityRole="header" accessibilityLabel={APP_TAGLINE}>
             <BrandLogo width={36} height={36} />
@@ -807,8 +1068,18 @@ export function ExploreScreen({ route }: Props) {
                   if (row.kind === "content") {
                     const item = row.item;
                     return (
-                      <Pressable
+                      <ContentCard
                         key={`c-${item.id}`}
+                        id={item.id}
+                        title={item.title}
+                        description={item.description}
+                        type="learn"
+                        category={contentCardCategory(item.category)}
+                        difficulty={contentCardDifficulty(item.difficulty)}
+                        duration={8}
+                        xpReward={10}
+                        thumbnail={item.imageUrl ?? undefined}
+                        compact
                         onPress={() => {
                           if (readOnly) {
                             showToast(READ_ONLY_TOAST_MSG, "error");
@@ -816,20 +1087,8 @@ export function ExploreScreen({ route }: Props) {
                           }
                           openContentDetail(item.id);
                         }}
-                        style={({ pressed }) => [styles.recForYouLearnCard, pressed && styles.learnCardPressed]}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Abrir ${item.title}`}
-                      >
-                        <View style={styles.recForYouMixedBadge}>
-                          <Text style={styles.recForYouMixedBadgeText}>📚 Aprender</Text>
-                        </View>
-                        <Text numberOfLines={2} style={styles.recForYouLearnTitle}>
-                          {item.title}
-                        </Text>
-                        <Text style={styles.recForYouLearnMeta}>
-                          {item.category} · {item.difficulty}
-                        </Text>
-                      </Pressable>
+                        style={styles.recForYouLearnCard}
+                      />
                     );
                   }
                   const g = row.item;
@@ -928,100 +1187,85 @@ export function ExploreScreen({ route }: Props) {
               <Text style={styles.quizCtaText}>🧭 Quizzes por área (7 materias)</Text>
             </Pressable>
             <Text style={styles.gamesDifficultyHint}>
-              {viewerLevel != null ? (
-                <>
-                  Recomendado:{" "}
-                  <Text style={{ fontWeight: "800", color: colors.primary }}>{recommendedDifficulty}</Text>
-                  {" · nivel "}
-                  {viewerLevel}
-                  {" · podés elegir otra dificultad"}
-                </>
-              ) : (
-                <>
-                  Recomendado:{" "}
-                  <Text style={{ fontWeight: "800", color: colors.primary }}>{recommendedDifficulty}</Text>
-                  {" · iniciá sesión para ajustar según tu nivel"}
-                </>
-              )}
+              Conectado a /api/quizzes?category=X · fallback con preguntas reales si no hay datos.
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gamesCardsRow}>
               {orderedQuizEntries.map((entry) => (
-                <Pressable
+                <ContentCard
                   key={entry.category}
+                  id={`area-${entry.category}`}
+                  title={`${entry.icon} ${entry.title}`}
+                  description={`${entry.description}${entry.ageRange ? ` · ${entry.ageRange}` : ""}${
+                    entry.sampleQuestions?.[0] ? ` · Ej: ${entry.sampleQuestions[0]}` : ""
+                  }`}
+                  type="quiz"
+                  category={contentCardCategory(entry.category)}
+                  difficulty={entry.difficulty}
+                  duration={entry.category === "mixed" ? 5 : 8}
+                  xpReward={entry.difficulty === "medium" ? 18 : 15}
                   onPress={() => openQuizByCategory(entry.category)}
-                  style={({ pressed }) => [styles.gameCard, pressed && styles.gameCardPressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Abrir ${entry.title}`}
-                >
-                  <Text style={styles.gameCardTitle}>
-                    {entry.icon} {entry.title}
-                  </Text>
-                  <Text style={styles.gameCardMeta}>{entry.description}</Text>
-                  <View style={styles.gameDifficultyRow}>
-                    <View style={[styles.gameDifficultyChip, styles.gameDifficultyChipRecommended]}>
-                      <Text style={[styles.gameDifficultyChipText, styles.gameDifficultyChipTextRecommended]}>
-                        {recommendedDifficulty}
-                      </Text>
-                    </View>
-                  </View>
-                </Pressable>
+                  compact
+                  style={styles.gameCard}
+                />
               ))}
             </ScrollView>
           </View>
           <View style={styles.gamesSection}>
             <Text style={styles.gamesSectionTitle}>🎮 Juegos visuales</Text>
             <Text style={styles.gamesDifficultyHint}>
-              Preguntas con imagen · dificultad recomendada según tu nivel (
-              <Text style={{ fontWeight: "800", color: colors.primary }}>{recommendedDifficulty}</Text>)
+              Imágenes reales, progreso guardado y XP por nivel completado.
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gamesCardsRow}>
               {VISUAL_GAME_ENTRIES.map((entry) => (
-                <Pressable
-                  key={`visual-${entry.category}`}
-                  onPress={() => openVisualGame(entry.category)}
-                  style={({ pressed }) => [styles.gameCard, pressed && styles.gameCardPressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Abrir juego visual: ${entry.title}`}
-                >
-                  <Text style={styles.gameCardTitle}>{entry.title}</Text>
-                  <Text style={styles.gameCardMeta}>{entry.description}</Text>
-                  <View style={styles.gameDifficultyRow}>
-                    <View style={[styles.gameDifficultyChip, styles.gameDifficultyChipRecommended]}>
-                      <Text style={[styles.gameDifficultyChipText, styles.gameDifficultyChipTextRecommended]}>
-                        {recommendedDifficulty}
-                      </Text>
-                    </View>
-                  </View>
-                </Pressable>
+                <ContentCard
+                  key={`visual-${entry.gameId}`}
+                  id={entry.gameId}
+                  title={entry.title}
+                  description={`${entry.description} · ${entry.levels} niveles · ${entry.xpLabel}`}
+                  type="game"
+                  category={entry.cardCategory}
+                  difficulty={entry.cardDifficulty}
+                  duration={entry.levels}
+                  xpReward={entry.gameId === "identify-country" ? 15 : 10}
+                  onPress={() => openVisualGame(entry.category, entry.gameId)}
+                  compact
+                  style={styles.gameCard}
+                />
               ))}
             </ScrollView>
           </View>
           <View style={styles.learnSection}>
             <Text style={styles.learnSectionTitle}>📚 Aprender</Text>
-            <Pressable
-              onPress={openQuiz}
-              style={({ pressed }) => [styles.quizCtaBtn, pressed && styles.quizCtaBtnPressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Abrir quiz"
-            >
-              <Text style={styles.quizCtaText}>🧠 Quiz rápido</Text>
-            </Pressable>
+            <Text style={styles.gamesDifficultyHint}>Contenido desde /api/content · fallback educativo si no hay datos.</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.learnCardsRow}>
-              {learnRowsForExplore.map((item) => (
-                <Pressable
+              {learnCardsForExplore.map((item) => (
+                <ContentCard
                   key={item.id}
-                  onPress={() => openContentDetail(item.id)}
-                  style={({ pressed }) => [styles.learnCard, pressed && styles.learnCardPressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Abrir contenido ${item.title}`}
-                >
-                  <Text numberOfLines={2} style={styles.learnCardTitle}>
-                    {item.title}
-                  </Text>
-                  <Text style={styles.learnCardMeta}>
-                    {item.category} · {item.difficulty}
-                  </Text>
-                </Pressable>
+                  {...item}
+                  compact
+                  onPress={() => {
+                    if (item.contentId) {
+                      openContentDetail(item.contentId);
+                      return;
+                    }
+                    if (item.type === "quiz") openQuizByCategory(item.quizCategory ?? "math");
+                    else if (item.type === "game") openVisualGame("geography");
+                  }}
+                  style={styles.learnCard}
+                />
+              ))}
+            </ScrollView>
+            <Text style={[styles.learnSectionTitle, { marginTop: space.lg }]}>🎯 Quiz rápido</Text>
+            <Text style={styles.gamesDifficultyHint}>Quizzes desde /api/quizzes · tarjetas express si no hay datos.</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.learnCardsRow}>
+              {quickQuizCards.map((item) => (
+                <ContentCard
+                  key={item.id}
+                  {...item}
+                  compact
+                  onPress={() => openQuizByCategory(item.quizCategory ?? "mixed")}
+                  style={styles.learnCard}
+                />
               ))}
             </ScrollView>
           </View>

@@ -33,6 +33,7 @@ export async function getUserScreenTime(req: Request, res: Response): Promise<vo
       limitExceeded: state.limitExceeded,
       remainingSeconds: state.remainingSeconds,
       lastReset: state.lastReset.toISOString(),
+      isUnlimited: state.isUnlimited,
     });
   } catch (err) {
     logError("screenTime", err);
@@ -68,6 +69,7 @@ export async function postUserScreenTimeTick(req: Request, res: Response): Promi
       limitExceeded: state.limitExceeded,
       remainingSeconds: state.remainingSeconds,
       lastReset: state.lastReset.toISOString(),
+      isUnlimited: state.isUnlimited,
     });
   } catch (err) {
     logError("screenTime", err);

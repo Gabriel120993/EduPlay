@@ -17,6 +17,7 @@ import { postRouter } from "./routes/post.routes";
 import { reactionRouter } from "./routes/reaction.routes";
 import { userAchievementRouter } from "./routes/userAchievement.routes";
 import { apiRouter } from "./routes";
+import { serveImageProxy } from "./controllers/imageProxy.controller";
 
 export function createApp() {
   const app = express();
@@ -37,6 +38,16 @@ export function createApp() {
       docs: "/api/health",
     });
   });
+
+  /**
+   * Proxy/caché de imágenes (público, sin auth) para que `<img>` pueda cargarlas
+   * sin token. Se sirve con el mismo origen del API: evita CORS / referer / 429 de CDNs.
+   *
+   * IMPORTANTE: se registra ANTES del `apiGeneralLimiter` porque las imágenes son
+   * estáticas, cacheables y un único feed puede pedir docenas a la vez (no debe
+   * consumir el rate-limit general de la API).
+   */
+  app.get("/api/image-proxy/:asset", serveImageProxy);
 
   /** Mismo limitador por IP en prefijos usados por la app (comparten contador `api:<ip>`). */
   app.use("/api", apiGeneralLimiter);
