@@ -2,7 +2,10 @@ import { useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
 import { useAuth } from "../contexts/AuthContext";
-import { clearLocalNotificationSchedules, syncLocalNotifications } from "../services/localNotifications";
+import {
+  clearLocalNotificationSchedules,
+  syncLocalNotifications,
+} from "../services/localNotifications";
 
 /**
  * Programa notificaciones locales: inactividad 24h y desafíos diarios pendientes (según API).

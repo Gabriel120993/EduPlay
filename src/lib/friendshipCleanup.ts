@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import { prisma } from './prisma';
 
 /** Elimina filas de amistad en ambas direcciones entre dos usuarios. */
 export async function removeFriendshipPair(userIdA: string, userIdB: string): Promise<void> {

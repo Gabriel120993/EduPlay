@@ -1,23 +1,23 @@
-import type { Request, Response } from "express";
-import { ContentCategory } from "@prisma/client";
-import { CONTENT_CATEGORY_VALUES, parseContentCategory } from "../lib/contentCategory";
-import { userBelongsToParent } from "../lib/parentChildAccess";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
+import type { Request, Response } from 'express';
+import { ContentCategory } from '@prisma/client';
+import { CONTENT_CATEGORY_VALUES, parseContentCategory } from '../lib/contentCategory';
+import { userBelongsToParent } from '../lib/parentChildAccess';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
 
 /** Todas las categorías de contenido pueden elegirse en onboarding. */
 const ONBOARDING_INTERESTS = new Set<ContentCategory>(CONTENT_CATEGORY_VALUES);
 const MIN_ONBOARDING_INTERESTS = 3;
 /** Puntuación inicial al completar el onboarding por cada categoría elegida (create o update). */
 const ONBOARDING_INITIAL_SCORE = 20;
-const FIRST_ACTIONS_MINOR = new Set(["PLAY_GAME", "FOLLOW_USERS"]);
-const FIRST_ACTION_PARENT_ONBOARDING = "ADD_MINOR";
+const FIRST_ACTIONS_MINOR = new Set(['PLAY_GAME', 'FOLLOW_USERS']);
+const FIRST_ACTION_PARENT_ONBOARDING = 'ADD_MINOR';
 
 /** Menor: solo su propio `userId`. Padre: hijo de su cuenta. */
 async function assertCanAccessOnboardingUser(req: Request, userId: string): Promise<boolean> {
   const auth = req.auth;
   if (!auth) return false;
-  if (auth.kind === "child") {
+  if (auth.kind === 'child') {
     return auth.userId === userId;
   }
   return userBelongsToParent(userId, auth.parentId);
@@ -26,17 +26,17 @@ async function assertCanAccessOnboardingUser(req: Request, userId: string): Prom
 export async function getUserOnboardingStatus(req: Request, res: Response): Promise<void> {
   const userId = req.params.id?.trim();
   if (!req.auth) {
-    res.status(401).json({ error: "No autenticado." });
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
   if (!userId) {
-    res.status(400).json({ error: "id de usuario es obligatorio." });
+    res.status(400).json({ error: 'id de usuario es obligatorio.' });
     return;
   }
 
   const ok = await assertCanAccessOnboardingUser(req, userId);
   if (!ok) {
-    res.status(404).json({ error: "Usuario no encontrado." });
+    res.status(404).json({ error: 'Usuario no encontrado.' });
     return;
   }
 
@@ -51,7 +51,7 @@ export async function getUserOnboardingStatus(req: Request, res: Response): Prom
         parent: {
           select: {
             children: {
-              where: { type: "minor" },
+              where: { type: 'minor' },
               select: { id: true },
             },
           },
@@ -69,8 +69,8 @@ export async function getUserOnboardingStatus(req: Request, res: Response): Prom
       hasMinors,
     });
   } catch (err) {
-    logError("onboarding", err);
-    res.status(500).json({ error: "Error al leer el onboarding." });
+    logError('onboarding', err);
+    res.status(500).json({ error: 'Error al leer el onboarding.' });
   }
 }
 
@@ -82,21 +82,23 @@ type OnboardingBody = {
 export async function postUserOnboarding(req: Request, res: Response): Promise<void> {
   const userId = req.params.id?.trim();
   if (!req.auth) {
-    res.status(401).json({ error: "No autenticado." });
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
   if (!userId) {
-    res.status(400).json({ error: "id de usuario es obligatorio." });
+    res.status(400).json({ error: 'id de usuario es obligatorio.' });
     return;
   }
 
   const body = req.body as OnboardingBody;
-  const interests = Array.isArray(body?.interests) ? body.interests.map((x) => String(x).trim()) : [];
-  const firstAction = typeof body?.firstAction === "string" ? body.firstAction.trim() : "";
+  const interests = Array.isArray(body?.interests)
+    ? body.interests.map((x) => String(x).trim())
+    : [];
+  const firstAction = typeof body?.firstAction === 'string' ? body.firstAction.trim() : '';
 
   const ok = await assertCanAccessOnboardingUser(req, userId);
   if (!ok) {
-    res.status(404).json({ error: "Usuario no encontrado." });
+    res.status(404).json({ error: 'Usuario no encontrado.' });
     return;
   }
 
@@ -105,7 +107,7 @@ export async function postUserOnboarding(req: Request, res: Response): Promise<v
     select: { type: true, parentId: true, onboardingCompletedAt: true },
   });
   if (!subject) {
-    res.status(404).json({ error: "Usuario no encontrado." });
+    res.status(404).json({ error: 'Usuario no encontrado.' });
     return;
   }
   if (subject.onboardingCompletedAt) {
@@ -114,16 +116,18 @@ export async function postUserOnboarding(req: Request, res: Response): Promise<v
   }
 
   /** Tutor (`User.type === parent`): completar sin intereses; requiere al menos un menor. */
-  if (subject.type === "parent") {
+  if (subject.type === 'parent') {
     if (firstAction !== FIRST_ACTION_PARENT_ONBOARDING) {
-      res.status(400).json({ error: `firstAction del tutor debe ser ${FIRST_ACTION_PARENT_ONBOARDING}.` });
+      res
+        .status(400)
+        .json({ error: `firstAction del tutor debe ser ${FIRST_ACTION_PARENT_ONBOARDING}.` });
       return;
     }
     const minorCount = await prisma.user.count({
-      where: { parentId: subject.parentId, type: "minor" },
+      where: { parentId: subject.parentId, type: 'minor' },
     });
     if (minorCount < 1) {
-      res.status(400).json({ error: "Agregá al menos un perfil de hijo antes de continuar." });
+      res.status(400).json({ error: 'Agregá al menos un perfil de hijo antes de continuar.' });
       return;
     }
     try {
@@ -136,8 +140,8 @@ export async function postUserOnboarding(req: Request, res: Response): Promise<v
       });
       res.status(201).json({ ok: true });
     } catch (err) {
-      logError("onboarding", err);
-      res.status(500).json({ error: "Error al guardar onboarding del tutor." });
+      logError('onboarding', err);
+      res.status(500).json({ error: 'Error al guardar onboarding del tutor.' });
     }
     return;
   }
@@ -162,7 +166,7 @@ export async function postUserOnboarding(req: Request, res: Response): Promise<v
     return;
   }
   if (!FIRST_ACTIONS_MINOR.has(firstAction)) {
-    res.status(400).json({ error: "firstAction debe ser PLAY_GAME o FOLLOW_USERS." });
+    res.status(400).json({ error: 'firstAction debe ser PLAY_GAME o FOLLOW_USERS.' });
     return;
   }
 
@@ -199,7 +203,7 @@ export async function postUserOnboarding(req: Request, res: Response): Promise<v
 
     res.status(201).json({ ok: true });
   } catch (err) {
-    logError("onboarding", err);
-    res.status(500).json({ error: "Error al guardar preferencias." });
+    logError('onboarding', err);
+    res.status(500).json({ error: 'Error al guardar preferencias.' });
   }
 }

@@ -14,10 +14,11 @@ export function ParentIapProvider({ children }: { children: ReactNode }) {
       purchaseProduct: async () => {},
       restorePurchases: async () => ({
         ok: false,
-        message: "Las compras in-app están disponibles en la app para iOS o Android, no en el navegador.",
+        message:
+          "Las compras in-app están disponibles en la app para iOS o Android, no en el navegador.",
       }),
     }),
-    []
+    [],
   );
 
   return <ParentIapContext.Provider value={value}>{children}</ParentIapContext.Provider>;

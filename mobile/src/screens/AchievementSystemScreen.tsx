@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Linking,
@@ -13,7 +14,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-import { AppIcon } from "../components/AppIcon";
 import { API_BASE_URL } from "../config";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -45,6 +45,7 @@ function fullUrl(path: string): string {
 }
 
 export function AchievementSystemScreen() {
+  const { t } = useTranslation();
   const { colors, mode } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
@@ -53,7 +54,9 @@ export function AchievementSystemScreen() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<Awaited<ReturnType<typeof getAchievementSystemOverview>> | null>(null);
+  const [data, setData] = useState<Awaited<ReturnType<typeof getAchievementSystemOverview>> | null>(
+    null,
+  );
   const [tab, setTab] = useState<AchievementSystemKindApi | "ALL">("ALL");
   const [peerId, setPeerId] = useState("");
   const [compareText, setCompareText] = useState<string | null>(null);
@@ -91,7 +94,9 @@ export function AchievementSystemScreen() {
     if (!userId) return;
     try {
       const r = await patchAchievementProfileVisibility(userId, v);
-      setData((prev) => (prev ? { ...prev, achievementsPublicOnProfile: r.achievementsPublicOnProfile } : prev));
+      setData((prev) =>
+        prev ? { ...prev, achievementsPublicOnProfile: r.achievementsPublicOnProfile } : prev,
+      );
     } catch {
       /* toast opcional */
     }
@@ -103,7 +108,7 @@ export function AchievementSystemScreen() {
     try {
       const r = await getAchievementSystemCompare(userId, pid);
       setCompareText(
-        `vs ${r.peer.username} (nv.${r.peer.level}): vos ${r.you.unlocked} · ${r.peer.username} ${r.peer.unlocked} · Δ ${r.delta >= 0 ? "+" : ""}${r.delta}`
+        `vs ${r.peer.username} (nv.${r.peer.level}): vos ${r.you.unlocked} · ${r.peer.username} ${r.peer.unlocked} · Δ ${r.delta >= 0 ? "+" : ""}${r.delta}`,
       );
     } catch (e) {
       setCompareText(formatApiError(e, "No se pudo comparar."));
@@ -133,11 +138,22 @@ export function AchievementSystemScreen() {
         }}
       >
         <Text style={{ fontSize: 22, textAlign: "center" }}>{item.badge.icon}</Text>
-        <Text style={{ color: colors.text, fontWeight: "800", fontSize: 11, marginTop: 4, textAlign: "center" }} numberOfLines={3}>
+        <Text
+          style={{
+            color: colors.text,
+            fontWeight: "800",
+            fontSize: 11,
+            marginTop: 4,
+            textAlign: "center",
+          }}
+          numberOfLines={3}
+        >
           {item.displayTitle}
         </Text>
         {item.hidden ? (
-          <Text style={{ color: colors.textMuted, fontSize: 9, textAlign: "center", marginTop: 2 }}>Oculto</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 9, textAlign: "center", marginTop: 2 }}>
+            Oculto
+          </Text>
         ) : null}
       </View>
     );
@@ -145,7 +161,15 @@ export function AchievementSystemScreen() {
 
   if (!userId) {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top, justifyContent: "center", alignItems: "center", padding: space.lg }}>
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          justifyContent: "center",
+          alignItems: "center",
+          padding: space.lg,
+        }}
+      >
         <Text style={{ color: colors.text }}>Iniciá sesión como menor para ver logros.</Text>
       </View>
     );
@@ -153,15 +177,30 @@ export function AchievementSystemScreen() {
 
   if (loading && !data) {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.primary} />
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: colors.background,
+        }}
+      >
+        <ActivityIndicator color={colors.primary} accessibilityLabel={t("profile.loading")} />
       </View>
     );
   }
 
   if (error && !data) {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top, padding: space.lg, backgroundColor: colors.background }}>
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          padding: space.lg,
+          backgroundColor: colors.background,
+        }}
+      >
         <Text style={{ color: colors.error }}>{error}</Text>
         <Pressable onPress={() => void load()} style={{ marginTop: space.md }}>
           <Text style={{ color: colors.link, fontWeight: "800" }}>Reintentar</Text>
@@ -187,14 +226,31 @@ export function AchievementSystemScreen() {
         <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
           <Text style={{ color: colors.link, fontWeight: "900", fontSize: 16 }}>‹ Volver</Text>
         </Pressable>
-        <Text style={{ flex: 1, marginLeft: space.sm, color: colors.text, fontWeight: "900", fontSize: 18 }} numberOfLines={1}>
-          Mural de logros
+        <Text
+          style={{
+            flex: 1,
+            marginLeft: space.sm,
+            color: colors.text,
+            fontWeight: "900",
+            fontSize: 18,
+          }}
+          numberOfLines={1}
+          allowFontScaling
+          maxFontSizeMultiplier={1.5}
+        >
+          {t("profile.title")}
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: screenEdge.horizontal, paddingBottom: insets.bottom + space.xl }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: screenEdge.horizontal,
+          paddingBottom: insets.bottom + space.xl,
+        }}
+      >
         <Text style={{ color: colors.textMuted, fontWeight: "600", marginBottom: space.md }}>
-          Nivel {data.level} · {data.levelTier.tierName} ({data.levelTier.tierBand}) · insignias {data.levelTier.badgeStyle}
+          Nivel {data.level} · {data.levelTier.tierName} ({data.levelTier.tierBand}) · insignias{" "}
+          {data.levelTier.badgeStyle}
         </Text>
 
         <View
@@ -211,12 +267,17 @@ export function AchievementSystemScreen() {
           }}
         >
           <View style={{ flex: 1, paddingRight: space.md }}>
-            <Text style={{ color: colors.text, fontWeight: "800" }}>Mostrar logros en perfil público</Text>
+            <Text style={{ color: colors.text, fontWeight: "800" }}>
+              Mostrar logros en perfil público
+            </Text>
             <Text style={{ color: colors.textMuted, fontSize: typography.secondary, marginTop: 4 }}>
               Opcional: amigos pueden ver tu mural cuando la app lo habilite.
             </Text>
           </View>
-          <Switch value={data.achievementsPublicOnProfile} onValueChange={(v) => void onTogglePublic(v)} />
+          <Switch
+            value={data.achievementsPublicOnProfile}
+            onValueChange={(v) => void onTogglePublic(v)}
+          />
         </View>
 
         <Text style={{ color: colors.text, fontWeight: "900", marginBottom: space.sm }}>
@@ -225,7 +286,16 @@ export function AchievementSystemScreen() {
 
         {data.collections.length > 0 ? (
           <>
-            <Text style={{ color: colors.text, fontWeight: "900", marginTop: space.md, marginBottom: space.sm }}>Colecciones</Text>
+            <Text
+              style={{
+                color: colors.text,
+                fontWeight: "900",
+                marginTop: space.md,
+                marginBottom: space.sm,
+              }}
+            >
+              Colecciones
+            </Text>
             {data.collections.map((c) => (
               <View key={c.key} style={{ marginBottom: space.sm }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -238,7 +308,14 @@ export function AchievementSystemScreen() {
                     </Pressable>
                   ) : null}
                 </View>
-                <View style={{ height: 8, backgroundColor: colors.ghostBg, borderRadius: 4, marginTop: 4 }}>
+                <View
+                  style={{
+                    height: 8,
+                    backgroundColor: colors.ghostBg,
+                    borderRadius: 4,
+                    marginTop: 4,
+                  }}
+                >
                   <View
                     style={{
                       width: `${c.total > 0 ? Math.min(100, (c.unlocked / c.total) * 100) : 0}%`,
@@ -253,7 +330,16 @@ export function AchievementSystemScreen() {
           </>
         ) : null}
 
-        <Text style={{ color: colors.text, fontWeight: "900", marginTop: space.lg, marginBottom: space.sm }}>Comparar con amigo</Text>
+        <Text
+          style={{
+            color: colors.text,
+            fontWeight: "900",
+            marginTop: space.lg,
+            marginBottom: space.sm,
+          }}
+        >
+          Comparar con amigo
+        </Text>
         <TextInput
           value={peerId}
           onChangeText={setPeerId}
@@ -281,11 +367,26 @@ export function AchievementSystemScreen() {
           <Text style={{ color: colors.textOnPrimary, fontWeight: "900" }}>Comparar</Text>
         </Pressable>
         {compareText ? (
-          <Text style={{ color: colors.textSecondary, marginTop: space.sm, fontWeight: "600" }}>{compareText}</Text>
+          <Text style={{ color: colors.textSecondary, marginTop: space.sm, fontWeight: "600" }}>
+            {compareText}
+          </Text>
         ) : null}
 
-        <Text style={{ color: colors.text, fontWeight: "900", marginTop: space.lg, marginBottom: space.sm }}>Filtro</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm, marginBottom: space.md }}>
+        <Text
+          style={{
+            color: colors.text,
+            fontWeight: "900",
+            marginTop: space.lg,
+            marginBottom: space.sm,
+          }}
+        >
+          Filtro
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: space.sm, marginBottom: space.md }}
+        >
           <Pressable
             onPress={() => setTab("ALL")}
             style={{
@@ -297,7 +398,14 @@ export function AchievementSystemScreen() {
               borderColor: tab === "ALL" ? colors.chipActiveBorder : colors.chipBorder,
             }}
           >
-            <Text style={{ color: tab === "ALL" ? colors.chipTextActive : colors.chipText, fontWeight: "800" }}>Todos</Text>
+            <Text
+              style={{
+                color: tab === "ALL" ? colors.chipTextActive : colors.chipText,
+                fontWeight: "800",
+              }}
+            >
+              Todos
+            </Text>
           </Pressable>
           {(Object.keys(KIND_LABEL) as AchievementSystemKindApi[]).map((k) => (
             <Pressable
@@ -312,15 +420,30 @@ export function AchievementSystemScreen() {
                 borderColor: tab === k ? colors.chipActiveBorder : colors.chipBorder,
               }}
             >
-              <Text style={{ color: tab === k ? colors.chipTextActive : colors.chipText, fontWeight: "800" }}>{KIND_LABEL[k]}</Text>
+              <Text
+                style={{
+                  color: tab === k ? colors.chipTextActive : colors.chipText,
+                  fontWeight: "800",
+                }}
+              >
+                {KIND_LABEL[k]}
+              </Text>
             </Pressable>
           ))}
         </ScrollView>
 
-        <Text style={{ color: colors.textMuted, fontSize: typography.secondary, marginBottom: space.sm }}>
+        <Text
+          style={{
+            color: colors.textMuted,
+            fontSize: typography.secondary,
+            marginBottom: space.sm,
+          }}
+        >
           Trofeos y coleccionables 3D (vista mural)
         </Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>{filteredItems.map(renderTile)}</View>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
+          {filteredItems.map(renderTile)}
+        </View>
       </ScrollView>
     </View>
   );

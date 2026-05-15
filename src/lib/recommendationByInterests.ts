@@ -1,9 +1,13 @@
-import { ContentCategory } from "@prisma/client";
+import { ContentCategory } from '@prisma/client';
 
-import { CONTENT_CATEGORY_VALUES, educationalCategoryToContentCategory, parseContentCategory } from "./contentCategory";
-import { pickDiverseByCategory } from "./recommendationDiversity";
-import { prisma } from "./prisma";
-import { getTopUserInterests, getUserInterestScoreMap } from "./userInterest";
+import {
+  CONTENT_CATEGORY_VALUES,
+  educationalCategoryToContentCategory,
+  parseContentCategory,
+} from './contentCategory';
+import { pickDiverseByCategory } from './recommendationDiversity';
+import { prisma } from './prisma';
+import { getTopUserInterests, getUserInterestScoreMap } from './userInterest';
 
 /** Límite por defecto de ítems por lista (entre 5 y 10). */
 export const DEFAULT_RECOMMENDATION_LIMIT = 8;
@@ -23,7 +27,8 @@ function clampLimit(n: number | undefined): number {
 
 /** Query `?limit=` entre 5 y 10; si falta o es inválido → default 8. */
 export function parseRecommendationLimitFromQuery(raw: unknown): number {
-  const q = typeof raw === "string" ? raw : Array.isArray(raw) && raw[0] != null ? String(raw[0]) : "";
+  const q =
+    typeof raw === 'string' ? raw : Array.isArray(raw) && raw[0] != null ? String(raw[0]) : '';
   const n = q.trim() ? Number.parseInt(q.trim(), 10) : NaN;
   if (!Number.isFinite(n)) return DEFAULT_RECOMMENDATION_LIMIT;
   return clampLimit(n);
@@ -36,7 +41,10 @@ export function splitInterestDiscovery(limit: number): { interest: number; disco
   return { interest: Math.max(0, interest), discovery: Math.max(0, discovery) };
 }
 
-function interestScoreForCategory(scoreMap: Map<ContentCategory, number>, rawCategory: string): number {
+function interestScoreForCategory(
+  scoreMap: Map<ContentCategory, number>,
+  rawCategory: string,
+): number {
   const cc = categoryStringToEnum(rawCategory);
   if (!cc) return 0;
   return scoreMap.get(cc) ?? 0;
@@ -49,7 +57,7 @@ function sortByInterestRecencyRandom<T>(
   items: T[],
   scoreMap: Map<ContentCategory, number>,
   getCategoryRaw: (t: T) => string,
-  getCreatedAt: (t: T) => Date
+  getCreatedAt: (t: T) => Date,
 ): T[] {
   const decorated = items.map((t) => ({
     t,
@@ -98,7 +106,9 @@ export async function getRecommendationCategoriesContext(userId: string): Promis
 /**
  * Top 2–3 categorías por score; si no hay intereses, todas las canónicas (compatibilidad).
  */
-export async function getTopCategoriesForRecommendations(userId: string): Promise<ContentCategory[]> {
+export async function getTopCategoriesForRecommendations(
+  userId: string,
+): Promise<ContentCategory[]> {
   const ctx = await getRecommendationCategoriesContext(userId);
   return ctx.topCategories;
 }
@@ -113,7 +123,7 @@ export type RecommendedEducationalDto = {
   title: string;
   description: string;
   category: string;
-  difficulty: import("@prisma/client").Difficulty;
+  difficulty: import('@prisma/client').Difficulty;
   imageUrl: string | null;
   createdAt: string;
 };
@@ -123,7 +133,7 @@ type EduRow = {
   title: string;
   description: string;
   category: string;
-  difficulty: import("@prisma/client").Difficulty;
+  difficulty: import('@prisma/client').Difficulty;
   imageUrl: string | null;
   createdAt: Date;
 };
@@ -149,13 +159,13 @@ export async function fetchRecommendedEducationalContent(
   userId: string,
   topCategories: ContentCategory[],
   limit: number,
-  hasInterestProfile: boolean
+  hasInterestProfile: boolean,
 ): Promise<RecommendedEducationalDto[]> {
   const take = clampLimit(limit);
   const scoreMap = await getUserInterestScoreMap(userId);
 
   const pool = await prisma.educationalContent.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: FETCH_BUFFER,
     select: {
       id: true,
@@ -170,9 +180,15 @@ export async function fetchRecommendedEducationalContent(
 
   if (!hasInterestProfile) {
     const catKey = (row: EduRow) =>
-      (categoryStringToEnum(row.category)?.toString() ?? row.category.trim().toLowerCase()) || "__none__";
+      (categoryStringToEnum(row.category)?.toString() ?? row.category.trim().toLowerCase()) ||
+      '__none__';
     const picked = pickDiverseByCategory(pool, take, catKey, (row) => row.createdAt.getTime());
-    const sorted = sortByInterestRecencyRandom(picked, scoreMap, (r) => r.category, (r) => r.createdAt);
+    const sorted = sortByInterestRecencyRandom(
+      picked,
+      scoreMap,
+      (r) => r.category,
+      (r) => r.createdAt,
+    );
     return sorted.map(mapEducationalRow);
   }
 
@@ -181,13 +197,15 @@ export async function fetchRecommendedEducationalContent(
 
   const byRecent = (a: EduRow, b: EduRow) => b.createdAt.getTime() - a.createdAt.getTime();
 
-  let interestPool = pool.filter((row) => matchesCategorySet(row.category, topCategories)).sort(byRecent);
+  const interestPool = pool
+    .filter((row) => matchesCategorySet(row.category, topCategories))
+    .sort(byRecent);
   let discoveryPool =
     others.length > 0
       ? pool.filter((row) => matchesCategorySet(row.category, others)).sort(byRecent)
       : [];
 
-  let pickedInterest = interestPool.slice(0, nInterest);
+  const pickedInterest = interestPool.slice(0, nInterest);
   const interestIds = new Set(pickedInterest.map((r) => r.id));
 
   /** Sin “otras” categorías: descubrimiento = otros ítems recientes fuera del tramo de interés. */
@@ -195,7 +213,7 @@ export async function fetchRecommendedEducationalContent(
     discoveryPool = pool.filter((row) => !interestIds.has(row.id)).sort(byRecent);
   }
 
-  let pickedDiscovery = discoveryPool.slice(0, nDiscovery);
+  const pickedDiscovery = discoveryPool.slice(0, nDiscovery);
 
   let combined: EduRow[] = [...pickedInterest, ...pickedDiscovery];
   const seen = new Set(combined.map((r) => r.id));
@@ -211,12 +229,17 @@ export async function fetchRecommendedEducationalContent(
   }
 
   combined = combined.slice(0, take);
-  const sorted = sortByInterestRecencyRandom(combined, scoreMap, (r) => r.category, (r) => r.createdAt);
+  const sorted = sortByInterestRecencyRandom(
+    combined,
+    scoreMap,
+    (r) => r.category,
+    (r) => r.createdAt,
+  );
   return sorted.map(mapEducationalRow);
 }
 
 export type RecommendedQuizItem = {
-  kind: "quiz";
+  kind: 'quiz';
   id: string;
   category: string;
   difficulty: string;
@@ -225,7 +248,7 @@ export type RecommendedQuizItem = {
 };
 
 export type RecommendedVisualItem = {
-  kind: "visual";
+  kind: 'visual';
   id: string;
   category: string;
   difficulty: string;
@@ -239,12 +262,12 @@ export type RecommendedGameMixItem = RecommendedQuizItem | RecommendedVisualItem
 function quizToMix(q: {
   id: string;
   category: string;
-  difficulty: import("@prisma/client").Difficulty;
+  difficulty: import('@prisma/client').Difficulty;
   question: string;
   createdAt: Date;
 }): RecommendedQuizItem {
   return {
-    kind: "quiz",
+    kind: 'quiz',
     id: q.id,
     category: q.category,
     difficulty: String(q.difficulty),
@@ -256,13 +279,13 @@ function quizToMix(q: {
 function visualToMix(v: {
   id: string;
   category: string;
-  difficulty: import("@prisma/client").Difficulty;
+  difficulty: import('@prisma/client').Difficulty;
   question: string;
   imageUrl: string;
   createdAt: Date;
 }): RecommendedVisualItem {
   return {
-    kind: "visual",
+    kind: 'visual',
     id: v.id,
     category: v.category,
     difficulty: String(v.difficulty),
@@ -273,16 +296,22 @@ function visualToMix(v: {
 }
 
 function buildGameMixFromPools(
-  quizPool: { id: string; category: string; difficulty: import("@prisma/client").Difficulty; question: string; createdAt: Date }[],
+  quizPool: {
+    id: string;
+    category: string;
+    difficulty: import('@prisma/client').Difficulty;
+    question: string;
+    createdAt: Date;
+  }[],
   visualPool: {
     id: string;
     category: string;
-    difficulty: import("@prisma/client").Difficulty;
+    difficulty: import('@prisma/client').Difficulty;
     question: string;
     imageUrl: string;
     createdAt: Date;
   }[],
-  allowed: ContentCategory[]
+  allowed: ContentCategory[],
 ): RecommendedGameMixItem[] {
   const mixed: RecommendedGameMixItem[] = [];
   for (const q of quizPool) {
@@ -297,17 +326,17 @@ function buildGameMixFromPools(
 }
 
 type GameCand =
-  | ({ kind: "quiz" } & {
+  | ({ kind: 'quiz' } & {
       id: string;
       category: string;
-      difficulty: import("@prisma/client").Difficulty;
+      difficulty: import('@prisma/client').Difficulty;
       question: string;
       createdAt: Date;
     })
-  | ({ kind: "visual" } & {
+  | ({ kind: 'visual' } & {
       id: string;
       category: string;
-      difficulty: import("@prisma/client").Difficulty;
+      difficulty: import('@prisma/client').Difficulty;
       question: string;
       imageUrl: string;
       createdAt: Date;
@@ -322,14 +351,14 @@ export async function fetchRecommendedQuizAndVisual(
   userId: string,
   topCategories: ContentCategory[],
   limit: number,
-  hasInterestProfile: boolean
+  hasInterestProfile: boolean,
 ): Promise<RecommendedGameMixItem[]> {
   const take = clampLimit(limit);
   const scoreMap = await getUserInterestScoreMap(userId);
 
   const [quizPool, visualPool] = await Promise.all([
     prisma.quizQuestion.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: FETCH_BUFFER,
       select: {
         id: true,
@@ -340,7 +369,7 @@ export async function fetchRecommendedQuizAndVisual(
       },
     }),
     prisma.visualQuestion.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: FETCH_BUFFER,
       select: {
         id: true,
@@ -355,29 +384,34 @@ export async function fetchRecommendedQuizAndVisual(
 
   if (!hasInterestProfile) {
     const candidates: GameCand[] = [
-      ...quizPool.map((q) => ({ kind: "quiz" as const, ...q })),
-      ...visualPool.map((v) => ({ kind: "visual" as const, ...v })),
+      ...quizPool.map((q) => ({ kind: 'quiz' as const, ...q })),
+      ...visualPool.map((v) => ({ kind: 'visual' as const, ...v })),
     ];
     const catKey = (c: GameCand) =>
-      (categoryStringToEnum(c.category)?.toString() ?? c.category.trim().toLowerCase()) || "__none__";
+      (categoryStringToEnum(c.category)?.toString() ?? c.category.trim().toLowerCase()) ||
+      '__none__';
     const picked = pickDiverseByCategory(candidates, take, catKey, (c) => c.createdAt.getTime());
-    const sorted = sortByInterestRecencyRandom(picked, scoreMap, (c) => c.category, (c) => c.createdAt);
-    return sorted.map((c) => (c.kind === "quiz" ? quizToMix(c) : visualToMix(c)));
+    const sorted = sortByInterestRecencyRandom(
+      picked,
+      scoreMap,
+      (c) => c.category,
+      (c) => c.createdAt,
+    );
+    return sorted.map((c) => (c.kind === 'quiz' ? quizToMix(c) : visualToMix(c)));
   }
 
   const { interest: nInterest, discovery: nDiscovery } = splitInterestDiscovery(take);
   const others = discoveryCategories(topCategories);
 
-  let interestMix = buildGameMixFromPools(quizPool, visualPool, topCategories);
-  let pickedInterest = interestMix.slice(0, nInterest);
+  const interestMix = buildGameMixFromPools(quizPool, visualPool, topCategories);
+  const pickedInterest = interestMix.slice(0, nInterest);
   const interestKeys = new Set(pickedInterest.map((x) => `${x.kind}:${x.id}`));
 
-  let discoveryMix =
-    others.length > 0
-      ? buildGameMixFromPools(quizPool, visualPool, others)
-      : [];
+  let discoveryMix = others.length > 0 ? buildGameMixFromPools(quizPool, visualPool, others) : [];
 
-  let pickedDiscovery = discoveryMix.filter((x) => !interestKeys.has(`${x.kind}:${x.id}`)).slice(0, nDiscovery);
+  let pickedDiscovery = discoveryMix
+    .filter((x) => !interestKeys.has(`${x.kind}:${x.id}`))
+    .slice(0, nDiscovery);
 
   if (others.length === 0) {
     const allMix = buildGameMixFromPools(quizPool, visualPool, CONTENT_CATEGORY_VALUES);
@@ -390,7 +424,7 @@ export async function fetchRecommendedQuizAndVisual(
 
   if (combined.length < take) {
     const fallback = buildGameMixFromPools(quizPool, visualPool, CONTENT_CATEGORY_VALUES).filter(
-      (x) => !seen.has(`${x.kind}:${x.id}`)
+      (x) => !seen.has(`${x.kind}:${x.id}`),
     );
     for (const x of fallback) {
       if (combined.length >= take) break;
@@ -405,6 +439,6 @@ export async function fetchRecommendedQuizAndVisual(
     combined,
     scoreMap,
     (x) => x.category,
-    (x) => new Date(x.createdAt)
+    (x) => new Date(x.createdAt),
   );
 }

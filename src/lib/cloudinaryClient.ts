@@ -1,6 +1,6 @@
-import { v2 as cloudinary } from "cloudinary";
+import { v2 as cloudinary } from 'cloudinary';
 
-import { env, isCloudinaryConfigured } from "../config/env";
+import { env, isCloudinaryConfigured } from '../config/env';
 
 export { isCloudinaryConfigured };
 

@@ -1,9 +1,9 @@
-import type { OwnedPostRef } from "../middlewares/resourceOwnership.middleware";
+import type { OwnedPostRef } from '../middlewares/resourceOwnership.middleware';
 
 /** Claims de sesión establecidos tras `requireAuth` (JWT). */
 export type RequestAuth =
-  | { kind: "parent"; parentId: string; email: string }
-  | { kind: "child"; userId: string; username: string };
+  | { kind: 'parent'; parentId: string; email: string }
+  | { kind: 'child'; userId: string; username: string };
 
 declare global {
   namespace Express {
@@ -11,7 +11,7 @@ declare global {
       /** Relleno por `auth.middleware` tras JWT válido. */
       auth?: RequestAuth;
       /** `parent` \| `child`; alineado con `req.auth`. */
-      role?: "parent" | "child";
+      role?: 'parent' | 'child';
       /** Usuario admin verificado por `role.middleware` / `requireAdmin`. */
       adminUserId?: string;
       /** Identificador de correlación (p. ej. request logger). */

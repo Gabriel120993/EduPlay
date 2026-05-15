@@ -9,7 +9,10 @@ export function ReadOnlyBanner() {
   const { colors } = useTheme();
   return (
     <View
-      style={[styles.wrap, { backgroundColor: colors.warnBannerBg, borderBottomColor: colors.warnBannerBorder }]}
+      style={[
+        styles.wrap,
+        { backgroundColor: colors.warnBannerBg, borderBottomColor: colors.warnBannerBorder },
+      ]}
       accessibilityRole="text"
     >
       <Text style={[styles.text, { color: colors.warnBannerText }]}>{READ_ONLY_BANNER_TEXT}</Text>

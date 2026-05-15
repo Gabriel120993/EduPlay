@@ -40,9 +40,7 @@ export function RootNavigator({ onLogout }: { onLogout: () => void }) {
       }}
     >
       <Stack.Screen name="Main" options={{ headerShown: false }}>
-        {() => (
-          <MainTabNavigator onLogout={onLogout} viewerUserId={viewerUserId ?? undefined} />
-        )}
+        {() => <MainTabNavigator onLogout={onLogout} viewerUserId={viewerUserId ?? undefined} />}
       </Stack.Screen>
       <Stack.Screen
         name="Settings"
@@ -117,7 +115,9 @@ export function RootNavigator({ onLogout }: { onLogout: () => void }) {
           const category = route.params?.category ?? "astronomy";
           const meta = QUIZ_CATEGORY_TITLE[category] ?? { label: "Quiz", icon: "🎮" };
           const title =
-            category === "mixed" ? `${meta.label} ${meta.icon}` : `Quiz de ${meta.label} ${meta.icon}`;
+            category === "mixed"
+              ? `${meta.label} ${meta.icon}`
+              : `Quiz de ${meta.label} ${meta.icon}`;
           return {
             headerShown: true,
             title,
@@ -155,9 +155,21 @@ export function RootNavigator({ onLogout }: { onLogout: () => void }) {
           headerTitleStyle: { color: colors.headerTint, fontWeight: "700" },
         }}
       />
-      <Stack.Screen name="MiniGamesHub" component={MiniGamesHubScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="MiniGamePlayer" component={MiniGamePlayerScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="AchievementSystem" component={AchievementSystemScreen} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="MiniGamesHub"
+        component={MiniGamesHubScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MiniGamePlayer"
+        component={MiniGamePlayerScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AchievementSystem"
+        component={AchievementSystemScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }

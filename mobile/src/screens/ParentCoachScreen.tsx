@@ -27,13 +27,11 @@ import { space, typography } from "../theme/tokens";
 
 type Props = NativeStackScreenProps<ParentStackParamList, "ParentCoach">;
 
-type ReaderSheet =
-  | { kind: "article"; title: string; body: string; readMinutes: number }
-  | null;
+type ReaderSheet = { kind: "article"; title: string; body: string; readMinutes: number } | null;
 
 function severityStyle(
   severity: ParentCoachPayload["alerts"][0]["severity"],
-  colors: ReturnType<typeof useTheme>["colors"]
+  colors: ReturnType<typeof useTheme>["colors"],
 ): { bg: string; border: string; text: string } {
   if (severity === "early") {
     return { bg: colors.error + "18", border: colors.error, text: colors.error };
@@ -77,7 +75,7 @@ export function ParentCoachScreen({ route }: Props) {
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [load])
+    }, [load]),
   );
 
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -85,7 +83,11 @@ export function ParentCoachScreen({ route }: Props) {
   const openVideo = useCallback((url: string, title: string) => {
     void Linking.openURL(url).catch(() => {
       const msg = `No se pudo abrir el enlace.\n${title}`;
-      if (Platform.OS === "web" && typeof window !== "undefined" && typeof window.alert === "function") {
+      if (
+        Platform.OS === "web" &&
+        typeof window !== "undefined" &&
+        typeof window.alert === "function"
+      ) {
         window.alert(msg);
         return;
       }
@@ -116,7 +118,9 @@ export function ParentCoachScreen({ route }: Props) {
         return;
       }
       if (r.type === "article") {
-        const article = payload.understandingYourChild.articles.find((a) => a.id === r.curatedArticleId);
+        const article = payload.understandingYourChild.articles.find(
+          (a) => a.id === r.curatedArticleId,
+        );
         if (article) {
           openArticleReader(article);
           return;
@@ -126,7 +130,7 @@ export function ParentCoachScreen({ route }: Props) {
       }
       showToast("Este tipo de recurso se muestra arriba en tips y conversaciones.", "error");
     },
-    [openArticleReader, openVideo]
+    [openArticleReader, openVideo],
   );
 
   if (!parentId) {
@@ -164,104 +168,106 @@ export function ParentCoachScreen({ route }: Props) {
   return (
     <>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-      <Text style={styles.screenTitle}>Guía para padres</Text>
-      <Text style={styles.screenHint}>
-        Contenido curado por psicólogos infantiles y pedagogos, adaptado a la actividad en la app.
-      </Text>
-      <Text style={styles.metaNote}>{data.meta.personalizationNote}</Text>
+        <Text style={styles.screenTitle}>Guía para padres</Text>
+        <Text style={styles.screenHint}>
+          Contenido curado por psicólogos infantiles y pedagogos, adaptado a la actividad en la app.
+        </Text>
+        <Text style={styles.metaNote}>{data.meta.personalizationNote}</Text>
 
-      <Text style={styles.sectionTitle}>Entender a tu hijo</Text>
-      <Text style={styles.sectionSub}>Artículos cortos, videos breves y tips para hoy.</Text>
+        <Text style={styles.sectionTitle}>Entender a tu hijo</Text>
+        <Text style={styles.sectionSub}>Artículos cortos, videos breves y tips para hoy.</Text>
 
-      {data.understandingYourChild.articles.map((a) => (
-        <Pressable
-          key={a.id}
-          style={styles.card}
-          onPress={() => openArticleReader(a)}
-        >
-          <Text style={styles.cardTitle}>{a.title}</Text>
-          <Text style={styles.cardBody} numberOfLines={3}>
-            {a.excerpt}
-          </Text>
-          <Text style={styles.cardMeta}>{a.readMinutes} min de lectura · Tocá para leer contenido</Text>
-        </Pressable>
-      ))}
-
-      {data.understandingYourChild.videos.map((v) => (
-        <View key={v.id} style={styles.card}>
-          <Text style={styles.cardTitle}>▶ {v.title}</Text>
-          <Text style={styles.cardMeta}>
-            {v.durationMinutes} min · {v.psychologist}
-          </Text>
-          <Pressable style={styles.primaryBtn} onPress={() => openVideo(v.url, v.title)}>
-            <Text style={styles.primaryBtnText}>Abrir video</Text>
-          </Pressable>
-        </View>
-      ))}
-
-      {data.understandingYourChild.tips.map((t) => (
-        <View key={t.id} style={[styles.card, styles.tipCard]}>
-          <Text style={styles.tipBadge}>Tip hoy</Text>
-          <Text style={styles.cardBody}>{t.text}</Text>
-        </View>
-      ))}
-
-      <Text style={[styles.sectionTitle, styles.sectionSpaced]}>Actividades juntos</Text>
-      <Text style={styles.sectionSub}>Propuestas offline ligadas a lo que aprendió en la app.</Text>
-      {data.activitiesTogether.map((act) => (
-        <View key={act.childId} style={styles.card}>
-          <Text style={styles.cardTitle}>{act.childName}</Text>
-          <Text style={styles.cardBody}>{act.learnedThisWeek}</Text>
-          <Text style={styles.highlight}>{act.activity}</Text>
-          <Text style={styles.cardMeta}>{act.offlineHint}</Text>
-        </View>
-      ))}
-
-      <Text style={[styles.sectionTitle, styles.sectionSpaced]}>Conversaciones</Text>
-      <Text style={styles.sectionSub}>Guías para hablar en casa con calma y claridad.</Text>
-      {data.conversations.map((c) => (
-        <View key={c.id} style={styles.card}>
-          <Text style={styles.cardTitle}>{c.topic}</Text>
-          {c.prompts.map((p, i) => (
-            <Text key={`${c.id}-${i}`} style={styles.bullet}>
-              • {p}
+        {data.understandingYourChild.articles.map((a) => (
+          <Pressable key={a.id} style={styles.card} onPress={() => openArticleReader(a)}>
+            <Text style={styles.cardTitle}>{a.title}</Text>
+            <Text style={styles.cardBody} numberOfLines={3}>
+              {a.excerpt}
             </Text>
-          ))}
-        </View>
-      ))}
+            <Text style={styles.cardMeta}>
+              {a.readMinutes} min de lectura · Tocá para leer contenido
+            </Text>
+          </Pressable>
+        ))}
 
-      <Text style={[styles.sectionTitle, styles.sectionSpaced]}>Alertas y alertas tempranas</Text>
-      {data.alerts.map((al) => {
-        const sev = severityStyle(al.severity, colors);
-        return (
-          <View
-            key={al.id}
-            style={[styles.alertCard, { backgroundColor: sev.bg, borderColor: sev.border }]}
-          >
-            <Text style={[styles.alertText, { color: sev.text }]}>{al.message}</Text>
+        {data.understandingYourChild.videos.map((v) => (
+          <View key={v.id} style={styles.card}>
+            <Text style={styles.cardTitle}>▶ {v.title}</Text>
+            <Text style={styles.cardMeta}>
+              {v.durationMinutes} min · {v.psychologist}
+            </Text>
+            <Pressable style={styles.primaryBtn} onPress={() => openVideo(v.url, v.title)}>
+              <Text style={styles.primaryBtnText}>Abrir video</Text>
+            </Pressable>
           </View>
-        );
-      })}
+        ))}
 
-      <Text style={[styles.sectionTitle, styles.sectionSpaced]}>Recursos sugeridos para vos</Text>
-      <Text style={styles.sectionSub}>Ordenados por relevancia según patrones de la semana.</Text>
-      {data.personalizedResources.map((r) => (
-        <Pressable
-          key={r.id}
-          style={styles.card}
-          onPress={() => openPersonalizedResource(r, data)}
-        >
-          <Text style={styles.cardTitle}>
-            {r.type === "video" ? "🎬 " : "📄 "}
-            {r.title}
-          </Text>
-          <Text style={styles.cardMeta}>Relevancia: {r.relevanceScore}</Text>
-          <Text style={styles.cardBody}>{r.reason}</Text>
-          <Text style={styles.cardFoot}>
-            {r.type === "video" ? "Tocá para abrir el video (navegador)" : "Tocá para leer en la app"}
-          </Text>
-        </Pressable>
-      ))}
+        {data.understandingYourChild.tips.map((t) => (
+          <View key={t.id} style={[styles.card, styles.tipCard]}>
+            <Text style={styles.tipBadge}>Tip hoy</Text>
+            <Text style={styles.cardBody}>{t.text}</Text>
+          </View>
+        ))}
+
+        <Text style={[styles.sectionTitle, styles.sectionSpaced]}>Actividades juntos</Text>
+        <Text style={styles.sectionSub}>
+          Propuestas offline ligadas a lo que aprendió en la app.
+        </Text>
+        {data.activitiesTogether.map((act) => (
+          <View key={act.childId} style={styles.card}>
+            <Text style={styles.cardTitle}>{act.childName}</Text>
+            <Text style={styles.cardBody}>{act.learnedThisWeek}</Text>
+            <Text style={styles.highlight}>{act.activity}</Text>
+            <Text style={styles.cardMeta}>{act.offlineHint}</Text>
+          </View>
+        ))}
+
+        <Text style={[styles.sectionTitle, styles.sectionSpaced]}>Conversaciones</Text>
+        <Text style={styles.sectionSub}>Guías para hablar en casa con calma y claridad.</Text>
+        {data.conversations.map((c) => (
+          <View key={c.id} style={styles.card}>
+            <Text style={styles.cardTitle}>{c.topic}</Text>
+            {c.prompts.map((p, i) => (
+              <Text key={`${c.id}-${i}`} style={styles.bullet}>
+                • {p}
+              </Text>
+            ))}
+          </View>
+        ))}
+
+        <Text style={[styles.sectionTitle, styles.sectionSpaced]}>Alertas y alertas tempranas</Text>
+        {data.alerts.map((al) => {
+          const sev = severityStyle(al.severity, colors);
+          return (
+            <View
+              key={al.id}
+              style={[styles.alertCard, { backgroundColor: sev.bg, borderColor: sev.border }]}
+            >
+              <Text style={[styles.alertText, { color: sev.text }]}>{al.message}</Text>
+            </View>
+          );
+        })}
+
+        <Text style={[styles.sectionTitle, styles.sectionSpaced]}>Recursos sugeridos para vos</Text>
+        <Text style={styles.sectionSub}>Ordenados por relevancia según patrones de la semana.</Text>
+        {data.personalizedResources.map((r) => (
+          <Pressable
+            key={r.id}
+            style={styles.card}
+            onPress={() => openPersonalizedResource(r, data)}
+          >
+            <Text style={styles.cardTitle}>
+              {r.type === "video" ? "🎬 " : "📄 "}
+              {r.title}
+            </Text>
+            <Text style={styles.cardMeta}>Relevancia: {r.relevanceScore}</Text>
+            <Text style={styles.cardBody}>{r.reason}</Text>
+            <Text style={styles.cardFoot}>
+              {r.type === "video"
+                ? "Tocá para abrir el video (navegador)"
+                : "Tocá para leer en la app"}
+            </Text>
+          </Pressable>
+        ))}
       </ScrollView>
 
       <Modal
@@ -271,8 +277,17 @@ export function ParentCoachScreen({ route }: Props) {
         onRequestClose={() => setReader(null)}
       >
         <View style={styles.modalBackdrop}>
-          <Pressable style={styles.modalDismiss} onPress={() => setReader(null)} accessibilityLabel="Cerrar lectura" />
-          <View style={[styles.modalSheet, { borderColor: colors.borderSubtle, backgroundColor: colors.card }]}>
+          <Pressable
+            style={styles.modalDismiss}
+            onPress={() => setReader(null)}
+            accessibilityLabel="Cerrar lectura"
+          />
+          <View
+            style={[
+              styles.modalSheet,
+              { borderColor: colors.borderSubtle, backgroundColor: colors.card },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {reader?.kind === "article" ? reader.title : ""}
@@ -292,7 +307,9 @@ export function ParentCoachScreen({ route }: Props) {
                   Lectura aprox.: {reader.readMinutes} min
                 </Text>
                 <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
-                  <Text style={[styles.modalBody, { color: colors.textSecondary }]}>{reader.body}</Text>
+                  <Text style={[styles.modalBody, { color: colors.textSecondary }]}>
+                    {reader.body}
+                  </Text>
                 </ScrollView>
               </>
             ) : null}
@@ -316,8 +333,18 @@ function createStyles(c: import("../theme/appTheme").AppColors) {
     },
     loadingHint: { marginTop: space.sm, color: c.textMuted, fontWeight: "600" },
     screenTitle: { fontSize: typography.title, fontWeight: "900", color: c.text },
-    screenHint: { marginTop: space.xs, fontSize: typography.secondary, color: c.textMuted, fontWeight: "600" },
-    metaNote: { marginTop: space.sm, fontSize: typography.secondary - 1, color: c.textSecondary, fontStyle: "italic" },
+    screenHint: {
+      marginTop: space.xs,
+      fontSize: typography.secondary,
+      color: c.textMuted,
+      fontWeight: "600",
+    },
+    metaNote: {
+      marginTop: space.sm,
+      fontSize: typography.secondary - 1,
+      color: c.textSecondary,
+      fontStyle: "italic",
+    },
     sectionTitle: {
       marginTop: space.md,
       fontSize: typography.body,
@@ -346,7 +373,12 @@ function createStyles(c: import("../theme/appTheme").AppColors) {
     },
     cardTitle: { fontSize: typography.bodyLarge, fontWeight: "800", color: c.text },
     cardBody: { marginTop: 6, fontSize: typography.body, color: c.textSecondary, lineHeight: 22 },
-    cardMeta: { marginTop: 8, fontSize: typography.secondary, color: c.textMuted, fontWeight: "600" },
+    cardMeta: {
+      marginTop: 8,
+      fontSize: typography.secondary,
+      color: c.textMuted,
+      fontWeight: "600",
+    },
     cardFoot: { marginTop: 10, fontSize: typography.secondary, color: c.link, fontWeight: "700" },
     highlight: {
       marginTop: 10,

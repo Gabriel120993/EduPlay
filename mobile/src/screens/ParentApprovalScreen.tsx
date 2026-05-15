@@ -3,7 +3,11 @@ import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } 
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { getParentPendingApprovals, patchMinorApproval, type MinorApprovalItem } from "../services/api";
+import {
+  getParentPendingApprovals,
+  patchMinorApproval,
+  type MinorApprovalItem,
+} from "../services/api";
 
 export function ParentApprovalScreen() {
   const { parent } = useAuth();
@@ -25,7 +29,7 @@ export function ParentApprovalScreen() {
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [load])
+    }, [load]),
   );
 
   const applyDecision = async (row: MinorApprovalItem, status: "approved" | "rejected") => {
@@ -50,9 +54,14 @@ export function ParentApprovalScreen() {
     >
       <Text style={[styles.title, { color: colors.text }]}>Aprobaciones pendientes</Text>
       {rows.map((row) => (
-        <View key={row.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          key={row.id}
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
           <Text style={[styles.type, { color: colors.text }]}>{row.activityType}</Text>
-          <Text style={{ color: colors.textMuted }}>Solicitado: {new Date(row.requestedAt).toLocaleString()}</Text>
+          <Text style={{ color: colors.textMuted }}>
+            Solicitado: {new Date(row.requestedAt).toLocaleString()}
+          </Text>
           <Text style={{ color: colors.textBody, marginTop: 6 }}>
             Detalle: {JSON.stringify(row.activityData)}
           </Text>
@@ -63,13 +72,18 @@ export function ParentApprovalScreen() {
             >
               <Text style={[styles.btnText, { color: colors.textOnPrimary }]}>Approve</Text>
             </Pressable>
-            <Pressable onPress={() => void applyDecision(row, "rejected")} style={[styles.btn, { backgroundColor: colors.error }]}>
+            <Pressable
+              onPress={() => void applyDecision(row, "rejected")}
+              style={[styles.btn, { backgroundColor: colors.error }]}
+            >
               <Text style={[styles.btnText, { color: colors.textOnPrimary }]}>Reject</Text>
             </Pressable>
           </View>
         </View>
       ))}
-      {rows.length === 0 ? <Text style={{ color: colors.textMuted }}>No hay acciones pendientes.</Text> : null}
+      {rows.length === 0 ? (
+        <Text style={{ color: colors.textMuted }}>No hay acciones pendientes.</Text>
+      ) : null}
     </ScrollView>
   );
 }

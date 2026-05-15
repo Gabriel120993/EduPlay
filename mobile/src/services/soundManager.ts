@@ -1,6 +1,11 @@
 import { Audio } from "expo-av";
 
-import { loadSoundSettings, saveSoundEnabled, saveSoundVolume, SOUND_DEFAULTS } from "../lib/soundSettingsStorage";
+import {
+  loadSoundSettings,
+  saveSoundEnabled,
+  saveSoundVolume,
+  SOUND_DEFAULTS,
+} from "../lib/soundSettingsStorage";
 
 /** Clic UI: mismo tap que reacciones (WAV fiable en web y nativo). */
 const clickSrc = require("../../assets/sounds/mixkit-game-ball-tap-2073.wav");
@@ -102,7 +107,11 @@ export async function preloadGameFeedbackSounds(): Promise<void> {
 }
 
 async function playSourceOneShot(source: number, vol: number): Promise<void> {
-  const { sound } = await Audio.Sound.createAsync(source, { shouldPlay: true, volume: vol, isMuted: false });
+  const { sound } = await Audio.Sound.createAsync(source, {
+    shouldPlay: true,
+    volume: vol,
+    isMuted: false,
+  });
   sound.setOnPlaybackStatusUpdate((status) => {
     if (status.isLoaded && status.didJustFinish) {
       void sound.unloadAsync();

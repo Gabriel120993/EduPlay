@@ -1,6 +1,6 @@
-import { prisma } from "./prisma";
-import { areAcceptedFriends } from "./chatFriendship";
-import { assertAllowChat, assertAllowFriends } from "./parentalRestrictions";
+import { prisma } from './prisma';
+import { areAcceptedFriends } from './chatFriendship';
+import { assertAllowChat, assertAllowFriends } from './parentalRestrictions';
 
 export type ChatGateFailure = { ok: false; status: 400 | 403 | 404; error: string };
 
@@ -12,13 +12,13 @@ export type ChatGateFailure = { ok: false; status: 400 | 403 | 404; error: strin
  */
 export async function assertOutgoingChatAllowed(
   senderId: string,
-  recipientId: string
+  recipientId: string,
 ): Promise<{ ok: true } | ChatGateFailure> {
   if (!recipientId) {
-    return { ok: false, status: 400, error: "recipientId es obligatorio." };
+    return { ok: false, status: 400, error: 'recipientId es obligatorio.' };
   }
   if (recipientId === senderId) {
-    return { ok: false, status: 400, error: "No podés chatear con vos mismo." };
+    return { ok: false, status: 400, error: 'No podés chatear con vos mismo.' };
   }
 
   const [recipientUser, friendsOk, senderChat, recipientChat, senderFriends, recipientFriends] =
@@ -32,22 +32,26 @@ export async function assertOutgoingChatAllowed(
     ]);
 
   if (!recipientUser) {
-    return { ok: false, status: 404, error: "Destinatario no encontrado." };
+    return { ok: false, status: 404, error: 'Destinatario no encontrado.' };
   }
   if (!friendsOk) {
-    return { ok: false, status: 403, error: "Solo podés chatear con amigos aceptados." };
+    return { ok: false, status: 403, error: 'Solo podés chatear con amigos aceptados.' };
   }
   if (!senderChat.ok) {
     return { ok: false, status: 403, error: senderChat.message };
   }
   if (!recipientChat.ok) {
-    return { ok: false, status: 403, error: "El chat no está disponible para ese usuario." };
+    return { ok: false, status: 403, error: 'El chat no está disponible para ese usuario.' };
   }
   if (!senderFriends.ok) {
     return { ok: false, status: 403, error: senderFriends.message };
   }
   if (!recipientFriends.ok) {
-    return { ok: false, status: 403, error: "El destinatario no puede recibir mensajes de amigos." };
+    return {
+      ok: false,
+      status: 403,
+      error: 'El destinatario no puede recibir mensajes de amigos.',
+    };
   }
 
   return { ok: true };

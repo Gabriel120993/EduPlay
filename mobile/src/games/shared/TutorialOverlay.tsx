@@ -48,12 +48,37 @@ export function TutorialOverlay({ steps, onDone }: Props) {
           borderColor: colors.borderSubtle,
         }}
       >
-        <Text style={{ color: colors.textMuted, fontWeight: "800", marginBottom: space.xs }}>Tutorial · ~30 s</Text>
-        <View style={{ height: 6, backgroundColor: colors.ghostBg, borderRadius: 99, overflow: "hidden", marginBottom: space.md }}>
-          <View style={{ width: `${progress}%`, height: "100%", backgroundColor: colors.primary }} />
+        <Text style={{ color: colors.textMuted, fontWeight: "800", marginBottom: space.xs }}>
+          Tutorial · ~30 s
+        </Text>
+        <View
+          style={{
+            height: 6,
+            backgroundColor: colors.ghostBg,
+            borderRadius: 99,
+            overflow: "hidden",
+            marginBottom: space.md,
+          }}
+        >
+          <View
+            style={{ width: `${progress}%`, height: "100%", backgroundColor: colors.primary }}
+          />
         </View>
-        <Text style={{ color: colors.text, fontSize: 20, fontWeight: "900", marginBottom: space.sm }}>{step.title}</Text>
-        <Text style={{ color: colors.textSecondary, fontWeight: "600", lineHeight: 22, marginBottom: space.lg }}>{step.body}</Text>
+        <Text
+          style={{ color: colors.text, fontSize: 20, fontWeight: "900", marginBottom: space.sm }}
+        >
+          {step.title}
+        </Text>
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontWeight: "600",
+            lineHeight: 22,
+            marginBottom: space.lg,
+          }}
+        >
+          {step.body}
+        </Text>
         <View style={{ flexDirection: "row", gap: space.sm, justifyContent: "flex-end" }}>
           <Pressable
             onPress={onDone}
@@ -74,7 +99,9 @@ export function TutorialOverlay({ steps, onDone }: Props) {
             accessibilityRole="button"
             accessibilityLabel={isLast ? "Empezar" : "Siguiente"}
           >
-            <Text style={{ color: colors.textOnPrimary, fontWeight: "900" }}>{isLast ? "¡A jugar!" : "Siguiente"}</Text>
+            <Text style={{ color: colors.textOnPrimary, fontWeight: "900" }}>
+              {isLast ? "¡A jugar!" : "Siguiente"}
+            </Text>
           </Pressable>
         </View>
       </View>

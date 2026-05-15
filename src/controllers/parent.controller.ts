@@ -1,11 +1,11 @@
-import { randomUUID } from "node:crypto";
-import type { Request, Response } from "express";
-import { ContentFilterLevel, FriendStatus, Prisma } from "@prisma/client";
-import { removeFriendshipPair } from "../lib/friendshipCleanup";
-import { peekScreenTimeToday, utcDayStart } from "../lib/screenTime";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { userPublicSelect } from "../lib/prismaPublicSelects";
+import { randomUUID } from 'node:crypto';
+import type { Request, Response } from 'express';
+import { ContentFilterLevel, FriendStatus } from '@prisma/client';
+import { removeFriendshipPair } from '../lib/friendshipCleanup';
+import { peekScreenTimeToday, utcDayStart } from '../lib/screenTime';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { userPublicSelect } from '../lib/prismaPublicSelects';
 
 const RECENT_POSTS_PER_CHILD = 8;
 const RECENT_ACHIEVEMENTS_PER_CHILD = 6;
@@ -18,19 +18,19 @@ function utcDayEndExclusive(d = new Date()): Date {
 /** Soporta rutas con `:id` o `:parentId` (REST). */
 export function parentResourceId(req: Request): string | undefined {
   const raw = req.params.parentId ?? req.params.id;
-  return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
+  return typeof raw === 'string' && raw.trim() ? raw.trim() : undefined;
 }
 
 export async function getParentDashboard(req: Request, res: Response): Promise<void> {
   const parentId = parentResourceId(req);
   if (!parentId) {
-    res.status(400).json({ error: "id del padre/tutor es obligatorio." });
+    res.status(400).json({ error: 'id del padre/tutor es obligatorio.' });
     return;
   }
 
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
@@ -53,13 +53,13 @@ export async function getParentDashboard(req: Request, res: Response): Promise<v
             parentAccountApprovedAt: true,
             createdAt: true,
           },
-          orderBy: { username: "asc" },
+          orderBy: { username: 'asc' },
         },
       },
     });
 
     if (!parent) {
-      res.status(404).json({ error: "Padre o tutor no encontrado." });
+      res.status(404).json({ error: 'Padre o tutor no encontrado.' });
       return;
     }
 
@@ -104,8 +104,8 @@ export async function getParentDashboard(req: Request, res: Response): Promise<v
       const entry = {
         friendshipId: r.id,
         senderUserId: r.userId,
-        senderUsername: s?.username ?? "",
-        senderRealName: s?.realName ?? "",
+        senderUsername: s?.username ?? '',
+        senderRealName: s?.realName ?? '',
         createdAt: r.createdAt.toISOString(),
       };
       const arr = pendingFriendsByChild.get(r.friendId) ?? [];
@@ -123,7 +123,14 @@ export async function getParentDashboard(req: Request, res: Response): Promise<v
           settingsRow,
           recentAchievements,
         ] = await Promise.all([
-          peekScreenTimeToday(child.id),
+          (async () => {
+            try {
+              return await peekScreenTimeToday(child.id);
+            } catch (e) {
+              logError('parent:dashboard:peekScreenTime', e);
+              return null;
+            }
+          })(),
           prisma.userMission.count({
             where: {
               userId: child.id,
@@ -139,7 +146,7 @@ export async function getParentDashboard(req: Request, res: Response): Promise<v
           }),
           prisma.post.findMany({
             where: { userId: child.id },
-            orderBy: { createdAt: "desc" },
+            orderBy: { createdAt: 'desc' },
             take: RECENT_POSTS_PER_CHILD,
             select: {
               id: true,
@@ -171,7 +178,7 @@ export async function getParentDashboard(req: Request, res: Response): Promise<v
           }),
           prisma.userAchievement.findMany({
             where: { userId: child.id },
-            orderBy: { obtainedAt: "desc" },
+            orderBy: { obtainedAt: 'desc' },
             take: RECENT_ACHIEVEMENTS_PER_CHILD,
             select: {
               id: true,
@@ -233,25 +240,27 @@ export async function getParentDashboard(req: Request, res: Response): Promise<v
             parentModerationVisibleById: p.parentModerationVisibleById,
             type: p.type,
             visibility: p.visibility,
-            ...(p.category != null && String(p.category).trim() !== ""
+            ...(p.category != null && String(p.category).trim() !== ''
               ? { category: String(p.category).trim() }
               : {}),
             createdAt: p.createdAt.toISOString(),
           })),
-          recentAchievements: recentAchievements.map((a) => ({
-            id: a.id,
-            title: a.achievement.title,
-            badgeIcon: a.achievement.badgeIcon,
-            rarity: a.achievement.rarity,
-            obtainedAt: a.obtainedAt.toISOString(),
-          })),
+          recentAchievements: recentAchievements
+            .filter((a) => a.achievement != null)
+            .map((a) => ({
+              id: a.id,
+              title: a.achievement!.title,
+              badgeIcon: a.achievement!.badgeIcon,
+              rarity: a.achievement!.rarity,
+              obtainedAt: a.obtainedAt.toISOString(),
+            })),
         };
-      })
+      }),
     );
 
     const familyEvents = await prisma.parentFamilyEvent.findMany({
       where: { parentId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 30,
       select: {
         id: true,
@@ -283,8 +292,8 @@ export async function getParentDashboard(req: Request, res: Response): Promise<v
       })),
     });
   } catch (err) {
-    logError("parent", err);
-    res.status(500).json({ error: "Error al obtener el panel del padre/tutor." });
+    logError('parent', err);
+    res.status(500).json({ error: 'Error al obtener el panel del padre/tutor.' });
   }
 }
 
@@ -293,13 +302,13 @@ export async function approveChildAccount(req: Request, res: Response): Promise<
   const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
-    res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
+    res.status(400).json({ error: 'id del padre y childId del menor son obligatorios.' });
     return;
   }
 
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
@@ -309,7 +318,7 @@ export async function approveChildAccount(req: Request, res: Response): Promise<
       select: { id: true, parentId: true },
     });
     if (!child || child.parentId !== parentId) {
-      res.status(404).json({ error: "Menor no encontrado o no vinculado a tu cuenta." });
+      res.status(404).json({ error: 'Menor no encontrado o no vinculado a tu cuenta.' });
       return;
     }
 
@@ -321,8 +330,8 @@ export async function approveChildAccount(req: Request, res: Response): Promise<
 
     res.json({ ok: true, user: updated });
   } catch (err) {
-    logError("parent.approveChildAccount", err);
-    res.status(500).json({ error: "Error al aprobar la cuenta del menor." });
+    logError('parent.approveChildAccount', err);
+    res.status(500).json({ error: 'Error al aprobar la cuenta del menor.' });
   }
 }
 
@@ -330,18 +339,18 @@ export async function patchChildParentSettings(req: Request, res: Response): Pro
   const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
-    res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
+    res.status(400).json({ error: 'id del padre y childId del menor son obligatorios.' });
     return;
   }
 
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
-  if (req.body === null || typeof req.body !== "object") {
-    res.status(400).json({ error: "El cuerpo debe ser un objeto JSON." });
+  if (req.body === null || typeof req.body !== 'object') {
+    res.status(400).json({ error: 'El cuerpo debe ser un objeto JSON.' });
     return;
   }
 
@@ -356,57 +365,57 @@ export async function patchChildParentSettings(req: Request, res: Response): Pro
     dailyScreenTimeLimit?: number;
   } = {};
   if (b.allowPosting !== undefined) {
-    if (typeof b.allowPosting !== "boolean") {
-      res.status(400).json({ error: "allowPosting debe ser booleano." });
+    if (typeof b.allowPosting !== 'boolean') {
+      res.status(400).json({ error: 'allowPosting debe ser booleano.' });
       return;
     }
     patch.allowPosting = b.allowPosting;
   }
   if (b.allowFriends !== undefined) {
-    if (typeof b.allowFriends !== "boolean") {
-      res.status(400).json({ error: "allowFriends debe ser booleano." });
+    if (typeof b.allowFriends !== 'boolean') {
+      res.status(400).json({ error: 'allowFriends debe ser booleano.' });
       return;
     }
     patch.allowFriends = b.allowFriends;
   }
   if (b.chatEnabled !== undefined) {
-    if (typeof b.chatEnabled !== "boolean") {
-      res.status(400).json({ error: "chatEnabled debe ser booleano." });
+    if (typeof b.chatEnabled !== 'boolean') {
+      res.status(400).json({ error: 'chatEnabled debe ser booleano.' });
       return;
     }
     patch.chatEnabled = b.chatEnabled;
   }
   if (b.parentChatSupervisionEnabled !== undefined) {
-    if (typeof b.parentChatSupervisionEnabled !== "boolean") {
-      res.status(400).json({ error: "parentChatSupervisionEnabled debe ser booleano." });
+    if (typeof b.parentChatSupervisionEnabled !== 'boolean') {
+      res.status(400).json({ error: 'parentChatSupervisionEnabled debe ser booleano.' });
       return;
     }
     patch.parentChatSupervisionEnabled = b.parentChatSupervisionEnabled;
   }
   if (b.notifyParentNewContact !== undefined) {
-    if (typeof b.notifyParentNewContact !== "boolean") {
-      res.status(400).json({ error: "notifyParentNewContact debe ser booleano." });
+    if (typeof b.notifyParentNewContact !== 'boolean') {
+      res.status(400).json({ error: 'notifyParentNewContact debe ser booleano.' });
       return;
     }
     patch.notifyParentNewContact = b.notifyParentNewContact;
   }
   if (b.notifyParentSuspiciousChat !== undefined) {
-    if (typeof b.notifyParentSuspiciousChat !== "boolean") {
-      res.status(400).json({ error: "notifyParentSuspiciousChat debe ser booleano." });
+    if (typeof b.notifyParentSuspiciousChat !== 'boolean') {
+      res.status(400).json({ error: 'notifyParentSuspiciousChat debe ser booleano.' });
       return;
     }
     patch.notifyParentSuspiciousChat = b.notifyParentSuspiciousChat;
   }
   if (b.dailyScreenTimeLimit !== undefined) {
     const raw = b.dailyScreenTimeLimit;
-    const n = typeof raw === "number" ? raw : Number(raw);
+    const n = typeof raw === 'number' ? raw : Number(raw);
     if (!Number.isFinite(n) || !Number.isInteger(n)) {
-      res.status(400).json({ error: "dailyScreenTimeLimit debe ser un entero." });
+      res.status(400).json({ error: 'dailyScreenTimeLimit debe ser un entero.' });
       return;
     }
     if (n !== 0 && (n < 15 || n > 24 * 60)) {
       res.status(400).json({
-        error: "dailyScreenTimeLimit: usá 0 para ilimitado, o entre 15 y 1440 minutos por día.",
+        error: 'dailyScreenTimeLimit: usá 0 para ilimitado, o entre 15 y 1440 minutos por día.',
       });
       return;
     }
@@ -416,7 +425,7 @@ export async function patchChildParentSettings(req: Request, res: Response): Pro
   if (Object.keys(patch).length === 0) {
     res.status(400).json({
       error:
-        "Incluí al menos un campo: allowPosting, allowFriends, chatEnabled, parentChatSupervisionEnabled, notifyParentNewContact, notifyParentSuspiciousChat, dailyScreenTimeLimit.",
+        'Incluí al menos un campo: allowPosting, allowFriends, chatEnabled, parentChatSupervisionEnabled, notifyParentNewContact, notifyParentSuspiciousChat, dailyScreenTimeLimit.',
     });
     return;
   }
@@ -427,11 +436,11 @@ export async function patchChildParentSettings(req: Request, res: Response): Pro
       select: { id: true, parentId: true },
     });
     if (!child) {
-      res.status(404).json({ error: "Menor no encontrado." });
+      res.status(404).json({ error: 'Menor no encontrado.' });
       return;
     }
     if (child.parentId !== parentId) {
-      res.status(403).json({ error: "Este menor no pertenece a ese padre o tutor." });
+      res.status(403).json({ error: 'Este menor no pertenece a ese padre o tutor.' });
       return;
     }
 
@@ -473,30 +482,30 @@ export async function patchChildParentSettings(req: Request, res: Response): Pro
       dailyScreenTimeLimit: row.dailyScreenTimeLimit,
     });
   } catch (err) {
-    logError("parent", err);
-    res.status(500).json({ error: "Error al actualizar la configuración parental." });
+    logError('parent', err);
+    res.status(500).json({ error: 'Error al actualizar la configuración parental.' });
   }
 }
 
-const CONTENT_FILTER_LEVELS = new Set<string>(["LOW", "MEDIUM", "HIGH"]);
+const CONTENT_FILTER_LEVELS = new Set<string>(['LOW', 'MEDIUM', 'HIGH']);
 
 /** PATCH controles avanzados: límite de pantalla y filtro de contenido (requiere premium en ruta). */
 export async function patchChildParentAdvancedSettings(req: Request, res: Response): Promise<void> {
   const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
-    res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
+    res.status(400).json({ error: 'id del padre y childId del menor son obligatorios.' });
     return;
   }
 
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
-  if (req.body === null || typeof req.body !== "object") {
-    res.status(400).json({ error: "El cuerpo debe ser un objeto JSON." });
+  if (req.body === null || typeof req.body !== 'object') {
+    res.status(400).json({ error: 'El cuerpo debe ser un objeto JSON.' });
     return;
   }
 
@@ -505,10 +514,10 @@ export async function patchChildParentAdvancedSettings(req: Request, res: Respon
 
   if (b.dailyScreenTimeLimit !== undefined) {
     const raw = b.dailyScreenTimeLimit;
-    const n = typeof raw === "number" ? raw : Number(raw);
+    const n = typeof raw === 'number' ? raw : Number(raw);
     if (!Number.isFinite(n) || !Number.isInteger(n) || (n !== 0 && (n < 15 || n > 24 * 60))) {
       res.status(400).json({
-        error: "dailyScreenTimeLimit: usá 0 para ilimitado, o entre 15 y 1440 minutos por día.",
+        error: 'dailyScreenTimeLimit: usá 0 para ilimitado, o entre 15 y 1440 minutos por día.',
       });
       return;
     }
@@ -516,20 +525,22 @@ export async function patchChildParentAdvancedSettings(req: Request, res: Respon
   }
 
   if (b.contentFilterLevel !== undefined) {
-    if (typeof b.contentFilterLevel !== "string") {
-      res.status(400).json({ error: "contentFilterLevel debe ser un texto (LOW | MEDIUM | HIGH)." });
+    if (typeof b.contentFilterLevel !== 'string') {
+      res
+        .status(400)
+        .json({ error: 'contentFilterLevel debe ser un texto (LOW | MEDIUM | HIGH).' });
       return;
     }
     const lvl = b.contentFilterLevel.trim().toUpperCase();
     if (!CONTENT_FILTER_LEVELS.has(lvl)) {
-      res.status(400).json({ error: "contentFilterLevel debe ser LOW, MEDIUM o HIGH." });
+      res.status(400).json({ error: 'contentFilterLevel debe ser LOW, MEDIUM o HIGH.' });
       return;
     }
     patch.contentFilterLevel = ContentFilterLevel[lvl as keyof typeof ContentFilterLevel];
   }
 
   if (Object.keys(patch).length === 0) {
-    res.status(400).json({ error: "Incluí dailyScreenTimeLimit y/o contentFilterLevel." });
+    res.status(400).json({ error: 'Incluí dailyScreenTimeLimit y/o contentFilterLevel.' });
     return;
   }
 
@@ -539,11 +550,11 @@ export async function patchChildParentAdvancedSettings(req: Request, res: Respon
       select: { id: true, parentId: true },
     });
     if (!child) {
-      res.status(404).json({ error: "Menor no encontrado." });
+      res.status(404).json({ error: 'Menor no encontrado.' });
       return;
     }
     if (child.parentId !== parentId) {
-      res.status(403).json({ error: "Este menor no pertenece a ese padre o tutor." });
+      res.status(403).json({ error: 'Este menor no pertenece a ese padre o tutor.' });
       return;
     }
 
@@ -575,8 +586,8 @@ export async function patchChildParentAdvancedSettings(req: Request, res: Respon
       contentFilterLevel: row.contentFilterLevel,
     });
   } catch (err) {
-    logError("parent", err);
-    res.status(500).json({ error: "Error al actualizar los controles parentales avanzados." });
+    logError('parent', err);
+    res.status(500).json({ error: 'Error al actualizar los controles parentales avanzados.' });
   }
 }
 
@@ -587,20 +598,23 @@ export async function getChildChatMessages(req: Request, res: Response): Promise
   const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
-    res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
+    res.status(400).json({ error: 'id del padre y childId del menor son obligatorios.' });
     return;
   }
 
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
   const rawLimit = req.query.limit;
   let limit = 80;
-  if (rawLimit != null && rawLimit !== "") {
-    const n = typeof rawLimit === "string" ? Number(rawLimit) : Number(Array.isArray(rawLimit) ? rawLimit[0] : rawLimit);
+  if (rawLimit != null && rawLimit !== '') {
+    const n =
+      typeof rawLimit === 'string'
+        ? Number(rawLimit)
+        : Number(Array.isArray(rawLimit) ? rawLimit[0] : rawLimit);
     if (Number.isFinite(n) && Number.isInteger(n) && n >= 1) {
       limit = Math.min(CHILD_CHAT_MONITOR_LIMIT_MAX, n);
     }
@@ -612,11 +626,11 @@ export async function getChildChatMessages(req: Request, res: Response): Promise
       select: { id: true, parentId: true },
     });
     if (!child) {
-      res.status(404).json({ error: "Menor no encontrado." });
+      res.status(404).json({ error: 'Menor no encontrado.' });
       return;
     }
     if (child.parentId !== parentId) {
-      res.status(403).json({ error: "Este menor no pertenece a ese padre o tutor." });
+      res.status(403).json({ error: 'Este menor no pertenece a ese padre o tutor.' });
       return;
     }
 
@@ -627,7 +641,7 @@ export async function getChildChatMessages(req: Request, res: Response): Promise
     if (supervision && !supervision.parentChatSupervisionEnabled) {
       res.status(403).json({
         error:
-          "La supervisión de mensajes está desactivada para este menor. Podés activarla en controles parentales del panel.",
+          'La supervisión de mensajes está desactivada para este menor. Podés activarla en controles parentales del panel.',
       });
       return;
     }
@@ -636,7 +650,7 @@ export async function getChildChatMessages(req: Request, res: Response): Promise
       where: {
         OR: [{ senderId: childId }, { recipientId: childId }],
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
         id: true,
@@ -683,21 +697,21 @@ export async function getChildChatMessages(req: Request, res: Response): Promise
       }),
     });
   } catch (err) {
-    logError("parent", err);
-    res.status(500).json({ error: "Error al obtener los mensajes de chat del menor." });
+    logError('parent', err);
+    res.status(500).json({ error: 'Error al obtener los mensajes de chat del menor.' });
   }
 }
 
 export async function postParentPushToken(req: Request, res: Response): Promise<void> {
   const parentId = parentResourceId(req);
   if (!parentId) {
-    res.status(400).json({ error: "id del padre/tutor es obligatorio." });
+    res.status(400).json({ error: 'id del padre/tutor es obligatorio.' });
     return;
   }
 
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
@@ -714,8 +728,8 @@ export async function postParentPushToken(req: Request, res: Response): Promise<
       return;
     }
 
-    if (typeof raw !== "string") {
-      res.status(400).json({ error: "token debe ser un string o null." });
+    if (typeof raw !== 'string') {
+      res.status(400).json({ error: 'token debe ser un string o null.' });
       return;
     }
 
@@ -730,7 +744,7 @@ export async function postParentPushToken(req: Request, res: Response): Promise<
     }
 
     if (trimmed.length > 8000) {
-      res.status(400).json({ error: "token demasiado largo." });
+      res.status(400).json({ error: 'token demasiado largo.' });
       return;
     }
 
@@ -740,8 +754,8 @@ export async function postParentPushToken(req: Request, res: Response): Promise<
     });
     res.status(204).send();
   } catch (err) {
-    logError("parent", err);
-    res.status(500).json({ error: "Error al guardar el token de notificaciones." });
+    logError('parent', err);
+    res.status(500).json({ error: 'Error al guardar el token de notificaciones.' });
   }
 }
 
@@ -750,13 +764,13 @@ export async function getChildFriendsForParent(req: Request, res: Response): Pro
   const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
-    res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
+    res.status(400).json({ error: 'id del padre y childId del menor son obligatorios.' });
     return;
   }
 
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
@@ -766,11 +780,11 @@ export async function getChildFriendsForParent(req: Request, res: Response): Pro
       select: { id: true, parentId: true },
     });
     if (!child) {
-      res.status(404).json({ error: "Menor no encontrado." });
+      res.status(404).json({ error: 'Menor no encontrado.' });
       return;
     }
     if (child.parentId !== parentId) {
-      res.status(403).json({ error: "Este menor no pertenece a ese padre o tutor." });
+      res.status(403).json({ error: 'Este menor no pertenece a ese padre o tutor.' });
       return;
     }
 
@@ -779,7 +793,7 @@ export async function getChildFriendsForParent(req: Request, res: Response): Pro
         status: FriendStatus.ACCEPTED,
         OR: [{ userId: childId }, { friendId: childId }],
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
 
     const seenOther = new Set<string>();
@@ -809,8 +823,8 @@ export async function getChildFriendsForParent(req: Request, res: Response): Pro
 
     res.json({ childId, friends });
   } catch (err) {
-    logError("parent", err);
-    res.status(500).json({ error: "Error al listar amigos del menor." });
+    logError('parent', err);
+    res.status(500).json({ error: 'Error al listar amigos del menor.' });
   }
 }
 
@@ -818,13 +832,13 @@ export async function listChildBlockedUsers(req: Request, res: Response): Promis
   const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
-    res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
+    res.status(400).json({ error: 'id del padre y childId del menor son obligatorios.' });
     return;
   }
 
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
@@ -834,17 +848,17 @@ export async function listChildBlockedUsers(req: Request, res: Response): Promis
       select: { id: true, parentId: true },
     });
     if (!child) {
-      res.status(404).json({ error: "Menor no encontrado." });
+      res.status(404).json({ error: 'Menor no encontrado.' });
       return;
     }
     if (child.parentId !== parentId) {
-      res.status(403).json({ error: "Este menor no pertenece a ese padre o tutor." });
+      res.status(403).json({ error: 'Este menor no pertenece a ese padre o tutor.' });
       return;
     }
 
     const blocks = await prisma.parentUserBlock.findMany({
       where: { childId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         blockedUserId: true,
@@ -865,8 +879,8 @@ export async function listChildBlockedUsers(req: Request, res: Response): Promis
       })),
     });
   } catch (err) {
-    logError("parent", err);
-    res.status(500).json({ error: "Error al listar usuarios bloqueados." });
+    logError('parent', err);
+    res.status(500).json({ error: 'Error al listar usuarios bloqueados.' });
   }
 }
 
@@ -874,23 +888,23 @@ export async function postBlockUserForChild(req: Request, res: Response): Promis
   const parentId = parentResourceId(req);
   const childId = req.params.childId?.trim();
   if (!parentId || !childId) {
-    res.status(400).json({ error: "id del padre y childId del menor son obligatorios." });
+    res.status(400).json({ error: 'id del padre y childId del menor son obligatorios.' });
     return;
   }
 
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
-  if (req.body === null || typeof req.body !== "object") {
-    res.status(400).json({ error: "El cuerpo debe ser un objeto JSON." });
+  if (req.body === null || typeof req.body !== 'object') {
+    res.status(400).json({ error: 'El cuerpo debe ser un objeto JSON.' });
     return;
   }
   const b = req.body as Record<string, unknown>;
-  const blockedUserIdRaw = typeof b.blockedUserId === "string" ? b.blockedUserId.trim() : "";
-  const usernameRaw = typeof b.username === "string" ? b.username.trim() : "";
+  const blockedUserIdRaw = typeof b.blockedUserId === 'string' ? b.blockedUserId.trim() : '';
+  const usernameRaw = typeof b.username === 'string' ? b.username.trim() : '';
 
   try {
     const child = await prisma.user.findUnique({
@@ -898,30 +912,30 @@ export async function postBlockUserForChild(req: Request, res: Response): Promis
       select: { id: true, parentId: true },
     });
     if (!child) {
-      res.status(404).json({ error: "Menor no encontrado." });
+      res.status(404).json({ error: 'Menor no encontrado.' });
       return;
     }
     if (child.parentId !== parentId) {
-      res.status(403).json({ error: "Este menor no pertenece a ese padre o tutor." });
+      res.status(403).json({ error: 'Este menor no pertenece a ese padre o tutor.' });
       return;
     }
 
     let blockedUserId = blockedUserIdRaw;
     if (!blockedUserId && usernameRaw) {
       const u = await prisma.user.findFirst({
-        where: { username: { equals: usernameRaw, mode: "insensitive" } },
+        where: { username: { equals: usernameRaw, mode: 'insensitive' } },
         select: { id: true },
       });
-      blockedUserId = u?.id ?? "";
+      blockedUserId = u?.id ?? '';
     }
 
     if (!blockedUserId) {
-      res.status(400).json({ error: "Indicá blockedUserId o username del usuario a bloquear." });
+      res.status(400).json({ error: 'Indicá blockedUserId o username del usuario a bloquear.' });
       return;
     }
 
     if (blockedUserId === childId) {
-      res.status(400).json({ error: "No podés bloquear al propio menor." });
+      res.status(400).json({ error: 'No podés bloquear al propio menor.' });
       return;
     }
 
@@ -930,7 +944,7 @@ export async function postBlockUserForChild(req: Request, res: Response): Promis
       select: { id: true, username: true },
     });
     if (!target) {
-      res.status(404).json({ error: "Usuario a bloquear no encontrado." });
+      res.status(404).json({ error: 'Usuario a bloquear no encontrado.' });
       return;
     }
 
@@ -954,8 +968,8 @@ export async function postBlockUserForChild(req: Request, res: Response): Promis
       username: target.username,
     });
   } catch (err) {
-    logError("parent", err);
-    res.status(500).json({ error: "Error al bloquear al usuario." });
+    logError('parent', err);
+    res.status(500).json({ error: 'Error al bloquear al usuario.' });
   }
 }
 
@@ -964,13 +978,13 @@ export async function unblockUserForChild(req: Request, res: Response): Promise<
   const childId = req.params.childId?.trim();
   const blockedUserId = req.params.blockedUserId?.trim();
   if (!parentId || !childId || !blockedUserId) {
-    res.status(400).json({ error: "id del padre, childId y blockedUserId son obligatorios." });
+    res.status(400).json({ error: 'id del padre, childId y blockedUserId son obligatorios.' });
     return;
   }
 
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
@@ -980,11 +994,11 @@ export async function unblockUserForChild(req: Request, res: Response): Promise<
       select: { id: true, parentId: true },
     });
     if (!child) {
-      res.status(404).json({ error: "Menor no encontrado." });
+      res.status(404).json({ error: 'Menor no encontrado.' });
       return;
     }
     if (child.parentId !== parentId) {
-      res.status(403).json({ error: "Este menor no pertenece a ese padre o tutor." });
+      res.status(403).json({ error: 'Este menor no pertenece a ese padre o tutor.' });
       return;
     }
 
@@ -993,13 +1007,13 @@ export async function unblockUserForChild(req: Request, res: Response): Promise<
     });
 
     if (del.count === 0) {
-      res.status(404).json({ error: "No hay bloqueo registrado para ese usuario." });
+      res.status(404).json({ error: 'No hay bloqueo registrado para ese usuario.' });
       return;
     }
 
     res.status(204).send();
   } catch (err) {
-    logError("parent", err);
-    res.status(500).json({ error: "Error al quitar el bloqueo." });
+    logError('parent', err);
+    res.status(500).json({ error: 'Error al quitar el bloqueo.' });
   }
 }

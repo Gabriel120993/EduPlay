@@ -3,7 +3,7 @@
  * Mantener alineado con `mobile/src/constants/premiumPlans.ts`.
  */
 
-export type PremiumPlanId = "monthly_premium" | "yearly_premium";
+export type PremiumPlanId = 'monthly_premium' | 'yearly_premium';
 
 export type PremiumPlanDefinition = {
   id: PremiumPlanId;
@@ -11,8 +11,8 @@ export type PremiumPlanDefinition = {
 };
 
 export const PREMIUM_PLANS: readonly PremiumPlanDefinition[] = [
-  { id: "monthly_premium", storeProductId: "eduplay_premium_monthly" },
-  { id: "yearly_premium", storeProductId: "eduplay_premium_yearly" },
+  { id: 'monthly_premium', storeProductId: 'eduplay_premium_monthly' },
+  { id: 'yearly_premium', storeProductId: 'eduplay_premium_yearly' },
 ] as const;
 
 export const PREMIUM_PLAN_BY_ID: Record<PremiumPlanId, PremiumPlanDefinition> = {
@@ -21,13 +21,13 @@ export const PREMIUM_PLAN_BY_ID: Record<PremiumPlanId, PremiumPlanDefinition> = 
 };
 
 export const PREMIUM_STORE_PRODUCT_IDS = new Set<string>([
-  "eduplay_premium_monthly",
-  "eduplay_premium_yearly",
+  'eduplay_premium_monthly',
+  'eduplay_premium_yearly',
 ]);
 
 export const PREMIUM_STORE_PRODUCT_ID_TO_PLAN: Record<string, PremiumPlanId> = {
-  eduplay_premium_monthly: "monthly_premium",
-  eduplay_premium_yearly: "yearly_premium",
+  eduplay_premium_monthly: 'monthly_premium',
+  eduplay_premium_yearly: 'yearly_premium',
 };
 
 export function isKnownPremiumStoreProductId(productId: string): boolean {

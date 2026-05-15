@@ -3,7 +3,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { space } from "../../theme/tokens";
-import { bumpUnlocksAfterLevel, getStarsForLevel, setMaxUnlockedLevel, setStarsForLevel } from "../storage/gameProgressStore";
+import {
+  bumpUnlocksAfterLevel,
+  getStarsForLevel,
+  setMaxUnlockedLevel,
+  setStarsForLevel,
+} from "../storage/gameProgressStore";
 import { MiniGameChrome } from "../shared/MiniGameChrome";
 import { starsFromAttempts } from "../shared/starsFromScore";
 import { TutorialOverlay, type TutorialStep } from "../shared/TutorialOverlay";
@@ -33,7 +38,21 @@ const ELS = ["💧 Agua", "🧂 Sal", "🍋 Ácido", "🧼 Base", "❄️ Frío"
 
 type PairKey = string;
 
-const WINNING: PairKey[] = ["0-4", "0-5", "0-1", "2-3", "1-5", "3-4", "1-4", "2-5", "0-3", "1-3", "2-4", "3-5", "4-5"];
+const WINNING: PairKey[] = [
+  "0-4",
+  "0-5",
+  "0-1",
+  "2-3",
+  "1-5",
+  "3-4",
+  "1-4",
+  "2-5",
+  "0-3",
+  "1-3",
+  "2-4",
+  "3-5",
+  "4-5",
+];
 
 export default function LabMadGame({ levelIndex, onCompleteLevel, onRequestExit }: MiniGameProps) {
   const { colors } = useTheme();
@@ -55,9 +74,7 @@ export default function LabMadGame({ levelIndex, onCompleteLevel, onRequestExit 
       setMsg("Elegí el segundo elemento…");
       return;
     }
-    const key = [first, i]
-      .sort((a, b) => a - b)
-      .join("-") as PairKey;
+    const key = [first, i].sort((a, b) => a - b).join("-") as PairKey;
     setFirst(null);
     if (key === target) {
       setMsg("¡Reacción perfecta! 🎉");
@@ -77,8 +94,16 @@ export default function LabMadGame({ levelIndex, onCompleteLevel, onRequestExit 
 
   return (
     <View style={{ flex: 1 }}>
-      {showTutorial ? <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} /> : null}
-      <MiniGameChrome meta={META} levelIndex={levelIndex} totalLevels={TOTAL_LEVELS} bestStars={best || undefined} onBack={onRequestExit}>
+      {showTutorial ? (
+        <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} />
+      ) : null}
+      <MiniGameChrome
+        meta={META}
+        levelIndex={levelIndex}
+        totalLevels={TOTAL_LEVELS}
+        bestStars={best || undefined}
+        onBack={onRequestExit}
+      >
         <Text style={{ color: colors.textSecondary, marginBottom: space.md, fontWeight: "700" }}>
           Encontrá la mezcla ganadora del nivel (experimentá con agua, sal, frío y calor).
         </Text>
@@ -101,7 +126,11 @@ export default function LabMadGame({ levelIndex, onCompleteLevel, onRequestExit 
           ))}
         </View>
         {msg ? (
-          <Text style={{ marginTop: space.lg, color: colors.primary, fontWeight: "800", fontSize: 16 }}>{msg}</Text>
+          <Text
+            style={{ marginTop: space.lg, color: colors.primary, fontWeight: "800", fontSize: 16 }}
+          >
+            {msg}
+          </Text>
         ) : null}
       </MiniGameChrome>
     </View>

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../contexts/ThemeContext";
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export function MinorHomeScreen({ age = 9, pendingApprovals = 0 }: Props) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   const ageBucket = useMemo(() => {
@@ -23,20 +25,39 @@ export function MinorHomeScreen({ age = 9, pendingApprovals = 0 }: Props) {
   }, [ageBucket]);
 
   return (
-    <ScrollView style={[styles.root, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.text }]}>Mi Inicio</Text>
-      <Text style={{ color: colors.textMuted }}>Contenido adaptado para tu edad ({age} años)</Text>
+    <ScrollView
+      style={[styles.root, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.content}
+    >
+      <Text
+        style={[styles.title, { color: colors.text }]}
+        allowFontScaling
+        maxFontSizeMultiplier={1.5}
+      >
+        {t("home.title")}
+      </Text>
+      <Text style={{ color: colors.textMuted }} allowFontScaling maxFontSizeMultiplier={1.5}>
+        {t("home.ageSubtitle", { age })}
+      </Text>
 
       {pendingApprovals > 0 ? (
-        <View style={[styles.banner, { backgroundColor: colors.warnBannerBg, borderColor: colors.warnBannerBorder }]}>
-          <Text style={{ color: colors.warnBannerText, fontWeight: "700" }}>
-            Tenés {pendingApprovals} aprobaciones pendientes de tu tutor.
+        <View
+          style={[
+            styles.banner,
+            { backgroundColor: colors.warnBannerBg, borderColor: colors.warnBannerBorder },
+          ]}
+          accessibilityRole="alert"
+        >
+          <Text style={{ color: colors.warnBannerText, fontWeight: "700" }} allowFontScaling>
+            {t("home.pendingBanner", { count: pendingApprovals })}
           </Text>
         </View>
       ) : null}
 
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Recomendado para vos</Text>
+        <Text style={[styles.cardTitle, { color: colors.text }]} allowFontScaling>
+          {t("home.recommendedTitle")}
+        </Text>
         {recommended.map((item) => (
           <Text key={item} style={{ color: colors.textBody }}>
             • {item}

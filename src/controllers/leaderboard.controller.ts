@@ -1,7 +1,7 @@
-import type { Request, Response } from "express";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { utcWeekRange } from "../lib/xpWeek";
+import type { Request, Response } from 'express';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { utcWeekRange } from '../lib/xpWeek';
 
 const LEADERBOARD_LIMIT = 10;
 
@@ -24,17 +24,17 @@ export async function getLeaderboard(_req: Request, res: Response): Promise<void
 
     const [allTimeRows, weeklyGrouped] = await Promise.all([
       prisma.user.findMany({
-        orderBy: [{ level: "desc" }, { experience: "desc" }],
+        orderBy: [{ level: 'desc' }, { experience: 'desc' }],
         take: LEADERBOARD_LIMIT,
         select: userLeaderboardSelect,
       }),
       prisma.xpGainLedger.groupBy({
-        by: ["userId"],
+        by: ['userId'],
         where: {
           createdAt: { gte: weekStartUtc, lt: weekEndExclusiveUtc },
         },
         _sum: { amount: true },
-        orderBy: { _sum: { amount: "desc" } },
+        orderBy: { _sum: { amount: 'desc' } },
         take: LEADERBOARD_LIMIT,
       }),
     ]);
@@ -84,7 +84,7 @@ export async function getLeaderboard(_req: Request, res: Response): Promise<void
       },
     });
   } catch (err) {
-    logError("leaderboard", err);
-    res.status(500).json({ error: "Error al obtener el ranking." });
+    logError('leaderboard', err);
+    res.status(500).json({ error: 'Error al obtener el ranking.' });
   }
 }

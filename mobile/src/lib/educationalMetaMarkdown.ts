@@ -8,7 +8,9 @@ export function educationalMetaToMarkdown(meta: unknown): string {
   const parts: string[] = [];
 
   const strList = (v: unknown): string[] =>
-    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim().length > 0) : [];
+    Array.isArray(v)
+      ? v.filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+      : [];
 
   const chapters = strList(m.chapters);
   if (chapters.length) {
@@ -74,14 +76,19 @@ export function educationalMetaToMarkdown(meta: unknown): string {
   const facts = strList(m.factsPerAnimal);
   if (animals.length) {
     const head = "## Animales para explorar\n\n";
-    const list = animals.slice(0, 24).map((a) => `- ${a}`).join("\n");
+    const list = animals
+      .slice(0, 24)
+      .map((a) => `- ${a}`)
+      .join("\n");
     const tail = facts.length ? `\n\n_En cada ficha podés ver: ${facts.join(", ")}._` : "";
     parts.push(`${head}${list}${tail}`);
   }
 
   const n = m.embeddedQuestions;
   if (typeof n === "number" && Number.isFinite(n) && n > 0) {
-    parts.push(`## Preguntas interactivas\n\nEste recurso incluye unas **${Math.floor(n)}** preguntas cortas para pensar mientras leés.`);
+    parts.push(
+      `## Preguntas interactivas\n\nEste recurso incluye unas **${Math.floor(n)}** preguntas cortas para pensar mientras leés.`,
+    );
   }
 
   return parts.filter(Boolean).join("\n\n").trim();

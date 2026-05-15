@@ -1,9 +1,9 @@
-import { isPremiumIapProductId } from "../../constants/premiumIap";
+import { isPremiumIapProductId } from '../../constants/premiumIap';
 
 type AppleVerifyPayload = {
-  "receipt-data": string;
+  'receipt-data': string;
   password: string;
-  "exclude-old-transactions"?: boolean;
+  'exclude-old-transactions'?: boolean;
 };
 
 type AppleReceiptInfo = {
@@ -37,15 +37,15 @@ export async function verifyAppleSubscription(params: {
   expectedTransactionId?: string;
 }): Promise<{ premiumUntil: Date; transactionId: string }> {
   const payload: AppleVerifyPayload = {
-    "receipt-data": params.receiptBase64,
+    'receipt-data': params.receiptBase64,
     password: params.sharedSecret,
-    "exclude-old-transactions": false,
+    'exclude-old-transactions': false,
   };
 
   const post = async (url: string): Promise<AppleVerifyResponse> => {
     const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
@@ -54,9 +54,9 @@ export async function verifyAppleSubscription(params: {
     return (await res.json()) as AppleVerifyResponse;
   };
 
-  let body = await post("https://buy.itunes.apple.com/verifyReceipt");
+  let body = await post('https://buy.itunes.apple.com/verifyReceipt');
   if (body.status === 21007) {
-    body = await post("https://sandbox.itunes.apple.com/verifyReceipt");
+    body = await post('https://sandbox.itunes.apple.com/verifyReceipt');
   }
 
   if (body.status !== 0) {
@@ -64,11 +64,11 @@ export async function verifyAppleSubscription(params: {
   }
 
   const rows = parseReceiptInfoArray(body).filter(
-    (r) => r.product_id && isPremiumIapProductId(r.product_id)
+    (r) => r.product_id && isPremiumIapProductId(r.product_id),
   );
   const forProduct = rows.filter((r) => r.product_id === params.expectedProductId);
   if (forProduct.length === 0) {
-    throw new Error("Recibo sin suscripción premium esperada.");
+    throw new Error('Recibo sin suscripción premium esperada.');
   }
 
   let chosen: AppleReceiptInfo;
@@ -81,12 +81,12 @@ export async function verifyAppleSubscription(params: {
 
   const ms = chosen.expires_date_ms ? Number(chosen.expires_date_ms) : NaN;
   if (!Number.isFinite(ms) || ms <= Date.now()) {
-    throw new Error("Suscripción expirada o sin fecha de fin en el recibo.");
+    throw new Error('Suscripción expirada o sin fecha de fin en el recibo.');
   }
 
   const tid = chosen.transaction_id;
   if (!tid) {
-    throw new Error("Recibo sin transaction_id.");
+    throw new Error('Recibo sin transaction_id.');
   }
 
   return { premiumUntil: new Date(ms), transactionId: tid };

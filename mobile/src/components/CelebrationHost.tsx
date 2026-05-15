@@ -19,7 +19,16 @@ import {
 import { playLevelUp, playReward } from "../services/soundManager";
 import { radius, space, typography } from "../theme/tokens";
 
-const CONFETTI_COLORS = ["#f472b6", "#34d399", "#60a5fa", "#fbbf24", "#a78bfa", "#fb7185", "#38bdf8", "#c084fc"];
+const CONFETTI_COLORS = [
+  "#f472b6",
+  "#34d399",
+  "#60a5fa",
+  "#fbbf24",
+  "#a78bfa",
+  "#fb7185",
+  "#38bdf8",
+  "#c084fc",
+];
 
 type ConfettiPieceConfig = {
   left: number;
@@ -57,7 +66,7 @@ function ConfettiBurst({ active }: { active: boolean }) {
 function ConfettiPiece(
   p: ConfettiPieceConfig & {
     height: number;
-  }
+  },
 ) {
   const y = useRef(new Animated.Value(-30)).current;
   const x = useRef(new Animated.Value(0)).current;
@@ -187,7 +196,12 @@ export function CelebrationHost() {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={dismiss}>
       <View style={styles.modalRoot}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} accessibilityRole="button" accessibilityLabel="Cerrar" />
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={dismiss}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar"
+        />
         <View style={[StyleSheet.absoluteFill, { overflow: "hidden" }]} pointerEvents="none">
           <ConfettiBurst active={visible && !!current} />
         </View>

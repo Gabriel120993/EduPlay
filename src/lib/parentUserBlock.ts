@@ -1,7 +1,10 @@
-import { prisma } from "./prisma";
+import { prisma } from './prisma';
 
 /** True si el tutor de `a` o el de `b` bloqueó la amistad entre ambos menores. */
-export async function isFriendshipForbiddenByParentBlock(aId: string, bId: string): Promise<boolean> {
+export async function isFriendshipForbiddenByParentBlock(
+  aId: string,
+  bId: string,
+): Promise<boolean> {
   if (aId === bId) return false;
   const row = await prisma.parentUserBlock.findFirst({
     where: {

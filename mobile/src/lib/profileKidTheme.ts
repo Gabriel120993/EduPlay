@@ -103,7 +103,10 @@ export function missionCardGradient(type: string, isDark = false): [string, stri
   }
 }
 
-export function missionTypeStrongColors(type: string, isDark = false): { iconBg: string; border: string; accent: string } {
+export function missionTypeStrongColors(
+  type: string,
+  isDark = false,
+): { iconBg: string; border: string; accent: string } {
   if (isDark) {
     switch (type) {
       case "PLAY_GAMES":

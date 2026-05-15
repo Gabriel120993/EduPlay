@@ -1,12 +1,5 @@
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { AppIcon } from "../../components/AppIcon";
 import { BrandLogo } from "../../components/BrandLogo";
@@ -76,7 +69,8 @@ export function OnboardingFlow({ userId, onComplete }: Props) {
     const ids = CONTENT_CATEGORIES_UI.map((c) => c.id);
     shuffleInPlace(ids);
     const count =
-      MIN_INTERESTS + Math.floor(Math.random() * (CONTENT_CATEGORIES_UI.length - MIN_INTERESTS + 1));
+      MIN_INTERESTS +
+      Math.floor(Math.random() * (CONTENT_CATEGORIES_UI.length - MIN_INTERESTS + 1));
     setInterests(new Set(ids.slice(0, count)));
   }, []);
 
@@ -101,9 +95,18 @@ export function OnboardingFlow({ userId, onComplete }: Props) {
   const canFinish = canNextFromInterests && firstAction !== null;
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.md }]}>
+    <View
+      style={[
+        styles.root,
+        { paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.md },
+      ]}
+    >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.onboardingHeader} accessibilityRole="image" accessibilityLabel="Logo de EduPlay">
+        <View
+          style={styles.onboardingHeader}
+          accessibilityRole="image"
+          accessibilityLabel="Logo de EduPlay"
+        >
           <BrandLogo width={144} height={144} />
         </View>
         {step === 0 ? (
@@ -111,7 +114,8 @@ export function OnboardingFlow({ userId, onComplete }: Props) {
             <Text style={styles.title}>Bienvenido a EduPlay</Text>
             <Text style={styles.tagline}>{APP_TAGLINE}</Text>
             <Text style={styles.lead}>
-              En unos pasos vamos a personalizar tu experiencia: intereses y qué te gustaría hacer primero.
+              En unos pasos vamos a personalizar tu experiencia: intereses y qué te gustaría hacer
+              primero.
             </Text>
             <Pressable
               style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
@@ -143,7 +147,11 @@ export function OnboardingFlow({ userId, onComplete }: Props) {
             <View style={styles.quickActionsRow}>
               <Pressable
                 onPress={selectAllInterests}
-                style={({ pressed }) => [styles.quickActionBtn, styles.quickActionBtnOutline, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.quickActionBtn,
+                  styles.quickActionBtnOutline,
+                  pressed && styles.pressed,
+                ]}
                 accessibilityRole="button"
                 accessibilityLabel="Seleccionar todas las categorías"
               >
@@ -151,7 +159,11 @@ export function OnboardingFlow({ userId, onComplete }: Props) {
               </Pressable>
               <Pressable
                 onPress={surpriseRandomInterests}
-                style={({ pressed }) => [styles.quickActionBtn, styles.quickActionBtnSurprise, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.quickActionBtn,
+                  styles.quickActionBtnSurprise,
+                  pressed && styles.pressed,
+                ]}
                 accessibilityRole="button"
                 accessibilityLabel="Sorpréndeme: elegir categorías al azar"
               >
@@ -191,7 +203,10 @@ export function OnboardingFlow({ userId, onComplete }: Props) {
                     <View style={styles.interestCardIconWrap} accessibilityElementsHidden>
                       <AppIcon name={cat.icon} color={on ? cat.accent : "#475569"} size="lg" />
                     </View>
-                    <Text style={[styles.interestCardLabel, on && { color: cat.accent }]} numberOfLines={2}>
+                    <Text
+                      style={[styles.interestCardLabel, on && { color: cat.accent }]}
+                      numberOfLines={2}
+                    >
                       {cat.emoji} {cat.label}
                     </Text>
                   </Pressable>

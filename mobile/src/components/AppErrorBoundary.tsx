@@ -30,7 +30,9 @@ export class AppErrorBoundary extends Component<Props, State> {
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
             <Text style={styles.mono}>{msg}</Text>
             {Platform.OS === "web" ? (
-              <Text style={styles.hint}>Abrí las herramientas de desarrollo del navegador (F12) para más detalle.</Text>
+              <Text style={styles.hint}>
+                Abrí las herramientas de desarrollo del navegador (F12) para más detalle.
+              </Text>
             ) : null}
           </ScrollView>
         </View>

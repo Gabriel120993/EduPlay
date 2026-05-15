@@ -2,7 +2,16 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useMemo } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { PREMIUM_PLANS } from "../constants/premiumPlans";
 import { useAuth } from "../contexts/AuthContext";
@@ -53,7 +62,11 @@ function PremiumPlansRow() {
           const detail = detailsByProductId.get(plan.storeProductId);
           const priceLabel = detail?.price ?? plan.priceDisplayLabel;
           return (
-            <View key={plan.id} style={styles.planCard} accessibilityLabel={`Plan ${plan.billingPeriodLabel}, ${priceLabel}`}>
+            <View
+              key={plan.id}
+              style={styles.planCard}
+              accessibilityLabel={`Plan ${plan.billingPeriodLabel}, ${priceLabel}`}
+            >
               <Text style={styles.planPeriod}>{plan.billingPeriodLabel}</Text>
               <Text style={styles.planPrice}>{priceLabel}</Text>
               {__DEV__ ? (
@@ -91,7 +104,7 @@ export function PremiumScreen(_props: Props) {
     Alert.alert(
       "Prueba gratis 7 días",
       "Estamos terminando la activación de la prueba y el pago seguro en la app. Muy pronto podrás empezar tus 7 días gratis desde aquí.",
-      [{ text: "Entendido", style: "default" }]
+      [{ text: "Entendido", style: "default" }],
     );
   };
 
@@ -106,7 +119,9 @@ export function PremiumScreen(_props: Props) {
         <View style={styles.hero}>
           <Text style={styles.heroEmoji}>✨</Text>
           <Text style={styles.heroTitle}>Ya tenés Premium</Text>
-          <Text style={styles.heroSub}>Disfrutá de analíticas y controles avanzados con tu cuenta.</Text>
+          <Text style={styles.heroSub}>
+            Disfrutá de analíticas y controles avanzados con tu cuenta.
+          </Text>
         </View>
         <Text style={styles.sectionHint}>Incluido en tu plan</Text>
         <View style={styles.card}>
@@ -132,7 +147,9 @@ export function PremiumScreen(_props: Props) {
       <View style={styles.hero}>
         <Text style={styles.heroEmoji}>✨</Text>
         <Text style={styles.heroTitle}>EduPlay Premium</Text>
-        <Text style={styles.heroSub}>Más visibilidad y tranquilidad para acompañar el aprendizaje en casa.</Text>
+        <Text style={styles.heroSub}>
+          Más visibilidad y tranquilidad para acompañar el aprendizaje en casa.
+        </Text>
       </View>
 
       <Text style={styles.sectionHint}>Beneficios</Text>
@@ -162,7 +179,8 @@ export function PremiumScreen(_props: Props) {
         <Text style={styles.ctaText}>Probar gratis 7 días</Text>
       </Pressable>
       <Text style={styles.legalHint}>
-        Sin cargo durante el período de prueba. Después se aplica el plan mensual o anual que elijas al suscribirte.
+        Sin cargo durante el período de prueba. Después se aplica el plan mensual o anual que elijas
+        al suscribirte.
       </Text>
 
       {Platform.OS !== "web" ? (
@@ -274,7 +292,12 @@ function createStyles(c: import("../theme/appTheme").AppColors) {
     benefitEmoji: { fontSize: 22, marginTop: 2, marginRight: space.md },
     benefitText: { flex: 1, minWidth: 0 },
     benefitTitle: { fontSize: typography.bodyLarge, fontWeight: "800", color: c.text },
-    benefitBody: { marginTop: space.xs, fontSize: typography.body, color: c.textMuted, lineHeight: 20 },
+    benefitBody: {
+      marginTop: space.xs,
+      fontSize: typography.body,
+      color: c.textMuted,
+      lineHeight: 20,
+    },
     plansRow: {
       flexDirection: "row",
       gap: space.sm,

@@ -1,60 +1,27 @@
-import type { Request, Response } from "express";
-import { FriendStatus, Prisma } from "@prisma/client";
+import type { Request, Response } from 'express';
+import { FriendStatus, Prisma } from '@prisma/client';
 import {
   recordAndNotifyFriendRequest,
   recordAndNotifyFriendshipAwaitingParentApproval,
   recordAndNotifyNewFriendship,
-} from "../lib/friendshipParentNotify";
-import { env } from "../config/env";
-import { assertAllowFriends } from "../lib/parentalRestrictions";
-import { isFriendshipForbiddenByParentBlock } from "../lib/parentUserBlock";
-import { logError, logSuspicious } from "../lib/logger";
-import { prisma } from "../lib/prisma";
+} from '../lib/friendshipParentNotify';
+import { env } from '../config/env';
+import { assertAllowFriends } from '../lib/parentalRestrictions';
+import { isFriendshipForbiddenByParentBlock } from '../lib/parentUserBlock';
+import { logError, logSuspicious } from '../lib/logger';
+import { prisma } from '../lib/prisma';
 import {
   formatZodError,
   friendUserPairSchema,
   parentApproveFriendBodySchema,
   parseUuidParam,
   sendFriendRequestBodySchema,
-} from "../lib/validation/schemas";
-
-function isActiveIncomingBlock(status: FriendStatus): boolean {
-  return status === FriendStatus.PENDING || status === FriendStatus.AWAITING_PARENT;
-}
-
-async function ensureBothUsersExist(userId: string, friendId: string): Promise<boolean> {
-  const [a, b] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
-    prisma.user.findUnique({ where: { id: friendId }, select: { id: true } }),
-  ]);
-  return Boolean(a && b);
-}
-
-function completeAcceptedFriendshipTx(rowId: string, userId: string, friendId: string) {
-  return prisma.$transaction([
-    prisma.friend.update({
-      where: { id: rowId },
-      data: { status: FriendStatus.ACCEPTED, parentApproved: true },
-    }),
-    prisma.friend.upsert({
-      where: {
-        userId_friendId: { userId: friendId, friendId: userId },
-      },
-      create: {
-        userId: friendId,
-        friendId: userId,
-        status: FriendStatus.ACCEPTED,
-        requiresParentApproval: false,
-        parentApproved: true,
-      },
-      update: {
-        status: FriendStatus.ACCEPTED,
-        parentApproved: true,
-        requiresParentApproval: false,
-      },
-    }),
-  ]);
-}
+} from '../lib/validation/schemas';
+import {
+  completeAcceptedFriendshipTx,
+  ensureBothUsersExist,
+  isActiveIncomingBlock,
+} from '../services/friends.service';
 
 export async function sendFriendRequest(req: Request, res: Response): Promise<void> {
   const parsed = sendFriendRequestBodySchema.safeParse(req.body);
@@ -67,13 +34,13 @@ export async function sendFriendRequest(req: Request, res: Response): Promise<vo
   const requiresParentApproval = true;
 
   const auth = req.auth;
-  if (auth?.kind !== "child" || auth.userId !== userId) {
-    logSuspicious("friend_request_spoofed_user_id", {
+  if (auth?.kind !== 'child' || auth.userId !== userId) {
+    logSuspicious('friend_request_spoofed_user_id', {
       bodyUserId: userId,
-      jwtUserId: auth?.kind === "child" ? auth.userId : undefined,
+      jwtUserId: auth?.kind === 'child' ? auth.userId : undefined,
     });
     res.status(403).json({
-      error: "El identificador de usuario del remitente no coincide con tu sesión.",
+      error: 'El identificador de usuario del remitente no coincide con tu sesión.',
     });
     return;
   }
@@ -84,21 +51,21 @@ export async function sendFriendRequest(req: Request, res: Response): Promise<vo
       where: { userId, createdAt: { gte: hourAgo } },
     });
     if (recentOutgoingCreates >= env.friendRequestDbMaxPerHour) {
-      logSuspicious("friend_request_hourly_db_cap", {
+      logSuspicious('friend_request_hourly_db_cap', {
         userId,
         count: recentOutgoingCreates,
         max: env.friendRequestDbMaxPerHour,
       });
       res.status(429).json({
         error:
-          "Enviaste demasiadas solicitudes de amistad recientemente. Probá de nuevo más tarde o pedí ayuda a un tutor.",
-        code: "FRIEND_REQUEST_TOO_MANY_NEW",
+          'Enviaste demasiadas solicitudes de amistad recientemente. Probá de nuevo más tarde o pedí ayuda a un tutor.',
+        code: 'FRIEND_REQUEST_TOO_MANY_NEW',
       });
       return;
     }
 
     if (!(await ensureBothUsersExist(userId, friendId))) {
-      res.status(400).json({ error: "userId o friendId no corresponden a usuarios existentes." });
+      res.status(400).json({ error: 'userId o friendId no corresponden a usuarios existentes.' });
       return;
     }
 
@@ -109,7 +76,7 @@ export async function sendFriendRequest(req: Request, res: Response): Promise<vo
     }
 
     if (await isFriendshipForbiddenByParentBlock(userId, friendId)) {
-      res.status(403).json({ error: "Un tutor bloqueó la amistad entre estos usuarios." });
+      res.status(403).json({ error: 'Un tutor bloqueó la amistad entre estos usuarios.' });
       return;
     }
 
@@ -121,12 +88,12 @@ export async function sendFriendRequest(req: Request, res: Response): Promise<vo
 
     if (reverse && isActiveIncomingBlock(reverse.status)) {
       res.status(409).json({
-        error: "Ya existe una solicitud pendiente en la dirección contraria.",
+        error: 'Ya existe una solicitud pendiente en la dirección contraria.',
       });
       return;
     }
     if (reverse?.status === FriendStatus.ACCEPTED) {
-      res.status(409).json({ error: "Ya son amigos." });
+      res.status(409).json({ error: 'Ya son amigos.' });
       return;
     }
 
@@ -137,17 +104,18 @@ export async function sendFriendRequest(req: Request, res: Response): Promise<vo
     });
 
     if (existing?.status === FriendStatus.PENDING) {
-      res.status(409).json({ error: "Ya enviaste una solicitud pendiente a este usuario." });
+      res.status(409).json({ error: 'Ya enviaste una solicitud pendiente a este usuario.' });
       return;
     }
     if (existing?.status === FriendStatus.AWAITING_PARENT) {
       res.status(409).json({
-        error: "La solicitud ya fue aceptada por el destinatario y espera aprobación del padre o tutor.",
+        error:
+          'La solicitud ya fue aceptada por el destinatario y espera aprobación del padre o tutor.',
       });
       return;
     }
     if (existing?.status === FriendStatus.ACCEPTED) {
-      res.status(409).json({ error: "Ya son amigos." });
+      res.status(409).json({ error: 'Ya son amigos.' });
       return;
     }
 
@@ -177,12 +145,12 @@ export async function sendFriendRequest(req: Request, res: Response): Promise<vo
 
     res.status(201).json(record);
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      res.status(409).json({ error: "Solicitud duplicada o conflicto con datos existentes." });
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      res.status(409).json({ error: 'Solicitud duplicada o conflicto con datos existentes.' });
       return;
     }
-    logError("friend", err);
-    res.status(500).json({ error: "Error al enviar la solicitud de amistad." });
+    logError('friend', err);
+    res.status(500).json({ error: 'Error al enviar la solicitud de amistad.' });
   }
 }
 
@@ -203,7 +171,8 @@ export async function acceptFriendRequest(req: Request, res: Response): Promise<
 
     if (!row || row.status !== FriendStatus.PENDING) {
       res.status(404).json({
-        error: "No hay solicitud pendiente con ese par userId (remitente) / friendId (destinatario).",
+        error:
+          'No hay solicitud pendiente con ese par userId (remitente) / friendId (destinatario).',
       });
       return;
     }
@@ -221,7 +190,7 @@ export async function acceptFriendRequest(req: Request, res: Response): Promise<
     }
 
     if (await isFriendshipForbiddenByParentBlock(userId, friendId)) {
-      res.status(403).json({ error: "Un tutor bloqueó la amistad entre estos usuarios." });
+      res.status(403).json({ error: 'Un tutor bloqueó la amistad entre estos usuarios.' });
       return;
     }
 
@@ -247,8 +216,8 @@ export async function acceptFriendRequest(req: Request, res: Response): Promise<
       reciprocal,
     });
   } catch (err) {
-    logError("friend", err);
-    res.status(500).json({ error: "Error al aceptar la solicitud." });
+    logError('friend', err);
+    res.status(500).json({ error: 'Error al aceptar la solicitud.' });
   }
 }
 
@@ -261,8 +230,8 @@ export async function parentApproveFriendRequest(req: Request, res: Response): P
   const { userId, friendId, parentId } = parsed.data;
 
   const auth = req.auth;
-  if (!auth || auth.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "El parentId no coincide con tu sesión de tutor." });
+  if (!auth || auth.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'El parentId no coincide con tu sesión de tutor.' });
     return;
   }
 
@@ -276,13 +245,13 @@ export async function parentApproveFriendRequest(req: Request, res: Response): P
     if (!row || row.status !== FriendStatus.AWAITING_PARENT) {
       res.status(404).json({
         error:
-          "No hay solicitud en espera de aprobación parental con ese par userId (remitente) / friendId (destinatario).",
+          'No hay solicitud en espera de aprobación parental con ese par userId (remitente) / friendId (destinatario).',
       });
       return;
     }
 
     if (!row.requiresParentApproval) {
-      res.status(400).json({ error: "Esta solicitud no requiere aprobación del padre o tutor." });
+      res.status(400).json({ error: 'Esta solicitud no requiere aprobación del padre o tutor.' });
       return;
     }
 
@@ -292,12 +261,13 @@ export async function parentApproveFriendRequest(req: Request, res: Response): P
     ]);
 
     if (!parentRecord) {
-      res.status(403).json({ error: "parentId no corresponde a un padre o tutor registrado." });
+      res.status(403).json({ error: 'parentId no corresponde a un padre o tutor registrado.' });
       return;
     }
     if (!recipientChild || recipientChild.parentId !== parentId) {
       res.status(403).json({
-        error: "Solo el padre o tutor vinculado al usuario destinatario (friendId) puede aprobar esta solicitud.",
+        error:
+          'Solo el padre o tutor vinculado al usuario destinatario (friendId) puede aprobar esta solicitud.',
       });
       return;
     }
@@ -314,7 +284,7 @@ export async function parentApproveFriendRequest(req: Request, res: Response): P
     }
 
     if (await isFriendshipForbiddenByParentBlock(userId, friendId)) {
-      res.status(403).json({ error: "Un tutor bloqueó la amistad entre estos usuarios." });
+      res.status(403).json({ error: 'Un tutor bloqueó la amistad entre estos usuarios.' });
       return;
     }
 
@@ -327,8 +297,8 @@ export async function parentApproveFriendRequest(req: Request, res: Response): P
       reciprocal,
     });
   } catch (err) {
-    logError("friend", err);
-    res.status(500).json({ error: "Error al aprobar la amistad." });
+    logError('friend', err);
+    res.status(500).json({ error: 'Error al aprobar la amistad.' });
   }
 }
 
@@ -342,8 +312,8 @@ export async function parentRejectFriendAwaiting(req: Request, res: Response): P
   const { userId, friendId, parentId } = parsed.data;
 
   const auth = req.auth;
-  if (!auth || auth.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "El parentId no coincide con tu sesión de tutor." });
+  if (!auth || auth.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'El parentId no coincide con tu sesión de tutor.' });
     return;
   }
 
@@ -357,7 +327,7 @@ export async function parentRejectFriendAwaiting(req: Request, res: Response): P
     if (!row || row.status !== FriendStatus.AWAITING_PARENT) {
       res.status(404).json({
         error:
-          "No hay solicitud en espera de aprobación parental con ese par userId (remitente) / friendId (destinatario).",
+          'No hay solicitud en espera de aprobación parental con ese par userId (remitente) / friendId (destinatario).',
       });
       return;
     }
@@ -368,7 +338,8 @@ export async function parentRejectFriendAwaiting(req: Request, res: Response): P
     });
     if (!recipientChild || recipientChild.parentId !== parentId) {
       res.status(403).json({
-        error: "Solo el padre o tutor vinculado al usuario destinatario (friendId) puede rechazar esta solicitud.",
+        error:
+          'Solo el padre o tutor vinculado al usuario destinatario (friendId) puede rechazar esta solicitud.',
       });
       return;
     }
@@ -380,8 +351,8 @@ export async function parentRejectFriendAwaiting(req: Request, res: Response): P
 
     res.json(updated);
   } catch (err) {
-    logError("friend.parentReject", err);
-    res.status(500).json({ error: "Error al rechazar la solicitud." });
+    logError('friend.parentReject', err);
+    res.status(500).json({ error: 'Error al rechazar la solicitud.' });
   }
 }
 
@@ -405,7 +376,8 @@ export async function rejectFriendRequest(req: Request, res: Response): Promise<
       (row.status !== FriendStatus.PENDING && row.status !== FriendStatus.AWAITING_PARENT)
     ) {
       res.status(404).json({
-        error: "No hay solicitud pendiente con ese par userId (remitente) / friendId (destinatario).",
+        error:
+          'No hay solicitud pendiente con ese par userId (remitente) / friendId (destinatario).',
       });
       return;
     }
@@ -417,8 +389,8 @@ export async function rejectFriendRequest(req: Request, res: Response): Promise<
 
     res.json(updated);
   } catch (err) {
-    logError("friend", err);
-    res.status(500).json({ error: "Error al rechazar la solicitud." });
+    logError('friend', err);
+    res.status(500).json({ error: 'Error al rechazar la solicitud.' });
   }
 }
 
@@ -433,7 +405,7 @@ export async function getAcceptedFriends(req: Request, res: Response): Promise<v
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
     if (!user) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
 
@@ -442,7 +414,7 @@ export async function getAcceptedFriends(req: Request, res: Response): Promise<v
         status: FriendStatus.ACCEPTED,
         OR: [{ userId }, { friendId: userId }],
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
 
     const seenOther = new Set<string>();
@@ -478,8 +450,8 @@ export async function getAcceptedFriends(req: Request, res: Response): Promise<v
 
     res.json({ userId, friends });
   } catch (err) {
-    logError("friend", err);
-    res.status(500).json({ error: "Error al listar amigos." });
+    logError('friend', err);
+    res.status(500).json({ error: 'Error al listar amigos.' });
   }
 }
 
@@ -494,7 +466,7 @@ export async function getPendingFriendRequests(req: Request, res: Response): Pro
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
     if (!user) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
 
@@ -503,7 +475,7 @@ export async function getPendingFriendRequests(req: Request, res: Response): Pro
         friendId: userId,
         status: FriendStatus.PENDING,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
 
     const requesterIds = [...new Set(rows.map((r) => r.userId))];
@@ -527,7 +499,7 @@ export async function getPendingFriendRequests(req: Request, res: Response): Pro
 
     res.json({ userId, requests });
   } catch (err) {
-    logError("friend", err);
-    res.status(500).json({ error: "Error al listar solicitudes pendientes." });
+    logError('friend', err);
+    res.status(500).json({ error: 'Error al listar solicitudes pendientes.' });
   }
 }

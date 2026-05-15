@@ -20,9 +20,14 @@ export type RarityBadgeVisual = {
  * Colores por rareza (COMMON gris, RARE azul, EPIC violeta, LEGENDARY oro).
  * Resplandor / borde más marcado desde RARE hacia arriba.
  */
-export function getRarityBadgeVisual(rarity: AchievementRarity, isDark: boolean): RarityBadgeVisual {
+export function getRarityBadgeVisual(
+  rarity: AchievementRarity,
+  isDark: boolean,
+): RarityBadgeVisual {
   const r: AchievementRarity =
-    rarity === "RARE" || rarity === "EPIC" || rarity === "LEGENDARY" || rarity === "COMMON" ? rarity : "COMMON";
+    rarity === "RARE" || rarity === "EPIC" || rarity === "LEGENDARY" || rarity === "COMMON"
+      ? rarity
+      : "COMMON";
   switch (r) {
     case "COMMON":
       return {

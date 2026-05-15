@@ -37,13 +37,17 @@ export function BrandEmptyState({ title, subtitle, emoji }: Props) {
     >
       <BrandLogo width={56} height={56} />
       <View style={styles.titleRow}>
-        {showSparkleIcon ? <AppIcon name="sparkles" color={colors.primaryStrong} size="md" /> : null}
+        {showSparkleIcon ? (
+          <AppIcon name="sparkles" color={colors.primaryStrong} size="md" />
+        ) : null}
         <Text style={[styles.title, { color: colors.primaryStrong }]}>
           {prefix}
           {title}
         </Text>
       </View>
-      {subtitle ? <Text style={[styles.subtitle, { color: colors.textMuted }]}>{subtitle}</Text> : null}
+      {subtitle ? (
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>{subtitle}</Text>
+      ) : null}
     </View>
   );
 }
@@ -81,4 +85,3 @@ const styles = StyleSheet.create({
     maxWidth: 380,
   },
 });
-

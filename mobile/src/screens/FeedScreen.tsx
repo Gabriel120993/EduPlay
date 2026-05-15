@@ -20,7 +20,11 @@ import type { BottomTabNavigationProp, BottomTabScreenProps } from "@react-navig
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ContinueLearningSection } from "../components/ContinueLearningSection";
-import { ContentCard, type ContentCardCategory, type ContentCardDifficulty } from "../components/ContentCard";
+import {
+  ContentCard,
+  type ContentCardCategory,
+  type ContentCardDifficulty,
+} from "../components/ContentCard";
 import { AnimatedFeedItem } from "../components/AnimatedFeedItem";
 import { AppIcon } from "../components/AppIcon";
 import { BrandEmptyState } from "../components/BrandEmptyState";
@@ -73,7 +77,14 @@ import { useFeedStyles } from "./feedScreenStyles";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Feed">;
 
-type QuizCategory = "astronomy" | "math" | "science" | "history" | "geography" | "creativity" | "mixed";
+type QuizCategory =
+  | "astronomy"
+  | "math"
+  | "science"
+  | "history"
+  | "geography"
+  | "creativity"
+  | "mixed";
 
 const CREATE_POST_MAX_LENGTH = 200;
 const FEED_LOAD_ERROR_MSG = "No se pudo cargar el feed";
@@ -230,7 +241,10 @@ function contentCardType(item: ApiRecommendedContentCard): FeedRecommendationCar
   return "learn";
 }
 
-function apiContentToFeedCard(item: ApiRecommendedContentCard, index: number): FeedRecommendationCard {
+function apiContentToFeedCard(
+  item: ApiRecommendedContentCard,
+  index: number,
+): FeedRecommendationCard {
   return {
     id: item.id,
     contentId: item.id,
@@ -273,7 +287,9 @@ function RecommendedForYouSection({
   const hOverflow = hScrollViewport > 0 && hScrollContent > hScrollViewport + 4;
   const hMaxScroll = Math.max(1, hScrollContent - hScrollViewport);
   const hProgress = hOverflow ? Math.min(1, Math.max(0, hScrollX / hMaxScroll)) : 0;
-  const hThumbPct = hOverflow ? Math.max(14, Math.min(100, (hScrollViewport / hScrollContent) * 100)) : 100;
+  const hThumbPct = hOverflow
+    ? Math.max(14, Math.min(100, (hScrollViewport / hScrollContent) * 100))
+    : 100;
   const hThumbLeftPct = hOverflow ? hProgress * (100 - hThumbPct) : 0;
 
   const onRecommendedScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -309,14 +325,20 @@ function RecommendedForYouSection({
 
   return (
     <View style={[styles.recommendedSectionOuter, highlightRing]}>
-      <View style={styles.recommendedWrap} accessibilityRole="summary" accessibilityLabel="Recomendado para vos">
+      <View
+        style={styles.recommendedWrap}
+        accessibilityRole="summary"
+        accessibilityLabel="Recomendado para vos"
+      >
         <View style={styles.recommendedGlow} pointerEvents="none" />
         <View style={styles.recommendedInner}>
           <View style={styles.recommendedTitleRow}>
             <AppIcon name="sparkles-outline" color={colors.recTitle} size="lg" />
             <View style={styles.recommendedTitleTextCol}>
               <Text style={styles.recommendedTitle}>✨ Recomendado para vos</Text>
-              <Text style={styles.recommendedSubtitle}>Contenido educativo real para seguir aprendiendo</Text>
+              <Text style={styles.recommendedSubtitle}>
+                Contenido educativo real para seguir aprendiendo
+              </Text>
             </View>
           </View>
           <ScrollView
@@ -478,9 +500,7 @@ export function FeedScreen({ route }: Props) {
   const { viewerUserId: authViewerId, token } = useAuth();
   const { pendingFeedWelcome, consumePendingFeedWelcome } = usePostOnboarding();
   const userId =
-    authViewerId?.trim() ||
-    route.params?.userId?.trim() ||
-    (token ? "" : VIEWER_USER_ID);
+    authViewerId?.trim() || route.params?.userId?.trim() || (token ? "" : VIEWER_USER_ID);
   const screenTime = useScreenTime();
   const readOnly = screenTime.readOnlyMode;
   const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -497,7 +517,8 @@ export function FeedScreen({ route }: Props) {
   const createPostLockRef = useRef(false);
   const reactionInFlightRef = useRef(false);
   const fetchInFlightRef = useRef(false);
-  const [recommendations, setRecommendations] = useState<FeedRecommendationCard[]>(FALLBACK_RECOMMENDATIONS);
+  const [recommendations, setRecommendations] =
+    useState<FeedRecommendationCard[]>(FALLBACK_RECOMMENDATIONS);
   const [apiContinueItem, setApiContinueItem] = useState<ContentFeedResponse["continue"]>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   /** `null` = todas las categorías. */
@@ -516,10 +537,12 @@ export function FeedScreen({ route }: Props) {
 
   const openEducationalFromRec = useCallback(
     (contentId: string) => {
-      const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+      const root = tabNavigation.getParent() as
+        | NativeStackNavigationProp<RootStackParamList>
+        | undefined;
       root?.navigate("ContentDetail", { contentId });
     },
-    [tabNavigation]
+    [tabNavigation],
   );
 
   const handleResumeLastGame = useCallback(() => {
@@ -529,7 +552,9 @@ export function FeedScreen({ route }: Props) {
     }
     const g = continueLearning.game;
     if (!g) return;
-    const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+    const root = tabNavigation.getParent() as
+      | NativeStackNavigationProp<RootStackParamList>
+      | undefined;
     if (g.kind === "quiz") {
       root?.navigate("Quiz", {
         category: g.category as QuizCategory,
@@ -547,7 +572,9 @@ export function FeedScreen({ route }: Props) {
     }
     const c = continueLearning.content;
     if (!c) return;
-    const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+    const root = tabNavigation.getParent() as
+      | NativeStackNavigationProp<RootStackParamList>
+      | undefined;
     root?.navigate("ContentDetail", { contentId: c.contentId });
   }, [continueLearning.content, readOnly, tabNavigation]);
 
@@ -654,7 +681,7 @@ export function FeedScreen({ route }: Props) {
         setFetchingPosts(false);
       }
     },
-    [userId]
+    [userId],
   );
 
   const fetchRecommendations = useCallback(async () => {
@@ -721,7 +748,7 @@ export function FeedScreen({ route }: Props) {
       return () => {
         cancelled = true;
       };
-    }, [userId, fetchFeed, fetchRecommendations])
+    }, [userId, fetchFeed, fetchRecommendations]),
   );
 
   useFocusEffect(
@@ -733,7 +760,7 @@ export function FeedScreen({ route }: Props) {
       return () => {
         cancelled = true;
       };
-    }, [])
+    }, []),
   );
 
   const onRefresh = useCallback(() => {
@@ -822,7 +849,7 @@ export function FeedScreen({ route }: Props) {
         setPendingKey(null);
       }
     },
-    [userId, readOnly]
+    [userId, readOnly],
   );
 
   if (!userId && !loading) {
@@ -832,15 +859,15 @@ export function FeedScreen({ route }: Props) {
         <Text style={styles.errorText}>
           {token ? (
             <>
-              Tu cuenta de tutor no tiene ningún menor vinculado en la base de datos. Hace falta un usuario hijo
-              asociado a tu cuenta para ver el feed.
+              Tu cuenta de tutor no tiene ningún menor vinculado en la base de datos. Hace falta un
+              usuario hijo asociado a tu cuenta para ver el feed.
             </>
           ) : (
             <>
               En la carpeta <Text style={styles.mono}>mobile</Text>, editá{" "}
               <Text style={styles.mono}>.env</Text> y poné{" "}
-              <Text style={styles.mono}>EXPO_PUBLIC_USER_ID</Text> con el UUID de un menor, o iniciá sesión con un
-              tutor que tenga hijos cargados.
+              <Text style={styles.mono}>EXPO_PUBLIC_USER_ID</Text> con el UUID de un menor, o iniciá
+              sesión con un tutor que tenga hijos cargados.
             </>
           )}
         </Text>
@@ -900,7 +927,9 @@ export function FeedScreen({ route }: Props) {
                 <AppIcon name="create-outline" color={colors.primary} size="md" />
                 <Text style={styles.modalTitle}>Nuevo post</Text>
               </View>
-              <Text style={styles.modalSubtitle}>Compartí algo que hayas aprendido con tus amigos.</Text>
+              <Text style={styles.modalSubtitle}>
+                Compartí algo que hayas aprendido con tus amigos.
+              </Text>
               <TextInput
                 style={styles.modalInput}
                 placeholder="¿Qué aprendiste hoy?"
@@ -927,7 +956,10 @@ export function FeedScreen({ route }: Props) {
                 <View style={styles.modalInlineError}>
                   <Text style={styles.modalInlineErrorText}>{createError}</Text>
                   <Pressable
-                    style={({ pressed }) => [styles.modalInlineRetryBtn, pressed && styles.modalInlineRetryPressed]}
+                    style={({ pressed }) => [
+                      styles.modalInlineRetryBtn,
+                      pressed && styles.modalInlineRetryPressed,
+                    ]}
                     onPress={() => void onSubmitCreatePost()}
                     disabled={createSubmitting || draftContent.trim().length === 0}
                     accessibilityRole="button"
@@ -949,7 +981,8 @@ export function FeedScreen({ route }: Props) {
                   style={[
                     styles.modalBtn,
                     styles.modalBtnPrimary,
-                    (createSubmitting || draftContent.trim().length === 0) && styles.modalBtnDisabled,
+                    (createSubmitting || draftContent.trim().length === 0) &&
+                      styles.modalBtnDisabled,
                   ]}
                   onPress={() => void onSubmitCreatePost()}
                   disabled={createSubmitting || draftContent.trim().length === 0}
@@ -1010,7 +1043,9 @@ export function FeedScreen({ route }: Props) {
                 <BrandLogo width={24} height={24} />
                 <Text style={styles.inlineErrorText}>{error}</Text>
                 <Pressable
-                  onPress={() => void fetchFeed({ showFullScreenLoading: false, isPullToRefresh: false })}
+                  onPress={() =>
+                    void fetchFeed({ showFullScreenLoading: false, isPullToRefresh: false })
+                  }
                   hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel="Intentalo de nuevo"
@@ -1121,7 +1156,11 @@ export function FeedScreen({ route }: Props) {
                         style={({ pressed }) => [
                           styles.categoryFilterChip,
                           selected
-                            ? { backgroundColor: c.softBg, borderWidth: 2, borderColor: c.highlight }
+                            ? {
+                                backgroundColor: c.softBg,
+                                borderWidth: 2,
+                                borderColor: c.highlight,
+                              }
                             : { borderColor: colors.chipBorder },
                           pressed && !readOnly && styles.categoryFilterChipPressed,
                           readOnly && styles.categoryFilterChipReadOnly,
@@ -1131,7 +1170,10 @@ export function FeedScreen({ route }: Props) {
                         accessibilityLabel={`Filtrar por ${c.label}`}
                       >
                         <Text
-                          style={[styles.categoryFilterChipText, selected && { color: c.accent, fontWeight: "800" }]}
+                          style={[
+                            styles.categoryFilterChipText,
+                            selected && { color: c.accent, fontWeight: "800" },
+                          ]}
                           numberOfLines={1}
                         >
                           {categoryDisplayLabel(c)}
@@ -1178,57 +1220,59 @@ export function FeedScreen({ route }: Props) {
                     postCat && { borderLeftWidth: 4, borderLeftColor: chrome.stripe },
                   ]}
                 >
-                <FeedPostCardHeader
-                  username={item.user.username}
-                  avatarUrl={item.user.avatarUrl}
-                  category={item.category}
-                  feedLabel={item.feedLabel}
-                  postType={item.type}
-                  createdAt={item.createdAt}
-                  createdAtFormatted={item.createdAtFormatted}
-                />
-                <View style={styles.cardBody}>
-                  {item.content ? <Text style={styles.content}>{item.content}</Text> : null}
-                  {item.badge && rarityVis ? (
-                    <View style={styles.badgeBlock}>
-                      <View
-                        style={[
-                          styles.badgeIconWrap,
-                          {
-                            borderColor: chrome.ring,
-                            borderWidth: 3,
-                          },
-                        ]}
-                      >
-                        <Text style={styles.badgeIcon}>{item.badge.icon}</Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.rarityPill,
-                          {
-                            borderColor: rarityVis.border,
-                            backgroundColor: rarityVis.softBg,
-                            borderWidth: rarityVis.borderWidth,
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.rarityText, { color: rarityVis.accent }]}>{item.badge.rarity}</Text>
-                      </View>
-                    </View>
-                  ) : null}
-                </View>
-                <View style={styles.cardFooter}>
-                  <PostReactionBar
-                    postId={item.id}
-                    counts={getReactionCounts(item)}
-                    userReaction={item.userReaction ?? null}
-                    pending={postReactionBusy}
-                    readOnly={readOnly}
-                    onReact={(pid, t) => void onReact(pid, t)}
+                  <FeedPostCardHeader
+                    username={item.user.username}
+                    avatarUrl={item.user.avatarUrl}
+                    category={item.category}
+                    feedLabel={item.feedLabel}
+                    postType={item.type}
+                    createdAt={item.createdAt}
+                    createdAtFormatted={item.createdAtFormatted}
                   />
+                  <View style={styles.cardBody}>
+                    {item.content ? <Text style={styles.content}>{item.content}</Text> : null}
+                    {item.badge && rarityVis ? (
+                      <View style={styles.badgeBlock}>
+                        <View
+                          style={[
+                            styles.badgeIconWrap,
+                            {
+                              borderColor: chrome.ring,
+                              borderWidth: 3,
+                            },
+                          ]}
+                        >
+                          <Text style={styles.badgeIcon}>{item.badge.icon}</Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.rarityPill,
+                            {
+                              borderColor: rarityVis.border,
+                              backgroundColor: rarityVis.softBg,
+                              borderWidth: rarityVis.borderWidth,
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.rarityText, { color: rarityVis.accent }]}>
+                            {item.badge.rarity}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : null}
+                  </View>
+                  <View style={styles.cardFooter}>
+                    <PostReactionBar
+                      postId={item.id}
+                      counts={getReactionCounts(item)}
+                      userReaction={item.userReaction ?? null}
+                      pending={postReactionBusy}
+                      readOnly={readOnly}
+                      onReact={(pid, t) => void onReact(pid, t)}
+                    />
+                  </View>
                 </View>
-              </View>
-            </Pressable>
+              </Pressable>
             </AnimatedFeedItem>
           );
         }}

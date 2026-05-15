@@ -3,7 +3,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { space } from "../../theme/tokens";
-import { bumpUnlocksAfterLevel, getStarsForLevel, setMaxUnlockedLevel, setStarsForLevel } from "../storage/gameProgressStore";
+import {
+  bumpUnlocksAfterLevel,
+  getStarsForLevel,
+  setMaxUnlockedLevel,
+  setStarsForLevel,
+} from "../storage/gameProgressStore";
 import { MiniGameChrome } from "../shared/MiniGameChrome";
 import { starsFromAttempts } from "../shared/starsFromScore";
 import { TutorialOverlay, type TutorialStep } from "../shared/TutorialOverlay";
@@ -33,10 +38,18 @@ const QUIZ = [
   { q: "Capital de Francia", a: "París", w: ["Lyon", "Marsella", "Niza"] },
   { q: "Capital de Japón", a: "Tokio", w: ["Osaka", "Kioto", "Sapporo"] },
   { q: "Capital de Argentina", a: "Buenos Aires", w: ["Córdoba", "Mendoza", "Rosario"] },
-  { q: "Entre Argentina y España, ¿qué océano?", a: "Atlántico", w: ["Pacífico", "Índico", "Ártico"] },
+  {
+    q: "Entre Argentina y España, ¿qué océano?",
+    a: "Atlántico",
+    w: ["Pacífico", "Índico", "Ártico"],
+  },
 ];
 
-export default function WorldNavigatorGame({ levelIndex, onCompleteLevel, onRequestExit }: MiniGameProps) {
+export default function WorldNavigatorGame({
+  levelIndex,
+  onCompleteLevel,
+  onRequestExit,
+}: MiniGameProps) {
   const { colors } = useTheme();
   const [showTutorial, tutorialDone] = useTutorialSeen(META.id);
   const item = QUIZ[levelIndex % QUIZ.length]!;
@@ -75,9 +88,21 @@ export default function WorldNavigatorGame({ levelIndex, onCompleteLevel, onRequ
 
   return (
     <View style={{ flex: 1 }}>
-      {showTutorial ? <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} /> : null}
-      <MiniGameChrome meta={META} levelIndex={levelIndex} totalLevels={TOTAL_LEVELS} bestStars={best || undefined} onBack={onRequestExit}>
-        <Text style={{ color: colors.text, fontWeight: "900", fontSize: 18, marginBottom: space.md }}>{item.q}</Text>
+      {showTutorial ? (
+        <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} />
+      ) : null}
+      <MiniGameChrome
+        meta={META}
+        levelIndex={levelIndex}
+        totalLevels={TOTAL_LEVELS}
+        bestStars={best || undefined}
+        onBack={onRequestExit}
+      >
+        <Text
+          style={{ color: colors.text, fontWeight: "900", fontSize: 18, marginBottom: space.md }}
+        >
+          {item.q}
+        </Text>
         {opts.map((o) => (
           <Pressable
             key={o}

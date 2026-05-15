@@ -53,7 +53,7 @@ export function ChatInboxScreen() {
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [load])
+    }, [load]),
   );
 
   if (loading && items.length === 0) {
@@ -92,7 +92,8 @@ export function ChatInboxScreen() {
           </View>
           <Text style={[styles.emptyTitle, { color: k.titleText }]}>Todavía no hay chats</Text>
           <Text style={[styles.emptySub, { color: k.hintText }]}>
-            Cuando tengas amigos en EduPlay, vas a ver acá las conversaciones. ¡Chateá siempre con respeto!
+            Cuando tengas amigos en EduPlay, vas a ver acá las conversaciones. ¡Chateá siempre con
+            respeto!
           </Text>
         </View>
       ) : (
@@ -141,7 +142,9 @@ export function ChatInboxScreen() {
                 accessibilityLabel={`Abrir chat con ${label}`}
               >
                 <View style={[styles.avatar, { backgroundColor: k.avatarFriendBg }]}>
-                  <Text style={[styles.avatarLetter, { color: k.avatarFriendText }]}>{peerInitial(label)}</Text>
+                  <Text style={[styles.avatarLetter, { color: k.avatarFriendText }]}>
+                    {peerInitial(label)}
+                  </Text>
                 </View>
                 <View style={styles.rowBody}>
                   <View style={styles.rowTitleRow}>
@@ -149,7 +152,10 @@ export function ChatInboxScreen() {
                       {label}
                     </Text>
                     {item.lastMessage.moderationFlagged ? (
-                      <View style={[styles.flagDot, { backgroundColor: k.accentDot }]} accessibilityLabel="Revisión del tutor" />
+                      <View
+                        style={[styles.flagDot, { backgroundColor: k.accentDot }]}
+                        accessibilityLabel="Revisión del tutor"
+                      />
                     ) : null}
                   </View>
                   <Text style={[styles.preview, { color: k.previewText }]} numberOfLines={2}>
@@ -182,7 +188,12 @@ const styles = StyleSheet.create({
   listContent: { padding: space.lg, paddingBottom: space.xl * 2 },
   listHeader: { marginBottom: space.lg },
   listTitle: { fontSize: 22, fontWeight: "800", letterSpacing: 0.2 },
-  listSubtitle: { marginTop: space.sm, fontSize: typography.body, lineHeight: 20, fontWeight: "600" },
+  listSubtitle: {
+    marginTop: space.sm,
+    fontSize: typography.body,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",

@@ -15,7 +15,7 @@ export function setToastListener(next: Listener | null): void {
 export function showToast(
   message: string,
   variant: ToastVariant = "success",
-  visual: ToastVisual = "default"
+  visual: ToastVisual = "default",
 ): void {
   listener?.(message, variant, visual);
 }

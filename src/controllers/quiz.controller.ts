@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Request, Response } from 'express';
 import {
   ContentCategory,
   Difficulty,
@@ -8,18 +8,18 @@ import {
   QuizQuestionType,
   Visibility,
   XpGainSource,
-} from "@prisma/client";
+} from '@prisma/client';
 import {
   applyCorrectAnswersMissionProgress,
   applyEarnXpMissionProgress,
   applyPlayGamesMissionProgress,
   maybeGrantDailyChallengeBonus,
-} from "../lib/missionProgress";
-import { bumpUserInterestScore, interestDeltaForGameScore } from "../lib/userInterest";
-import { addExperience } from "../lib/xpLevel";
-import { recordXpGain } from "../lib/xpLedger";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
+} from '../lib/missionProgress';
+import { bumpUserInterestScore, interestDeltaForGameScore } from '../lib/userInterest';
+import { addExperience } from '../lib/xpLevel';
+import { recordXpGain } from '../lib/xpLedger';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
 import {
   QUIZ_SAMPLE_DEFAULT,
   addFlashcardsForWrong,
@@ -27,67 +27,42 @@ import {
   getQuizCatalogSummary,
   getQuizWallet,
   listDueFlashcards,
+  mapQuizCategoryToContentCategory,
   pickDailyChallengeQuestions,
   recordDailyChallengeResult,
   reviewFlashcard,
   unlockQuizHint,
   updateAdaptiveAfterSessionSimple,
   friendsWeeklyXpRanking,
-} from "../services/quiz.service";
-
-function mapQuizCategoryToContentCategory(value: string): ContentCategory | null {
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) return null;
-  const byName: Record<string, ContentCategory> = {
-    math: ContentCategory.math,
-    astronomy: ContentCategory.astronomy,
-    science: ContentCategory.science,
-    geography: ContentCategory.geography,
-    education: ContentCategory.education,
-    history: ContentCategory.history,
-    puzzle: ContentCategory.puzzle,
-    sports: ContentCategory.sports,
-    creativity: ContentCategory.creativity,
-    /** Quiz con preguntas de varias categorías; interés/post bajo educación general. */
-    mixed: ContentCategory.education,
-    mathematics: ContentCategory.math,
-    natural_sciences: ContentCategory.science,
-    social_sciences: ContentCategory.geography,
-    language: ContentCategory.education,
-    art_culture: ContentCategory.creativity,
-    logic_thinking: ContentCategory.puzzle,
-    emotions_values: ContentCategory.education,
-  };
-  return byName[normalized] ?? null;
-}
+} from '../services/quiz.service';
 
 const QUIZ_CATEGORY_ES: Record<ContentCategory, string> = {
-  [ContentCategory.math]: "matemáticas",
-  [ContentCategory.astronomy]: "astronomía",
-  [ContentCategory.science]: "ciencias",
-  [ContentCategory.geography]: "geografía",
-  [ContentCategory.education]: "educación",
-  [ContentCategory.history]: "historia",
-  [ContentCategory.puzzle]: "rompecabezas",
-  [ContentCategory.sports]: "deportes",
-  [ContentCategory.creativity]: "creatividad",
+  [ContentCategory.math]: 'matemáticas',
+  [ContentCategory.astronomy]: 'astronomía',
+  [ContentCategory.science]: 'ciencias',
+  [ContentCategory.geography]: 'geografía',
+  [ContentCategory.education]: 'educación',
+  [ContentCategory.history]: 'historia',
+  [ContentCategory.puzzle]: 'rompecabezas',
+  [ContentCategory.sports]: 'deportes',
+  [ContentCategory.creativity]: 'creatividad',
 };
 
 const QUIZ_CATEGORY_EMOJI: Partial<Record<ContentCategory, string>> = {
-  [ContentCategory.astronomy]: "🌌",
-  [ContentCategory.math]: "➗",
-  [ContentCategory.science]: "🧪",
-  [ContentCategory.geography]: "🌍",
-  [ContentCategory.history]: "📜",
-  [ContentCategory.education]: "📚",
-  [ContentCategory.puzzle]: "🧩",
-  [ContentCategory.sports]: "⚽",
-  [ContentCategory.creativity]: "🎨",
+  [ContentCategory.astronomy]: '🌌',
+  [ContentCategory.math]: '➗',
+  [ContentCategory.science]: '🧪',
+  [ContentCategory.geography]: '🌍',
+  [ContentCategory.history]: '📜',
+  [ContentCategory.education]: '📚',
+  [ContentCategory.puzzle]: '🧩',
+  [ContentCategory.sports]: '⚽',
+  [ContentCategory.creativity]: '🎨',
 };
 
-const QUIZ_ACH_FIRST_TITLE = "Primer quiz completado";
-const QUIZ_ACH_PERFECT_TITLE = "Puntaje perfecto (5/5)";
-const QUIZ_ACH_TEN_TITLE = "10 quizzes jugados";
+const QUIZ_ACH_FIRST_TITLE = 'Primer quiz completado';
+const QUIZ_ACH_PERFECT_TITLE = 'Puntaje perfecto (5/5)';
+const QUIZ_ACH_TEN_TITLE = '10 quizzes jugados';
 
 type UnlockedAchievement = {
   id: string;
@@ -98,7 +73,7 @@ type UnlockedAchievement = {
 
 async function ensureQuizAchievement(
   tx: Prisma.TransactionClient,
-  params: { title: string; description: string; icon: string; color: string }
+  params: { title: string; description: string; icon: string; color: string },
 ) {
   const existing = await tx.achievement.findFirst({
     where: { title: params.title },
@@ -119,10 +94,10 @@ async function ensureQuizAchievement(
 }
 
 function parseStringQuery(value: unknown): string | undefined {
-  if (typeof value === "string" && value.trim() !== "") return value.trim();
+  if (typeof value === 'string' && value.trim() !== '') return value.trim();
   if (Array.isArray(value) && value[0] != null) {
     const first = String(value[0]).trim();
-    if (first !== "") return first;
+    if (first !== '') return first;
   }
   return undefined;
 }
@@ -140,7 +115,7 @@ function parseExcludeIdsQuery(value: unknown): string[] {
   const raw = parseStringQuery(value);
   if (!raw) return [];
   return raw
-    .split(",")
+    .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
     .slice(0, 200);
@@ -181,7 +156,7 @@ function parseLimitQuery(value: unknown, fallback: number): number {
 function parseBoolQuery(value: unknown): boolean {
   const raw = parseStringQuery(value);
   if (!raw) return false;
-  return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "yes";
+  return raw === '1' || raw.toLowerCase() === 'true' || raw.toLowerCase() === 'yes';
 }
 
 /**
@@ -201,13 +176,11 @@ export async function getRandomQuiz(req: Request, res: Response): Promise<void> 
   const adaptive = parseBoolQuery(req.query.adaptive);
 
   if (!category && !area) {
-    res.status(400).json({ error: "Indicá category o area (área de conocimiento)." });
+    res.status(400).json({ error: 'Indicá category o area (área de conocimiento).' });
     return;
   }
-  const normalizedCat = category?.trim().toLowerCase() ?? "";
-  const isMixed = normalizedCat === "mixed";
   if (!area && (req.query.difficulty == null || !difficulty)) {
-    res.status(400).json({ error: "Query param difficulty es obligatorio salvo que uses area=…" });
+    res.status(400).json({ error: 'Query param difficulty es obligatorio salvo que uses area=…' });
     return;
   }
   if (area && !difficulty && !quizLevel) {
@@ -215,7 +188,7 @@ export async function getRandomQuiz(req: Request, res: Response): Promise<void> 
   }
 
   try {
-    const userId = req.auth?.kind === "child" ? req.auth.userId : undefined;
+    const userId = req.auth?.kind === 'child' ? req.auth.userId : undefined;
     const questions = await fetchRandomQuizQuestions({
       category,
       difficulty,
@@ -230,8 +203,8 @@ export async function getRandomQuiz(req: Request, res: Response): Promise<void> 
     });
     res.json({ questions });
   } catch (err) {
-    logError("quiz.getRandomQuiz", err);
-    res.status(500).json({ error: "Error al cargar el cuestionario." });
+    logError('quiz.getRandomQuiz', err);
+    res.status(500).json({ error: 'Error al cargar el cuestionario.' });
   }
 }
 
@@ -241,48 +214,52 @@ type CompleteQuizBody = {
   correct: number;
   total: number;
   /** `visual` = juego con imágenes (`VisualQuestion`); mismo XP, GameResult, interés y post. */
-  mode: "quiz" | "visual";
+  mode: 'quiz' | 'visual';
   knowledgeArea?: QuizKnowledgeArea;
   wrongQuestionIds?: string[];
 };
 
-function validateCompleteQuiz(body: unknown): { ok: true; data: CompleteQuizBody } | { ok: false; error: string } {
-  if (body === null || typeof body !== "object") {
-    return { ok: false, error: "El cuerpo debe ser un objeto JSON." };
+function validateCompleteQuiz(
+  body: unknown,
+): { ok: true; data: CompleteQuizBody } | { ok: false; error: string } {
+  if (body === null || typeof body !== 'object') {
+    return { ok: false, error: 'El cuerpo debe ser un objeto JSON.' };
   }
   const b = body as Record<string, unknown>;
-  if (!b.userId || String(b.userId).trim() === "") {
-    return { ok: false, error: "userId es obligatorio." };
+  if (!b.userId || String(b.userId).trim() === '') {
+    return { ok: false, error: 'userId es obligatorio.' };
   }
-  if (!b.category || String(b.category).trim() === "") {
-    return { ok: false, error: "category es obligatorio." };
+  if (!b.category || String(b.category).trim() === '') {
+    return { ok: false, error: 'category es obligatorio.' };
   }
-  const correct = typeof b.correct === "number" ? b.correct : Number(b.correct);
-  const total = typeof b.total === "number" ? b.total : Number(b.total);
+  const correct = typeof b.correct === 'number' ? b.correct : Number(b.correct);
+  const total = typeof b.total === 'number' ? b.total : Number(b.total);
   if (!Number.isFinite(correct) || !Number.isInteger(correct) || correct < 0) {
-    return { ok: false, error: "correct debe ser un entero >= 0." };
+    return { ok: false, error: 'correct debe ser un entero >= 0.' };
   }
   if (!Number.isFinite(total) || !Number.isInteger(total) || total < 1) {
-    return { ok: false, error: "total debe ser un entero >= 1." };
+    return { ok: false, error: 'total debe ser un entero >= 1.' };
   }
   if (correct > total) {
-    return { ok: false, error: "correct no puede ser mayor que total." };
+    return { ok: false, error: 'correct no puede ser mayor que total.' };
   }
   const modeRaw = b.mode;
-  const mode: "quiz" | "visual" =
-    modeRaw === "visual" || modeRaw === "quiz" ? modeRaw : "quiz";
+  const mode: 'quiz' | 'visual' = modeRaw === 'visual' || modeRaw === 'quiz' ? modeRaw : 'quiz';
   let knowledgeArea: QuizKnowledgeArea | undefined;
   if (b.knowledgeArea != null) {
     const raw = String(b.knowledgeArea).trim();
     const allowed = Object.values(QuizKnowledgeArea) as string[];
     if (!allowed.includes(raw)) {
-      return { ok: false, error: "knowledgeArea inválido." };
+      return { ok: false, error: 'knowledgeArea inválido.' };
     }
     knowledgeArea = raw as QuizKnowledgeArea;
   }
   let wrongQuestionIds: string[] | undefined;
   if (Array.isArray(b.wrongQuestionIds)) {
-    wrongQuestionIds = b.wrongQuestionIds.map((x) => String(x).trim()).filter(Boolean).slice(0, 40);
+    wrongQuestionIds = b.wrongQuestionIds
+      .map((x) => String(x).trim())
+      .filter(Boolean)
+      .slice(0, 40);
   }
   return {
     ok: true,
@@ -309,10 +286,11 @@ export async function completeQuiz(req: Request, res: Response): Promise<void> {
     res.status(400).json({ error: validation.error });
     return;
   }
-  const { userId, category, correct, total, mode, knowledgeArea, wrongQuestionIds } = validation.data;
+  const { userId, category, correct, total, mode, knowledgeArea, wrongQuestionIds } =
+    validation.data;
 
-  if (req.role !== "child" || req.auth?.kind !== "child" || req.auth.userId !== userId) {
-    res.status(403).json({ error: "No autorizado para completar el quiz con este userId." });
+  if (req.role !== 'child' || req.auth?.kind !== 'child' || req.auth.userId !== userId) {
+    res.status(403).json({ error: 'No autorizado para completar el quiz con este userId.' });
     return;
   }
 
@@ -321,17 +299,17 @@ export async function completeQuiz(req: Request, res: Response): Promise<void> {
       ? mapQuizCategoryToContentCategory(String(knowledgeArea))
       : mapQuizCategoryToContentCategory(category);
   if (!contentCategory) {
-    res.status(400).json({ error: "category inválida para el quiz." });
+    res.status(400).json({ error: 'category inválida para el quiz.' });
     return;
   }
 
   const xpGained = correct * 10;
   const interestDelta = interestDeltaForGameScore(Math.max(1, correct * 10));
 
-  const isMixedQuiz = category.trim().toLowerCase() === "mixed";
-  const isVisual = mode === "visual";
+  const isMixedQuiz = category.trim().toLowerCase() === 'mixed';
+  const isVisual = mode === 'visual';
   const esName = QUIZ_CATEGORY_ES[contentCategory] ?? category;
-  const emoji = QUIZ_CATEGORY_EMOJI[contentCategory] ?? "📚";
+  const emoji = QUIZ_CATEGORY_EMOJI[contentCategory] ?? '📚';
   const postContent = isMixedQuiz
     ? isVisual
       ? `Completé un juego visual modo desafío 🎯 con ${correct}/${total}`
@@ -341,14 +319,17 @@ export async function completeQuiz(req: Request, res: Response): Promise<void> {
       : `Completé un quiz de ${esName} ${emoji} con ${correct}/${total}`;
 
   try {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, level: true, experience: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, level: true, experience: true },
+    });
     if (!user) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const gamePrefix = isVisual ? "Visual" : "Quiz";
+      const gamePrefix = isVisual ? 'Visual' : 'Quiz';
       let game = await tx.game.findFirst({
         where: {
           category: contentCategory,
@@ -360,7 +341,7 @@ export async function completeQuiz(req: Request, res: Response): Promise<void> {
           data: {
             name: `${gamePrefix} · ${contentCategory}`,
             category: contentCategory,
-            difficulty: "easy",
+            difficulty: 'easy',
           },
         });
       }
@@ -379,34 +360,39 @@ export async function completeQuiz(req: Request, res: Response): Promise<void> {
         where: {
           userId,
           game: {
-            OR: [{ name: { startsWith: "Quiz" } }, { name: { startsWith: "Visual" } }],
+            OR: [{ name: { startsWith: 'Quiz' } }, { name: { startsWith: 'Visual' } }],
           },
         },
       });
 
-      const unlockables: Array<{ title: string; description: string; icon: string; color: string }> = [];
+      const unlockables: Array<{
+        title: string;
+        description: string;
+        icon: string;
+        color: string;
+      }> = [];
       if (totalQuizzesPlayed >= 1) {
         unlockables.push({
           title: QUIZ_ACH_FIRST_TITLE,
-          description: "Completaste tu primer quiz.",
-          icon: "✅",
-          color: "#22c55e",
+          description: 'Completaste tu primer quiz.',
+          icon: '✅',
+          color: '#22c55e',
         });
       }
       if (correct === total) {
         unlockables.push({
           title: QUIZ_ACH_PERFECT_TITLE,
-          description: "Respondiste todas las preguntas correctamente en un quiz.",
-          icon: "🏅",
-          color: "#eab308",
+          description: 'Respondiste todas las preguntas correctamente en un quiz.',
+          icon: '🏅',
+          color: '#eab308',
         });
       }
       if (totalQuizzesPlayed >= 10) {
         unlockables.push({
           title: QUIZ_ACH_TEN_TITLE,
-          description: "Jugaste 10 quizzes.",
-          icon: "🎯",
-          color: "#3b82f6",
+          description: 'Jugaste 10 quizzes.',
+          icon: '🎯',
+          color: '#3b82f6',
         });
       }
 
@@ -437,7 +423,7 @@ export async function completeQuiz(req: Request, res: Response): Promise<void> {
       });
 
       const next = addExperience(user.level, user.experience, xpGained);
-      const coinsEarned = mode === "quiz" ? correct * 2 : 0;
+      const coinsEarned = mode === 'quiz' ? correct * 2 : 0;
       let userProgress = await tx.user.update({
         where: { id: userId },
         data: {
@@ -477,14 +463,14 @@ export async function completeQuiz(req: Request, res: Response): Promise<void> {
       };
     });
 
-    if (mode === "quiz" && wrongQuestionIds && wrongQuestionIds.length > 0) {
+    if (mode === 'quiz' && wrongQuestionIds && wrongQuestionIds.length > 0) {
       try {
         await addFlashcardsForWrong({ userId, questionIds: wrongQuestionIds });
       } catch (e) {
-        logError("quiz.flashcards_wrong", e);
+        logError('quiz.flashcards_wrong', e);
       }
     }
-    if (mode === "quiz" && knowledgeArea) {
+    if (mode === 'quiz' && knowledgeArea) {
       try {
         await updateAdaptiveAfterSessionSimple({
           userId,
@@ -493,7 +479,7 @@ export async function completeQuiz(req: Request, res: Response): Promise<void> {
           total,
         });
       } catch (e) {
-        logError("quiz.adaptive", e);
+        logError('quiz.adaptive', e);
       }
     }
 
@@ -505,19 +491,19 @@ export async function completeQuiz(req: Request, res: Response): Promise<void> {
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === "P2002") {
+      if (err.code === 'P2002') {
         res.status(409).json({
-          error: "Conflicto de unicidad al registrar el resultado del quiz.",
+          error: 'Conflicto de unicidad al registrar el resultado del quiz.',
         });
         return;
       }
-      if (err.code === "P2003") {
-        res.status(400).json({ error: "Referencia inválida." });
+      if (err.code === 'P2003') {
+        res.status(400).json({ error: 'Referencia inválida.' });
         return;
       }
     }
-    logError("quiz.completeQuiz", err);
-    res.status(500).json({ error: "Error al registrar el resultado del quiz." });
+    logError('quiz.completeQuiz', err);
+    res.status(500).json({ error: 'Error al registrar el resultado del quiz.' });
   }
 }
 
@@ -526,37 +512,37 @@ export async function getQuizCatalog(_req: Request, res: Response): Promise<void
     const data = await getQuizCatalogSummary();
     res.json(data);
   } catch (err) {
-    logError("quiz.catalog", err);
-    res.status(500).json({ error: "Error al obtener el catálogo de quizzes." });
+    logError('quiz.catalog', err);
+    res.status(500).json({ error: 'Error al obtener el catálogo de quizzes.' });
   }
 }
 
 export async function getQuizWalletHandler(req: Request, res: Response): Promise<void> {
-  if (req.auth?.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (req.auth?.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return;
   }
   const w = await getQuizWallet(req.auth.userId);
   if (!w) {
-    res.status(404).json({ error: "Usuario no encontrado." });
+    res.status(404).json({ error: 'Usuario no encontrado.' });
     return;
   }
   res.json(w);
 }
 
 export async function postQuizHintUnlock(req: Request, res: Response): Promise<void> {
-  if (req.auth?.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (req.auth?.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return;
   }
   const b = req.body as Record<string, unknown>;
-  const questionId = typeof b?.questionId === "string" ? b.questionId.trim() : "";
+  const questionId = typeof b?.questionId === 'string' ? b.questionId.trim() : '';
   if (!questionId) {
-    res.status(400).json({ error: "questionId es obligatorio." });
+    res.status(400).json({ error: 'questionId es obligatorio.' });
     return;
   }
   const r = await unlockQuizHint({ userId: req.auth.userId, questionId });
-  if ("error" in r) {
+  if ('error' in r) {
     res.status(400).json({ error: r.error });
     return;
   }
@@ -564,29 +550,35 @@ export async function postQuizHintUnlock(req: Request, res: Response): Promise<v
 }
 
 export async function getQuizDailyChallenge(req: Request, res: Response): Promise<void> {
-  if (req.auth?.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (req.auth?.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return;
   }
   try {
     const data = await pickDailyChallengeQuestions(req.auth.userId);
     res.json(data);
   } catch (err) {
-    logError("quiz.daily", err);
-    res.status(500).json({ error: "Error al armar el desafío del día." });
+    logError('quiz.daily', err);
+    res.status(500).json({ error: 'Error al armar el desafío del día.' });
   }
 }
 
 export async function postQuizDailyRecord(req: Request, res: Response): Promise<void> {
-  if (req.auth?.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (req.auth?.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return;
   }
   const b = req.body as Record<string, unknown>;
-  const correct = typeof b.correct === "number" ? b.correct : Number(b.correct);
-  const total = typeof b.total === "number" ? b.total : Number(b.total);
-  if (!Number.isInteger(correct) || correct < 0 || !Number.isInteger(total) || total < 1 || correct > total) {
-    res.status(400).json({ error: "correct y total inválidos." });
+  const correct = typeof b.correct === 'number' ? b.correct : Number(b.correct);
+  const total = typeof b.total === 'number' ? b.total : Number(b.total);
+  if (
+    !Number.isInteger(correct) ||
+    correct < 0 ||
+    !Number.isInteger(total) ||
+    total < 1 ||
+    correct > total
+  ) {
+    res.status(400).json({ error: 'correct y total inválidos.' });
     return;
   }
   try {
@@ -597,14 +589,14 @@ export async function postQuizDailyRecord(req: Request, res: Response): Promise<
     });
     res.status(201).json(data);
   } catch (err) {
-    logError("quiz.daily_record", err);
-    res.status(500).json({ error: "Error al registrar el desafío del día." });
+    logError('quiz.daily_record', err);
+    res.status(500).json({ error: 'Error al registrar el desafío del día.' });
   }
 }
 
 export async function getQuizFlashcardsDue(req: Request, res: Response): Promise<void> {
-  if (req.auth?.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (req.auth?.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return;
   }
   const limit = parseLimitQuery(req.query.limit, 15);
@@ -612,25 +604,25 @@ export async function getQuizFlashcardsDue(req: Request, res: Response): Promise
     const questions = await listDueFlashcards(req.auth.userId, limit);
     res.json({ questions });
   } catch (err) {
-    logError("quiz.flashcards_list", err);
-    res.status(500).json({ error: "Error al listar repasos." });
+    logError('quiz.flashcards_list', err);
+    res.status(500).json({ error: 'Error al listar repasos.' });
   }
 }
 
 export async function postQuizFlashcardReview(req: Request, res: Response): Promise<void> {
-  if (req.auth?.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (req.auth?.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return;
   }
   const b = req.body as Record<string, unknown>;
-  const questionId = typeof b?.questionId === "string" ? b.questionId.trim() : "";
-  const quality = typeof b.quality === "number" ? b.quality : Number(b.quality);
+  const questionId = typeof b?.questionId === 'string' ? b.questionId.trim() : '';
+  const quality = typeof b.quality === 'number' ? b.quality : Number(b.quality);
   if (!questionId || !Number.isInteger(quality) || quality < 0 || quality > 3) {
-    res.status(400).json({ error: "questionId y quality (0–3) son obligatorios." });
+    res.status(400).json({ error: 'questionId y quality (0–3) son obligatorios.' });
     return;
   }
   const r = await reviewFlashcard({ userId: req.auth.userId, questionId, quality });
-  if ("error" in r) {
+  if ('error' in r) {
     res.status(404).json({ error: r.error });
     return;
   }
@@ -638,28 +630,31 @@ export async function postQuizFlashcardReview(req: Request, res: Response): Prom
 }
 
 export async function postQuizFlashcardsFromWrong(req: Request, res: Response): Promise<void> {
-  if (req.auth?.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (req.auth?.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return;
   }
   const b = req.body as Record<string, unknown>;
   if (!Array.isArray(b.questionIds)) {
-    res.status(400).json({ error: "questionIds debe ser un array." });
+    res.status(400).json({ error: 'questionIds debe ser un array.' });
     return;
   }
-  const questionIds = b.questionIds.map((x) => String(x).trim()).filter(Boolean).slice(0, 40);
+  const questionIds = b.questionIds
+    .map((x) => String(x).trim())
+    .filter(Boolean)
+    .slice(0, 40);
   try {
     const added = await addFlashcardsForWrong({ userId: req.auth.userId, questionIds });
     res.status(201).json({ added });
   } catch (err) {
-    logError("quiz.flashcards_add", err);
-    res.status(500).json({ error: "Error al crear tarjetas de repaso." });
+    logError('quiz.flashcards_add', err);
+    res.status(500).json({ error: 'Error al crear tarjetas de repaso.' });
   }
 }
 
 export async function getQuizFriendsWeekRanking(req: Request, res: Response): Promise<void> {
-  if (req.auth?.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (req.auth?.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return;
   }
   const limit = parseLimitQuery(req.query.limit, 15);
@@ -667,7 +662,7 @@ export async function getQuizFriendsWeekRanking(req: Request, res: Response): Pr
     const data = await friendsWeeklyXpRanking(req.auth.userId, limit);
     res.json(data);
   } catch (err) {
-    logError("quiz.friends_week", err);
-    res.status(500).json({ error: "Error al obtener el ranking semanal de amigos." });
+    logError('quiz.friends_week', err);
+    res.status(500).json({ error: 'Error al obtener el ranking semanal de amigos.' });
   }
 }

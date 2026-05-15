@@ -1,12 +1,12 @@
-import { ContentFilterLevel } from "@prisma/client";
+import { ContentFilterLevel } from '@prisma/client';
 import {
   BLOCK_MEDIUM,
   containsBlockedWord,
   messageLooksLikeEmail,
   messageLooksLikePhone,
   moderatePlainTextForLevel,
-} from "./contentModerationText";
-import { sanitizeUserPlainText } from "./sanitizeUserInput";
+} from './contentModerationText';
+import { sanitizeUserPlainText } from './sanitizeUserInput';
 
 const URL_LIKE = /\bhttps?:\/\/\S+/i;
 
@@ -26,14 +26,17 @@ const MAX_CHAT_SANITIZE = 50_000;
  * - Bloqueo: email, teléfono, palabras inapropiadas, reglas estrictas del tutor (nivel HIGH, etc.).
  * - Marca (`moderationFlagged`): enlace http(s) si el nivel no es HIGH (se entrega el texto, el tutor puede revisar).
  */
-export function filterOutgoingChatMessage(plain: string, level: ContentFilterLevel): ChatFilterResult {
+export function filterOutgoingChatMessage(
+  plain: string,
+  level: ContentFilterLevel,
+): ChatFilterResult {
   const sanitized = sanitizeUserPlainText(plain, MAX_CHAT_SANITIZE);
   const trimmed = sanitized.trim();
   if (!trimmed) {
     return {
       allowed: false,
-      deliveredBody: "",
-      blockReason: "EMPTY",
+      deliveredBody: '',
+      blockReason: 'EMPTY',
       auditPlain: sanitized.length > 0 ? sanitized : null,
       moderationFlagged: false,
     };
@@ -42,8 +45,8 @@ export function filterOutgoingChatMessage(plain: string, level: ContentFilterLev
   if (messageLooksLikeEmail(trimmed)) {
     return {
       allowed: false,
-      deliveredBody: "",
-      blockReason: "PERSONAL_DATA",
+      deliveredBody: '',
+      blockReason: 'PERSONAL_DATA',
       auditPlain: trimmed,
       moderationFlagged: false,
     };
@@ -52,8 +55,8 @@ export function filterOutgoingChatMessage(plain: string, level: ContentFilterLev
   if (messageLooksLikePhone(trimmed)) {
     return {
       allowed: false,
-      deliveredBody: "",
-      blockReason: "PERSONAL_DATA",
+      deliveredBody: '',
+      blockReason: 'PERSONAL_DATA',
       auditPlain: trimmed,
       moderationFlagged: false,
     };
@@ -62,8 +65,8 @@ export function filterOutgoingChatMessage(plain: string, level: ContentFilterLev
   if (containsBlockedWord(trimmed, BLOCK_MEDIUM)) {
     return {
       allowed: false,
-      deliveredBody: "",
-      blockReason: "BAD_WORDS",
+      deliveredBody: '',
+      blockReason: 'BAD_WORDS',
       auditPlain: trimmed,
       moderationFlagged: false,
     };

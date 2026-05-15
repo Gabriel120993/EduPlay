@@ -46,7 +46,11 @@ export function ParentOnboardingNavigator({
           ),
         }}
       >
-        <Stack.Screen name="ParentOnboarding" component={ParentOnboardingFlow} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="ParentOnboarding"
+          component={ParentOnboardingFlow}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="ParentOnboardingComplete"
           component={ParentOnboardingCompleteScreen}

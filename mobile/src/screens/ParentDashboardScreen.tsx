@@ -27,7 +27,7 @@ export function ParentDashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [load])
+    }, [load]),
   );
 
   const stats = useMemo(() => {
@@ -58,7 +58,10 @@ export function ParentDashboardScreen() {
       </Pressable>
 
       {rows.map((row) => (
-        <View key={row.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          key={row.id}
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
           <View style={styles.cardTitleRow}>
             <MinorListAvatar avatarUrl={row.avatarUrl} username={row.username} />
             <Text style={[styles.name, { color: colors.text, flex: 1 }]}>{row.username}</Text>
@@ -94,21 +97,28 @@ function MinorListAvatar({ avatarUrl, username }: { avatarUrl: string | null; us
 
   if (glyph) {
     return (
-      <View style={[styles.minorAvatarWrap, { width: size, height: size, borderRadius: r, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.minorAvatarWrap,
+          { width: size, height: size, borderRadius: r, borderColor: colors.border },
+        ]}
+      >
         <Text style={{ fontSize: 22, lineHeight: 26 }}>{glyph}</Text>
       </View>
     );
   }
   if (remote && avatarUrl) {
     return (
-      <Image
-        source={{ uri: avatarUrl }}
-        style={{ width: size, height: size, borderRadius: r }}
-      />
+      <Image source={{ uri: avatarUrl }} style={{ width: size, height: size, borderRadius: r }} />
     );
   }
   return (
-    <View style={[styles.minorAvatarWrap, { width: size, height: size, borderRadius: r, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.minorAvatarWrap,
+        { width: size, height: size, borderRadius: r, borderColor: colors.border },
+      ]}
+    >
       <Text style={{ fontSize: 14, fontWeight: "800", color: colors.textMuted }}>{initial}</Text>
     </View>
   );
@@ -119,7 +129,13 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   title: { fontSize: 24, fontWeight: "800" },
   statsRow: { flexDirection: "row", gap: 8 },
-  statCard: { flex: 1, borderWidth: 1, borderRadius: 12, paddingVertical: 10, alignItems: "center" },
+  statCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
   statValue: { fontSize: 20, fontWeight: "800" },
   statLabel: { fontSize: 12, color: "#64748b" },
   addBtn: { borderRadius: 12, paddingVertical: 12, alignItems: "center" },

@@ -5,21 +5,21 @@ import {
   Prisma,
   QuizKnowledgeArea,
   QuizQuestionType,
-} from "@prisma/client";
-import { pickImageUrl } from "../lib/imageProxyUrl";
-import { prisma } from "../lib/prisma";
-import { utcWeekRange } from "../lib/xpWeek";
+} from '@prisma/client';
+import { pickImageUrl } from '../lib/imageProxyUrl';
+import { prisma } from '../lib/prisma';
+import { utcWeekRange } from '../lib/xpWeek';
 
 export const QUIZ_SAMPLE_DEFAULT = 5;
 
 const AREA_TO_LEGACY_CATEGORY: Record<QuizKnowledgeArea, string> = {
-  mathematics: "math",
-  natural_sciences: "science",
-  social_sciences: "geography",
-  language: "education",
-  art_culture: "creativity",
-  logic_thinking: "puzzle",
-  emotions_values: "education",
+  mathematics: 'math',
+  natural_sciences: 'science',
+  social_sciences: 'geography',
+  language: 'education',
+  art_culture: 'creativity',
+  logic_thinking: 'puzzle',
+  emotions_values: 'education',
 };
 
 export function mapKnowledgeAreaToLegacyCategory(area: QuizKnowledgeArea): string {
@@ -151,7 +151,9 @@ export type FetchRandomQuizParams = {
   adaptive?: boolean;
 };
 
-export async function fetchRandomQuizQuestions(params: FetchRandomQuizParams): Promise<QuizQuestionClientDto[]> {
+export async function fetchRandomQuizQuestions(
+  params: FetchRandomQuizParams,
+): Promise<QuizQuestionClientDto[]> {
   const {
     category,
     difficulty,
@@ -181,7 +183,7 @@ export async function fetchRandomQuizQuestions(params: FetchRandomQuizParams): P
     }
   }
 
-  const isMixed = category?.trim().toLowerCase() === "mixed";
+  const isMixed = category?.trim().toLowerCase() === 'mixed';
   const levels =
     levelFilter != null && levelFilter >= 1 && levelFilter <= 5
       ? [levelFilter]
@@ -192,7 +194,7 @@ export async function fetchRandomQuizQuestions(params: FetchRandomQuizParams): P
   const baseWhere: Prisma.QuizQuestionWhereInput = {
     ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
     ...(questionType ? { questionType } : {}),
-    ...(topicSlug ? { topicSlug: { equals: topicSlug, mode: "insensitive" } } : {}),
+    ...(topicSlug ? { topicSlug: { equals: topicSlug, mode: 'insensitive' } } : {}),
   };
 
   const where: Prisma.QuizQuestionWhereInput = isMixed
@@ -209,7 +211,7 @@ export async function fetchRandomQuizQuestions(params: FetchRandomQuizParams): P
         }
       : {
           ...baseWhere,
-          category: { equals: category ?? "", mode: "insensitive" },
+          category: { equals: category ?? '', mode: 'insensitive' },
           ...(difficulty ? { difficulty } : {}),
           quizLevel: levels.length === 1 ? levels[0]! : { in: levels },
         };
@@ -228,7 +230,7 @@ export async function fetchRandomQuizQuestions(params: FetchRandomQuizParams): P
   if (rows.length < sampleSize && !isMixed && category && !areaFilter) {
     rows = await prisma.quizQuestion.findMany({
       where: {
-        category: { equals: category, mode: "insensitive" },
+        category: { equals: category, mode: 'insensitive' },
         ...(difficulty ? { difficulty } : {}),
         ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
       },
@@ -251,11 +253,11 @@ export async function getQuizCatalogSummary(): Promise<{
   total: number;
 }> {
   const grouped = await prisma.quizQuestion.groupBy({
-    by: ["knowledgeArea"],
+    by: ['knowledgeArea'],
     _count: { _all: true },
   });
   const topicsByArea = await prisma.quizQuestion.groupBy({
-    by: ["knowledgeArea", "topicSlug"],
+    by: ['knowledgeArea', 'topicSlug'],
     _count: { _all: true },
   });
   const topicMap = new Map<QuizKnowledgeArea, Set<string>>();
@@ -281,7 +283,7 @@ export async function unlockQuizHint(params: {
     select: { hintText: true, hintCost: true },
   });
   if (!q?.hintText) {
-    return { error: "No hay pista disponible para esta pregunta." };
+    return { error: 'No hay pista disponible para esta pregunta.' };
   }
   const hintText = q.hintText;
   const cost = Math.max(0, q.hintCost);
@@ -291,9 +293,9 @@ export async function unlockQuizHint(params: {
         where: { id: params.userId },
         select: { quizCoins: true },
       });
-      if (!user) return { error: "Usuario no encontrado." };
+      if (!user) return { error: 'Usuario no encontrado.' };
       if (user.quizCoins < cost) {
-        return { error: "No tenés monedas suficientes para esta pista." };
+        return { error: 'No tenés monedas suficientes para esta pista.' };
       }
       const updated = await tx.user.update({
         where: { id: params.userId },
@@ -302,12 +304,14 @@ export async function unlockQuizHint(params: {
       });
       return { coinsRemaining: updated.quizCoins };
     });
-    if ("coinsRemaining" in result && typeof result.coinsRemaining === "number") {
+    if ('coinsRemaining' in result && typeof result.coinsRemaining === 'number') {
       return { hintText, coinsRemaining: result.coinsRemaining };
     }
-    return { error: typeof result.error === "string" ? result.error : "Error al desbloquear la pista." };
+    return {
+      error: typeof result.error === 'string' ? result.error : 'Error al desbloquear la pista.',
+    };
   } catch {
-    return { error: "No se pudo desbloquear la pista." };
+    return { error: 'No se pudo desbloquear la pista.' };
   }
 }
 
@@ -357,7 +361,7 @@ export async function pickDailyChallengeQuestions(userId: string): Promise<{
   const streakRow = await prisma.userQuizStreak.findUnique({ where: { userId } });
   const pool = await prisma.quizQuestion.findMany({
     take: 200,
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     include: quizQuestionImageInclude,
   });
   const picked = shuffleInPlace(pool).slice(0, QUIZ_SAMPLE_DEFAULT);
@@ -430,7 +434,10 @@ export async function recordDailyChallengeResult(params: {
   return { ...streak, coinsAwarded };
 }
 
-export async function addFlashcardsForWrong(params: { userId: string; questionIds: string[] }): Promise<number> {
+export async function addFlashcardsForWrong(params: {
+  userId: string;
+  questionIds: string[];
+}): Promise<number> {
   const unique = [...new Set(params.questionIds)].slice(0, 40);
   const when = new Date();
   let n = 0;
@@ -454,12 +461,15 @@ export async function addFlashcardsForWrong(params: { userId: string; questionId
   return n;
 }
 
-export async function listDueFlashcards(userId: string, limit: number): Promise<QuizQuestionClientDto[]> {
+export async function listDueFlashcards(
+  userId: string,
+  limit: number,
+): Promise<QuizQuestionClientDto[]> {
   const now = new Date();
   const cards = await prisma.userQuizFlashcard.findMany({
     where: { userId, nextReviewAt: { lte: now } },
     take: limit,
-    orderBy: { nextReviewAt: "asc" },
+    orderBy: { nextReviewAt: 'asc' },
     include: { question: { include: quizQuestionImageInclude } },
   });
   return cards.map((c) => toDto(c.question));
@@ -474,7 +484,7 @@ export async function reviewFlashcard(params: {
   const card = await prisma.userQuizFlashcard.findUnique({
     where: { userId_questionId: { userId: params.userId, questionId: params.questionId } },
   });
-  if (!card) return { error: "Tarjeta no encontrada." };
+  if (!card) return { error: 'Tarjeta no encontrada.' };
   const q = Math.max(0, Math.min(3, params.quality));
   let ease = card.easeFactor;
   let rep = card.repetitions;
@@ -512,13 +522,13 @@ export async function friendsWeeklyXpRanking(userId: string, limit: number) {
   if (ids.length === 0) return { weekStartUtc: weekStartUtc.toISOString(), users: [] as const };
 
   const grouped = await prisma.xpGainLedger.groupBy({
-    by: ["userId"],
+    by: ['userId'],
     where: {
       userId: { in: ids },
       createdAt: { gte: weekStartUtc, lt: weekEndExclusiveUtc },
     },
     _sum: { amount: true },
-    orderBy: { _sum: { amount: "desc" } },
+    orderBy: { _sum: { amount: 'desc' } },
     take: limit,
   });
   const userRows = await prisma.user.findMany({
@@ -533,8 +543,8 @@ export async function friendsWeeklyXpRanking(userId: string, limit: number) {
       return {
         rank: i + 1,
         userId: g.userId,
-        username: u?.username ?? "",
-        realName: u?.realName ?? "",
+        username: u?.username ?? '',
+        realName: u?.realName ?? '',
         avatarUrl: u?.avatarUrl ?? null,
         xpThisWeek: g._sum.amount ?? 0,
       };
@@ -553,4 +563,30 @@ export function mapQuizKnowledgeAreaToContentCategory(area: QuizKnowledgeArea): 
     emotions_values: ContentCategory.education,
   };
   return m[area];
+}
+
+/** Mapea categorías legacy de quiz (string) a `ContentCategory` de contenido. */
+export function mapQuizCategoryToContentCategory(value: string): ContentCategory | null {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  const byName: Record<string, ContentCategory> = {
+    math: ContentCategory.math,
+    astronomy: ContentCategory.astronomy,
+    science: ContentCategory.science,
+    geography: ContentCategory.geography,
+    education: ContentCategory.education,
+    history: ContentCategory.history,
+    puzzle: ContentCategory.puzzle,
+    sports: ContentCategory.sports,
+    creativity: ContentCategory.creativity,
+    mixed: ContentCategory.education,
+    mathematics: ContentCategory.math,
+    natural_sciences: ContentCategory.science,
+    social_sciences: ContentCategory.geography,
+    language: ContentCategory.education,
+    art_culture: ContentCategory.creativity,
+    logic_thinking: ContentCategory.puzzle,
+    emotions_values: ContentCategory.education,
+  };
+  return byName[normalized] ?? null;
 }

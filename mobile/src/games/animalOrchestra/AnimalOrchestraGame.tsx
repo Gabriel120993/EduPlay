@@ -3,7 +3,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { space } from "../../theme/tokens";
-import { bumpUnlocksAfterLevel, getStarsForLevel, setMaxUnlockedLevel, setStarsForLevel } from "../storage/gameProgressStore";
+import {
+  bumpUnlocksAfterLevel,
+  getStarsForLevel,
+  setMaxUnlockedLevel,
+  setStarsForLevel,
+} from "../storage/gameProgressStore";
 import { MiniGameChrome } from "../shared/MiniGameChrome";
 import { starsFromAttempts } from "../shared/starsFromScore";
 import { TutorialOverlay, type TutorialStep } from "../shared/TutorialOverlay";
@@ -32,7 +37,11 @@ export const miniGameSpec = { meta: META, totalLevels: TOTAL_LEVELS };
 const NOTES = ["DO", "RE", "MI", "FA", "SOL", "LA", "SI"];
 const ANIMALS = ["🐘", "🦒", "🐸", "🦊", "🦁", "🐼", "🦉"];
 
-export default function AnimalOrchestraGame({ levelIndex, onCompleteLevel, onRequestExit }: MiniGameProps) {
+export default function AnimalOrchestraGame({
+  levelIndex,
+  onCompleteLevel,
+  onRequestExit,
+}: MiniGameProps) {
   const { colors } = useTheme();
   const [showTutorial, tutorialDone] = useTutorialSeen(META.id);
   const len = 3 + (levelIndex % 4);
@@ -82,12 +91,22 @@ export default function AnimalOrchestraGame({ levelIndex, onCompleteLevel, onReq
 
   return (
     <View style={{ flex: 1 }}>
-      {showTutorial ? <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} /> : null}
-      <MiniGameChrome meta={META} levelIndex={levelIndex} totalLevels={TOTAL_LEVELS} bestStars={best || undefined} onBack={onRequestExit}>
+      {showTutorial ? (
+        <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} />
+      ) : null}
+      <MiniGameChrome
+        meta={META}
+        levelIndex={levelIndex}
+        totalLevels={TOTAL_LEVELS}
+        bestStars={best || undefined}
+        onBack={onRequestExit}
+      >
         <Text style={{ color: colors.textSecondary, marginBottom: space.md, fontWeight: "700" }}>
           {phase === "show" ? "Escuchá la secuencia…" : `Repetí: paso ${idx + 1}/${seq.length}`}
         </Text>
-        <Text style={{ color: colors.text, fontSize: 18, fontWeight: "900", marginBottom: space.md }}>
+        <Text
+          style={{ color: colors.text, fontSize: 18, fontWeight: "900", marginBottom: space.md }}
+        >
           {phase === "show" ? seq.join(" · ") : "🎵"}
         </Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>

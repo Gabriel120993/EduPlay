@@ -14,7 +14,10 @@ import {
   pickAnotherInterestCategoryId,
   pickInterestCategoryId,
 } from "../lib/notificationPersonalization";
-import { ANDROID_DEFAULT_NOTIFICATION_CHANNEL_ID, EDUPLAY_SYSTEM_NOTIFICATION_WAV } from "../constants/systemNotificationSound";
+import {
+  ANDROID_DEFAULT_NOTIFICATION_CHANNEL_ID,
+  EDUPLAY_SYSTEM_NOTIFICATION_WAV,
+} from "../constants/systemNotificationSound";
 import { ensureEduPlayDefaultNotificationChannelAsync } from "../lib/ensureEduPlayNotificationChannel";
 import { getTodayDailyMissions, getUserProfile } from "./api";
 
@@ -41,7 +44,7 @@ async function cancelStored(key: string): Promise<void> {
 
 function hasIncompleteDailyChallenges(
   missions: { completed: boolean }[],
-  dailyChallengeBonus: { granted: boolean }
+  dailyChallengeBonus: { granted: boolean },
 ): boolean {
   if (missions.length === 0) return false;
   if (dailyChallengeBonus.granted) return false;
@@ -83,7 +86,9 @@ export async function syncLocalNotifications(userId: string): Promise<void> {
     return;
   }
 
-  const notificationSound = prefs.notificationSoundsEnabled ? EDUPLAY_SYSTEM_NOTIFICATION_WAV : false;
+  const notificationSound = prefs.notificationSoundsEnabled
+    ? EDUPLAY_SYSTEM_NOTIFICATION_WAV
+    : false;
 
   const androidTriggerExtra =
     Platform.OS === "android" ? { channelId: ANDROID_DEFAULT_NOTIFICATION_CHANNEL_ID } : {};

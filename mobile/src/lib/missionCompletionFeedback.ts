@@ -25,10 +25,7 @@ export function tryAlertMissionCompletions(items: MissionRewardLine[]): string[]
 
   if (toShow.length === 1) {
     const xp = toShow[0].xpReward;
-    showToast(
-      xp > 0 ? `Misión completada 🏆 +${xp} XP` : "Misión completada 🏆",
-      "success"
-    );
+    showToast(xp > 0 ? `Misión completada 🏆 +${xp} XP` : "Misión completada 🏆", "success");
   } else {
     const parts = toShow.map((x) => (x.xpReward > 0 ? `+${x.xpReward} XP` : "ok"));
     showToast(`${toShow.length} misiones completadas 🏆 · ${parts.join(", ")}`, "success");

@@ -1,0 +1,189 @@
+﻿TAREAS PENDIENTES + SECCIONES 7-12 — EDUPLAY
+Ejecutar en Cursor — Seguridad, Calidad, Arquitectura y DevOps
+
+PARTE A: TAREAS P0 FALTANTES (del prompt anterior)
+
+TAREA A1: CORS CON ALLOWLIST EXPLÍCITA
+Problema: Actualmente app.use(cors()) sin restricciones. Cursor dijo que era “fuera del alcance solo tests” pero es CRÍTICO de seguridad.
+Implementar:
+En src/config/env.ts agregar:
+CORS_ALLOWED_ORIGINS: z.string().optional().default('*'),
+En .env.example agregar:
+# CORS: lista separada por comas. En desarrollo dejar '*' o 'http://localhost:19006'# En producción usar dominios explícitos: 'https://eduplay.app,https://admin.eduplay.app'CORS_ALLOWED_ORIGINS=http://localhost:19006,http://localhost:3000
+En src/app.ts REEMPLAZAR app.use(cors()) por:
+import cors from 'cors';const corsOrigins = env.CORS_ALLOWED_ORIGINS;const corsOptions: cors.CorsOptions = {  origin: (origin, callback) => {    // Permitir sin origin (mobile apps, Postman, curl, server-to-server)    if (!origin) return callback(null, true);    // En desarrollo, permitir localhost    if (env.NODE_ENV === 'development') {      if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {        return callback(null, true);      }    }    // En producción, solo orígenes explícitos    if (corsOrigins === '*') {      return callback(null, true);    }    const allowedList = corsOrigins.split(',').map(o => o.trim()).filter(Boolean);    if (allowedList.includes(origin)) {      return callback(null, true);    }    callback(new Error(`CORS: origin ${origin} not allowed`));  },  credentials: true,  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],  maxAge: 86400, // 24 horas de cache para preflight};app.use(cors(corsOptions));
+Tests en tests/security.integration.test.ts:
+Origen en allowlist → 200 + headers CORS correctos
+Origen NO en allowlist → bloqueado (error CORS, no llega al handler)
+Sin origin (mobile app) → permitido
+OPTIONS /api/health con origin válido → 204 + headers preflight
+Cambiar CORS_ALLOWED_ORIGINS a dominio específico y verificar rechazo de localhost
+En desarrollo: npm run dev debe seguir funcionando sin problemas con Expo/web.
+Entregable: CORS seguro con allowlist + tests + documentación en README.
+
+TAREA A2: ESLINT + PRETTIER (BACKEND Y MOBILE)
+Cursor no implementó esto a pesar de estar en el P0. Es fundamental para calidad de código.
+A2.1 Backend (raíz)
+Instalar dependencias:
+npm install -D eslint @eslint/js @types/eslint__js typescript-eslint prettier eslint-config-prettier eslint-plugin-import
+Crear eslint.config.mjs:
+import js from '@eslint/js';import ts from 'typescript-eslint';import prettier from 'eslint-config-prettier';import importPlugin from 'eslint-plugin-import';export default ts.config(  js.configs.recommended,  ...ts.configs.recommended,  importPlugin.flatConfigs.recommended,  {    files: ['src/**/*.ts', 'tests/**/*.ts'],    languageOptions: {      parserOptions: {        project: './tsconfig.json',      },    },    rules: {      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],      '@typescript-eslint/no-explicit-any': 'warn',      '@typescript-eslint/strict-boolean-expressions': 'off',      'import/no-unresolved': 'off',      'import/order': ['warn', { alphabetize: { order: 'asc' } }],      'no-console': ['warn', { allow: ['error', 'warn', 'info'] }],    },  },  {    ignores: ['dist/', 'node_modules/', '.prisma-client/', 'mobile/', '*.config.*'],  },  prettier,);
+Crear .prettierrc:
+{  &quot;semi&quot;: true,  &quot;singleQuote&quot;: true,  &quot;tabWidth&quot;: 2,  &quot;trailingComma&quot;: &quot;all&quot;,  &quot;printWidth&quot;: 100,  &quot;endOfLine&quot;: &quot;lf&quot;}
+Agregar scripts en package.json:
+&quot;lint&quot;: &quot;eslint src tests&quot;,&quot;lint:fix&quot;: &quot;eslint src tests --fix&quot;,&quot;format&quot;: &quot;prettier --write &quot;src/**/*.ts&quot; &quot;tests/**/*.ts&quot;&quot;,&quot;format:check&quot;: &quot;prettier --check &quot;src/**/*.ts&quot; &quot;tests/**/*.ts&quot;&quot;
+Ejecutar y corregir TODO el código:
+npm run lint:fixnpm run format
+Si hay errores que no se pueden autofix: - Listarlos en un comentario // TODO: ESLint fix needed - [razón] - NO usar @ts-ignore para silenciar, usar @ts-expect-error con justificación
+A2.2 Mobile
+Instalar:
+cd mobilenpm install -D eslint @eslint/js @types/eslint__js typescript-eslint prettier eslint-config-prettier
+Crear mobile/eslint.config.mjs:
+import js from '@eslint/js';import ts from 'typescript-eslint';import prettier from 'eslint-config-prettier';export default ts.config(  js.configs.recommended,  ...ts.configs.recommended,  {    files: ['src/**/*.ts', 'src/**/*.tsx'],    languageOptions: {      parserOptions: {        project: './tsconfig.json',      },    },    rules: {      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],      'react/react-in-jsx-scope': 'off',      'no-console': ['warn', { allow: ['error', 'warn'] }],    },  },  {    ignores: ['node_modules/', '.expo/', 'dist/', 'web-build/'],  },  prettier,);
+Crear mobile/.prettierrc (misma config que raíz)
+Agregar scripts en mobile/package.json:
+&quot;lint&quot;: &quot;eslint src&quot;,&quot;lint:fix&quot;: &quot;eslint src --fix&quot;,&quot;format&quot;: &quot;prettier --write &quot;src/**/*.{ts,tsx}&quot;&quot;,&quot;format:check&quot;: &quot;prettier --check &quot;src/**/*.{ts,tsx}&quot;&quot;
+Ejecutar:
+cd mobile && npm run lint:fix && npm run format
+A2.3 Integrar al CI
+En .github/workflows/ci.yml agregar pasos en el job test:
+      - run: npm run lint      - run: npm run format:check
+Entregable: ESLint + Prettier funcionando en backend y mobile, CI los ejecuta, código formateado.
+
+PARTE B: SECCIONES 7-12 DE LA AUDITORÍA ORIGINAL
+
+TAREA B1: ARQUITECTURA — REFACTOR MASIVO A SERVICOS (SECCIÓN 7)
+Problema: 47 controllers con lógica de Prisma directa, solo 4 services. Esto es un problema de arquitectura serio.
+Objetivo: No refactorizar TODO de una vez (sería un PR gigante), sino crear el patrón definitivo y aplicarlo sistemáticamente.
+Patrón a establecer:
+src/  controllers/    → Solo reciben req/res, validan input, llaman service, retornan response  services/       → Toda la lógica de negocio, queries Prisma, reglas de dominio  repositories/   → (opcional) Si un service tiene muchas queries, extraer a repository  types/          → Interfaces de input/output de services
+Controllers a refactorizar en este lote (prioridad por riesgo):
+src/controllers/auth.controller.ts → ya parcialmente hecho, completar
+Mover TODO el código restante a src/services/auth.service.ts
+Controller solo debe tener: parse input → call service → return response
+src/controllers/parents.controller.ts → src/services/parents.service.ts
+Crear menores, listar menores, aprobar cuentas, etc.
+src/controllers/users.controller.ts → src/services/users.service.ts
+Perfiles, actualización de datos, búsqueda
+src/controllers/content.controller.ts → ya parcialmente hecho, completar
+CRUD completo de contenido educativo
+src/controllers/quiz.controller.ts → ya parcialmente hecho, completar
+Envío de respuestas, resultados, categorías
+src/controllers/friends.controller.ts → src/services/friends.service.ts
+Solicitudes, aceptación, lista de amigos
+src/controllers/chat.controller.ts → src/services/chat.service.ts
+Mensajes, conversaciones, historial
+src/controllers/game-results.controller.ts → src/services/gameResults.service.ts
+Guardar resultados, estadísticas, leaderboards
+Para cada controller: - Extraer TODO el código que no sea HTTP (req/res) al service correspondiente - El service debe ser testeable unitariamente (sin req/res) - El controller debe ser un “thin adapter” HTTP → Service - Actualizar tests para mockear el service en lugar de Prisma
+Entregable: 8 services completos + controllers refactorizados + tests actualizados.
+
+TAREA B2: PERFORMANCE (SECCIÓN 8)
+B2.1 Backend
+Implementar:
+Compresión gzip:
+npm install compression
+En src/app.ts:
+import compression from 'compression';app.use(compression());
+Logging de queries Prisma (solo en desarrollo): En prisma/client.ts o donde se instancia Prisma:
+const prisma = new PrismaClient({  log: env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],});
+Esto permite detectar N+1 queries en desarrollo.
+Revisar N+1 queries existentes:
+Buscar findMany con include anidados en controllers/services
+Listar los que potencialmente causen N+1
+Para cada uno, verificar si se puede usar select en lugar de include, o agregar take/skip
+Paginación en endpoints de listado:
+Verificar que TODOS los endpoints que retornan listas tengan paginación
+Si falta en alguno, agregar page + limit con defaults seguros (limit máximo 100)
+B2.2 Mobile
+Verificar uso de FlashList en lugar de FlatList para listas largas (mejor performance)
+Agregar React.memo a componentes puros que reciban props estables
+Verificar que useCallback se use en handlers pasados a componentes hijos
+Revisar que no haya useEffect innecesarios que causen re-renders
+Entregable: Compresión gzip + logging Prisma + lista de N+1 detectados + mejoras mobile.
+
+TAREA B3: DEVOPS Y DESPLIEGUE (SECCIÓN 9)
+B3.1 Docker Multi-Stage
+Problema: Dockerfile actual es una sola etapa. Optimizar a multi-stage.
+Crear Dockerfile optimizado:
+# Stage 1: DependenciesFROM node:22-alpine AS depsWORKDIR /appCOPY package*.json ./RUN npm ci --only=production# Stage 2: BuilderFROM node:22-alpine AS builderWORKDIR /appCOPY package*.json ./RUN npm ciCOPY . .RUN npx prisma generateRUN npm run build# Stage 3: RunnerFROM node:22-alpine AS runnerWORKDIR /appENV NODE_ENV=production# Copiar solo lo necesarioCOPY --from=deps /app/node_modules ./node_modulesCOPY --from=builder /app/dist ./distCOPY --from=builder /app/.prisma-client ./.prisma-clientCOPY --from=builder /app/prisma ./prismaCOPY package.json ./# Scripts y entrypointCOPY docker/entrypoint.sh ./RUN chmod +x entrypoint.shEXPOSE 3000ENTRYPOINT [&quot;./entrypoint.sh&quot;]CMD [&quot;node&quot;, &quot;dist/index.js&quot;]
+Resultado: Imagen final mucho más pequeña (sin devDependencies, sin source maps si no se necesitan).
+B3.2 Docker Compose completo
+Actualizar docker-compose.yml para incluir API:
+version: '3.8'services:  db:    image: postgres:16-alpine    environment:      POSTGRES_USER: eduplay      POSTGRES_PASSWORD: ${DB_PASSWORD:-eduplay123}      POSTGRES_DB: eduplay    volumes:      - postgres_data:/var/lib/postgresql/data    healthcheck:      test: [&quot;CMD-SHELL&quot;, &quot;pg_isready -U eduplay&quot;]      interval: 10s      timeout: 5s      retries: 5  api:    build:      context: .      dockerfile: Dockerfile    ports:      - &quot;${API_HOST_PORT:-3800}:3000&quot;    environment:      DATABASE_URL: postgresql://eduplay:${DB_PASSWORD:-eduplay123}@db:5432/eduplay?schema=public      JWT_SECRET: ${JWT_SECRET}      NODE_ENV: production      AUTO_SEED_DEMO: ${AUTO_SEED_DEMO:-false}    depends_on:      db:        condition: service_healthy    healthcheck:      test: [&quot;CMD&quot;, &quot;wget&quot;, &quot;--quiet&quot;, &quot;--tries=1&quot;, &quot;--spider&quot;, &quot;http://localhost:3000/api/health&quot;]      interval: 30s      timeout: 10s      retries: 3volumes:  postgres_data:
+B3.3 CI/CD mejorado
+En .github/workflows/ci.yml: - Agregar job docker-build que haga docker build para verificar que no se rompe - Agregar job typecheck-mobile que ejecute cd mobile && npx tsc --noEmit
+Entregable: Dockerfile multi-stage + docker-compose completo + CI mejorado.
+
+TAREA B4: DOCUMENTACIÓN COMPLETA (SECCIÓN 10)
+B4.1 OpenAPI / Swagger
+Instalar:
+npm install -D swagger-ui-express @types/swagger-ui-express
+Crear documentación mínima en src/lib/swagger.ts: - Documentar los 15 endpoints principales - Incluir schemas de request/response - Montar en /api/docs cuando NODE_ENV !== production (o proteger con auth)
+B4.2 Guía de contribución actualizada
+En CONTRIBUTING.md agregar: - Cómo ejecutar lint y format antes de commitear - Estructura de commits (conventional commits) - Proceso de PR (tests deben pasar, review requerido) - Cómo agregar tests para nuevos endpoints
+B4.3 Guía de troubleshooting
+Crear docs/TROUBLESHOOTING.md: - Error Prisma EPERM en Windows - Docker no levanta - Tests fallan por rate limiting - CORS bloquea requests en desarrollo - Mobile no conecta al backend
+Entregable: OpenAPI docs + CONTRIBUTING.md actualizado + TROUBLESHOOTING.md.
+
+TAREA B5: ACCESIBILIDAD MOBILE (SECCIÓN 11)
+Problema: Sin accessibilityLabel, sin allowFontScaling, cobertura a11y baja.
+Implementar en componentes críticos de mobile/src:
+Agregar accessibilityLabel a todos los botones y inputs:
+<TouchableOpacity accessibilityLabel=&quot;Enviar mensaje&quot; accessibilityRole=&quot;button&quot;>
+Agregar allowFontScaling donde sea necesario:
+<Text allowFontScaling={true} maxFontSizeMultiplier={1.5}>
+Verificar contrastes de color:
+Usar herramienta o criterio WCAG 2.1 AA (ratio 4.5:1 para texto normal)
+Listar componentes que no cumplan
+Touch targets mínimo 44x44dp:
+Verificar que todos los botones táctiles cumplan
+Aumentar padding si es necesario
+Screen reader friendly:
+Agrupar información relacionada con accessibilityLabel
+Ocultar elementos decorativos con accessibilityElementsHidden
+Entregable: Componentes críticos con a11y + checklist de cumplimiento.
+
+TAREA B6: INTERNACIONALIZACIÓN i18n (SECCIÓN 12)
+Problema: Textos hardcodeados en español. El producto podría expandirse a otros mercados.
+Implementar:
+Instalar en mobile:
+cd mobilenpm install i18next react-i18next expo-localization
+Crear mobile/src/i18n/index.ts:
+import i18n from 'i18next';import { initReactI18next } from 'react-i18next';import * as Localization from 'expo-localization';import es from './locales/es.json';import en from './locales/en.json';const resources = { es: { translation: es }, en: { translation: en } };i18n.use(initReactI18next).init({  resources,  lng: Localization.locale.startsWith('es') ? 'es' : 'en',  fallbackLng: 'es',  interpolation: { escapeValue: false },});export default i18n;
+Crear archivos de traducción:
+mobile/src/i18n/locales/es.json
+mobile/src/i18n/locales/en.json
+Extraer textos hardcodeados de 5 pantallas críticas:
+LoginScreen
+HomeScreen
+ProfileScreen
+ContentListScreen
+QuizScreen
+Reemplazar textos por t('key'):
+import { useTranslation } from 'react-i18next';const { t } = useTranslation();<Text>{t('login.title')}</Text>
+Entregable: Sistema i18n configurado + 5 pantallas traducidas + estructura para agregar más idiomas.
+
+⚠️ REGLAS GENERALES
+NO modificar comportamiento de endpoints (solo estructura y calidad)
+SÍ crear tests para TODO lo nuevo (CORS, services, i18n, a11y)
+SÍ ejecutar después de cada tarea:
+npm run lint        # debe pasarnpm run format:check  # debe pasarnpm test            # debe pasar (54+)npm run test:db     # si Docker disponiblenpm run qa:audit    # debe pasarcd mobile && npx tsc --noEmit  # debe pasar
+Sí hay errores de lint que no se puedan fixear automáticamente, listarlos y justificar
+Commits atómicos por tarea (A1, A2, B1, B2, B3, B4, B5, B6)
+Actualizar AUDIT_REPORT.md con progreso de cada tarea
+Si test:db falla por Docker, reportar WARNING y continuar con el resto
+
+ENTREGABLES FINALES
+☐ CORS con allowlist + tests
+☐ ESLint + Prettier backend y mobile + CI
+☐ 8 services refactorizados + controllers limpios
+☐ Compresión gzip + logging Prisma + paginación
+☐ Dockerfile multi-stage + docker-compose completo
+☐ OpenAPI/Swagger docs
+☐ CONTRIBUTING.md + TROUBLESHOOTING.md
+☐ Componentes mobile con a11y
+☐ Sistema i18n + 5 pantallas traducidas
+☐ AUDIT_REPORT.md actualizado
+☐ CI verde con todos los jobs
+

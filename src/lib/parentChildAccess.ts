@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import { prisma } from './prisma';
 
 /** Comprueba que el usuario menor pertenezca al tutor indicado. */
 export async function userBelongsToParent(userId: string, parentId: string): Promise<boolean> {

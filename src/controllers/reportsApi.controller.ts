@@ -1,11 +1,11 @@
-import type { Request, Response } from "express";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
+import type { Request, Response } from 'express';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
 
 function requireChild(req: Request, res: Response): string | null {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return null;
   }
   return auth.userId;
@@ -19,12 +19,12 @@ export async function getMyContentReports(req: Request, res: Response): Promise<
   try {
     const rows = await prisma.contentReport.findMany({
       where: { reporterUserId: userId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 100,
     });
     res.json({ reports: rows });
   } catch (e) {
-    logError("reportsApi.myReports", e);
-    res.status(500).json({ error: "Error al listar reportes." });
+    logError('reportsApi.myReports', e);
+    res.status(500).json({ error: 'Error al listar reportes.' });
   }
 }

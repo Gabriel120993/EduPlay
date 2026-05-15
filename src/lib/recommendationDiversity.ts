@@ -1,6 +1,6 @@
-import { ContentCategory } from "@prisma/client";
+import { ContentCategory } from '@prisma/client';
 
-import { CONTENT_CATEGORY_VALUES } from "./contentCategory";
+import { CONTENT_CATEGORY_VALUES } from './contentCategory';
 
 /** Cuota de ítems alineados con intereses del usuario vs exploración. */
 export const INTEREST_QUOTA = 0.7;
@@ -16,7 +16,7 @@ export function quotaSplit(total: number): { interestSlots: number; exploreSlots
 /** Categorías para exploración: las que el usuario no tiene en su top (o todas mezcladas si hace falta). */
 export function pickExplorationCategories(
   topInterestCategories: readonly ContentCategory[],
-  maxDistinct: number
+  maxDistinct: number,
 ): ContentCategory[] {
   const top = new Set(topInterestCategories);
   let pool = CONTENT_CATEGORY_VALUES.filter((c) => !top.has(c));
@@ -42,7 +42,7 @@ export function pickDiverseByCategory<T>(
   items: T[],
   limit: number,
   getCategory: (t: T) => string,
-  getSortKey: (t: T) => number
+  getSortKey: (t: T) => number,
 ): T[] {
   if (items.length === 0 || limit <= 0) return [];
 
@@ -50,7 +50,7 @@ export function pickDiverseByCategory<T>(
 
   const byCat = new Map<string, T[]>();
   for (const it of sorted) {
-    const key = getCategory(it).trim() || "__none__";
+    const key = getCategory(it).trim() || '__none__';
     if (!byCat.has(key)) byCat.set(key, []);
     byCat.get(key)!.push(it);
   }

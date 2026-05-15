@@ -243,7 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await clearPersistedSession();
       }
     },
-    [mergeLoginHints]
+    [mergeLoginHints],
   );
 
   const login = useCallback(
@@ -251,7 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const session = await loginParent(email, password);
       await persistParentSession(session, rememberSession, email);
     },
-    [persistParentSession]
+    [persistParentSession],
   );
 
   const loginAsChild = useCallback(
@@ -273,7 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await clearPersistedSession();
       }
     },
-    [mergeLoginHints]
+    [mergeLoginHints],
   );
 
   const register = useCallback(
@@ -281,7 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const session = await registerParent(email, password);
       await persistParentSession(session, rememberSession, email);
     },
-    [persistParentSession]
+    [persistParentSession],
   );
 
   const logout = useCallback(async () => {
@@ -322,7 +322,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       refreshParent,
     }),
-    [loading, token, sessionRole, parent, parentUserId, viewerUserId, login, loginAsChild, register, logout, refreshParent]
+    [
+      loading,
+      token,
+      sessionRole,
+      parent,
+      parentUserId,
+      viewerUserId,
+      login,
+      loginAsChild,
+      register,
+      logout,
+      refreshParent,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

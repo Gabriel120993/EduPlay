@@ -1,6 +1,6 @@
-import { ReactionType } from "@prisma/client";
+import { ReactionType } from '@prisma/client';
 
-import { prisma } from "./prisma";
+import { prisma } from './prisma';
 
 /** Conteos por tipo para la API móvil (camelCase). */
 export type ReactionCountsDto = { like: number; clap: number; star: number };
@@ -34,7 +34,7 @@ export function reactionCountsDtoToByType(dto: ReactionCountsDto): ReactionsCoun
 /** Reacción del usuario actual por post (`null` si no reaccionó). */
 export async function getUserReactionsByPostIds(
   userId: string,
-  postIds: string[]
+  postIds: string[],
 ): Promise<Map<string, ReactionType | null>> {
   const map = new Map<string, ReactionType | null>();
   if (postIds.length === 0) return map;
@@ -57,7 +57,9 @@ export async function getUserReactionsByPostIds(
 }
 
 /** Agrega `like` / `clap` / `star` por post en una sola consulta agrupada. */
-export async function getReactionCountsByPostIds(postIds: string[]): Promise<Map<string, ReactionCountsDto>> {
+export async function getReactionCountsByPostIds(
+  postIds: string[],
+): Promise<Map<string, ReactionCountsDto>> {
   const map = new Map<string, ReactionCountsDto>();
   if (postIds.length === 0) return map;
 
@@ -67,7 +69,7 @@ export async function getReactionCountsByPostIds(postIds: string[]): Promise<Map
   }
 
   const groups = await prisma.reaction.groupBy({
-    by: ["postId", "type"],
+    by: ['postId', 'type'],
     where: { postId: { in: unique } },
     _count: { _all: true },
   });

@@ -1,3 +1,4 @@
+import "./i18n";
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
@@ -257,7 +258,10 @@ function AppContent() {
 
   return (
     <ScreenTimeProvider userId={viewerUserId}>
-      <PostOnboardingProvider pendingFeedWelcome={pendingFeedWelcome} onConsume={consumePendingFeedWelcome}>
+      <PostOnboardingProvider
+        pendingFeedWelcome={pendingFeedWelcome}
+        onConsume={consumePendingFeedWelcome}
+      >
         <PushNotificationSetup />
         <LocalNotificationScheduler />
         <ChildNavigationContainer>

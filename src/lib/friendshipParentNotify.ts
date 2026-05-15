@@ -1,5 +1,5 @@
-import { sendExpoPushToToken } from "./expoPushSend";
-import { prisma } from "./prisma";
+import { sendExpoPushToToken } from './expoPushSend';
+import { prisma } from './prisma';
 
 function displayLabel(u: { username: string; realName: string }): string {
   return u.realName?.trim() || `@${u.username}`;
@@ -16,7 +16,10 @@ async function childWantsNewContactNotify(childId: string): Promise<boolean> {
 /**
  * Nueva solicitud PENDING: avisa a los tutores (remitente y destinatario, o uno si son hermanos).
  */
-export async function recordAndNotifyFriendRequest(senderId: string, recipientId: string): Promise<void> {
+export async function recordAndNotifyFriendRequest(
+  senderId: string,
+  recipientId: string,
+): Promise<void> {
   const [a, b] = await Promise.all([
     prisma.user.findUnique({
       where: { id: senderId },
@@ -30,12 +33,12 @@ export async function recordAndNotifyFriendRequest(senderId: string, recipientId
   if (!a || !b) return;
 
   if (a.parentId === b.parentId) {
-    const title = "Solicitud de amistad entre tus hijos";
+    const title = 'Solicitud de amistad entre tus hijos';
     const body = `${displayLabel(a)} (@${a.username}) envió una solicitud a ${displayLabel(b)} (@${b.username}).`;
     await prisma.parentFamilyEvent.create({
       data: {
         parentId: a.parentId,
-        kind: "FRIEND_REQUEST_SIBLINGS",
+        kind: 'FRIEND_REQUEST_SIBLINGS',
         childId: a.id,
         peerUserId: b.id,
         title,
@@ -48,7 +51,7 @@ export async function recordAndNotifyFriendRequest(senderId: string, recipientId
     });
     if (parent?.expoPushToken) {
       void sendExpoPushToToken(parent.expoPushToken, title, body, {
-        kind: "FRIEND_REQUEST",
+        kind: 'FRIEND_REQUEST',
         childId: a.id,
         peerUserId: b.id,
       });
@@ -56,7 +59,7 @@ export async function recordAndNotifyFriendRequest(senderId: string, recipientId
     return;
   }
 
-  const title = "Nueva solicitud de amistad";
+  const title = 'Nueva solicitud de amistad';
   const bodyRecipient = `${displayLabel(a)} (@${a.username}) quiere ser amigo de ${displayLabel(b)} (@${b.username}).`;
   const bodySender = `${displayLabel(a)} envió una solicitud de amistad a ${displayLabel(b)} (@${b.username}).`;
 
@@ -64,7 +67,7 @@ export async function recordAndNotifyFriendRequest(senderId: string, recipientId
     data: [
       {
         parentId: b.parentId,
-        kind: "FRIEND_REQUEST",
+        kind: 'FRIEND_REQUEST',
         childId: b.id,
         peerUserId: a.id,
         title,
@@ -72,7 +75,7 @@ export async function recordAndNotifyFriendRequest(senderId: string, recipientId
       },
       {
         parentId: a.parentId,
-        kind: "FRIEND_REQUEST",
+        kind: 'FRIEND_REQUEST',
         childId: a.id,
         peerUserId: b.id,
         title,
@@ -92,7 +95,7 @@ export async function recordAndNotifyFriendRequest(senderId: string, recipientId
     const childId = p.id === b.parentId ? b.id : a.id;
     const peerUserId = p.id === b.parentId ? a.id : b.id;
     void sendExpoPushToToken(p.expoPushToken, title, body, {
-      kind: "FRIEND_REQUEST",
+      kind: 'FRIEND_REQUEST',
       childId,
       peerUserId,
     });
@@ -104,7 +107,7 @@ export async function recordAndNotifyFriendRequest(senderId: string, recipientId
  */
 export async function recordAndNotifyFriendshipAwaitingParentApproval(
   senderId: string,
-  recipientId: string
+  recipientId: string,
 ): Promise<void> {
   const [sender, recipient] = await Promise.all([
     prisma.user.findUnique({
@@ -118,13 +121,13 @@ export async function recordAndNotifyFriendshipAwaitingParentApproval(
   ]);
   if (!sender || !recipient) return;
 
-  const title = "Amistad pendiente de tu aprobación";
+  const title = 'Amistad pendiente de tu aprobación';
   const body = `${displayLabel(recipient)} aceptó la solicitud de ${displayLabel(sender)} (@${sender.username}). Revisá y aprobá en la app.`;
 
   await prisma.parentFamilyEvent.create({
     data: {
       parentId: recipient.parentId,
-      kind: "FRIEND_AWAITING_PARENT",
+      kind: 'FRIEND_AWAITING_PARENT',
       childId: recipient.id,
       peerUserId: sender.id,
       title,
@@ -138,7 +141,7 @@ export async function recordAndNotifyFriendshipAwaitingParentApproval(
   });
   if (parent?.expoPushToken) {
     void sendExpoPushToToken(parent.expoPushToken, title, body, {
-      kind: "FRIEND_AWAITING_PARENT",
+      kind: 'FRIEND_AWAITING_PARENT',
       childId: recipient.id,
       peerUserId: sender.id,
     });
@@ -148,7 +151,10 @@ export async function recordAndNotifyFriendshipAwaitingParentApproval(
 /**
  * Tras amistad ACCEPTED: registra evento(s) en el panel del tutor y envía push si hay token.
  */
-export async function recordAndNotifyNewFriendship(userIdA: string, userIdB: string): Promise<void> {
+export async function recordAndNotifyNewFriendship(
+  userIdA: string,
+  userIdB: string,
+): Promise<void> {
   const [a, b] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userIdA },
@@ -161,16 +167,19 @@ export async function recordAndNotifyNewFriendship(userIdA: string, userIdB: str
   ]);
   if (!a || !b) return;
 
-  const [wantA, wantB] = await Promise.all([childWantsNewContactNotify(a.id), childWantsNewContactNotify(b.id)]);
+  const [wantA, wantB] = await Promise.all([
+    childWantsNewContactNotify(a.id),
+    childWantsNewContactNotify(b.id),
+  ]);
 
   if (a.parentId === b.parentId) {
     if (!wantA && !wantB) return;
-    const title = "Amistad aceptada entre tus hijos";
+    const title = 'Amistad aceptada entre tus hijos';
     const body = `${displayLabel(a)} y ${displayLabel(b)} (@${b.username}) ahora son amigos.`;
     await prisma.parentFamilyEvent.create({
       data: {
         parentId: a.parentId,
-        kind: "NEW_FRIEND_SIBLINGS",
+        kind: 'NEW_FRIEND_SIBLINGS',
         childId: a.id,
         peerUserId: b.id,
         title,
@@ -183,7 +192,7 @@ export async function recordAndNotifyNewFriendship(userIdA: string, userIdB: str
     });
     if (parent?.expoPushToken) {
       void sendExpoPushToToken(parent.expoPushToken, title, body, {
-        kind: "NEW_FRIEND",
+        kind: 'NEW_FRIEND',
         childId: a.id,
         peerUserId: b.id,
       });
@@ -191,7 +200,7 @@ export async function recordAndNotifyNewFriendship(userIdA: string, userIdB: str
     return;
   }
 
-  const title = "Amistad aceptada";
+  const title = 'Amistad aceptada';
   const bodyA = `${displayLabel(a)} y ${displayLabel(b)} (@${b.username}) son amigos.`;
   const bodyB = `${displayLabel(b)} y ${displayLabel(a)} (@${a.username}) son amigos.`;
 
@@ -206,7 +215,7 @@ export async function recordAndNotifyNewFriendship(userIdA: string, userIdB: str
   if (wantA) {
     eventRows.push({
       parentId: a.parentId,
-      kind: "NEW_FRIEND",
+      kind: 'NEW_FRIEND',
       childId: a.id,
       peerUserId: b.id,
       title,
@@ -216,7 +225,7 @@ export async function recordAndNotifyNewFriendship(userIdA: string, userIdB: str
   if (wantB) {
     eventRows.push({
       parentId: b.parentId,
-      kind: "NEW_FRIEND",
+      kind: 'NEW_FRIEND',
       childId: b.id,
       peerUserId: a.id,
       title,
@@ -240,7 +249,7 @@ export async function recordAndNotifyNewFriendship(userIdA: string, userIdB: str
     const childId = p.id === a.parentId ? a.id : b.id;
     const peerUserId = p.id === a.parentId ? b.id : a.id;
     void sendExpoPushToToken(p.expoPushToken, title, body, {
-      kind: "NEW_FRIEND",
+      kind: 'NEW_FRIEND',
       childId,
       peerUserId,
     });

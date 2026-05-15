@@ -1,32 +1,32 @@
-import type { Request, Response } from "express";
-import { FriendStatus } from "@prisma/client";
-import { z } from "zod";
-import { peekScreenTimeToday } from "../lib/screenTime";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { formatZodError } from "../lib/validation/schemas";
+import type { Request, Response } from 'express';
+import { FriendStatus } from '@prisma/client';
+import { z } from 'zod';
+import { peekScreenTimeToday } from '../lib/screenTime';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { formatZodError } from '../lib/validation/schemas';
 
 async function assertMinorAccess(req: Request, res: Response, minorId: string): Promise<boolean> {
   const auth = req.auth;
   if (!auth) {
-    res.status(401).json({ error: "No autenticado." });
+    res.status(401).json({ error: 'No autenticado.' });
     return false;
   }
-  if (auth.kind === "child" && auth.userId === minorId) {
+  if (auth.kind === 'child' && auth.userId === minorId) {
     return true;
   }
-  if (auth.kind === "parent") {
+  if (auth.kind === 'parent') {
     const minor = await prisma.user.findUnique({
       where: { id: minorId },
       select: { parentId: true, type: true },
     });
-    if (!minor || minor.type !== "minor" || minor.parentId !== auth.parentId) {
-      res.status(403).json({ error: "No autorizado para este menor." });
+    if (!minor || minor.type !== 'minor' || minor.parentId !== auth.parentId) {
+      res.status(403).json({ error: 'No autorizado para este menor.' });
       return false;
     }
     return true;
   }
-  res.status(403).json({ error: "No autorizado." });
+  res.status(403).json({ error: 'No autorizado.' });
   return false;
 }
 
@@ -34,7 +34,7 @@ async function assertMinorAccess(req: Request, res: Response, minorId: string): 
 export async function getMinorProgress(req: Request, res: Response): Promise<void> {
   const minorId = req.params.minorId?.trim();
   if (!minorId) {
-    res.status(400).json({ error: "minorId inválido." });
+    res.status(400).json({ error: 'minorId inválido.' });
     return;
   }
   if (!(await assertMinorAccess(req, res, minorId))) return;
@@ -52,7 +52,7 @@ export async function getMinorProgress(req: Request, res: Response): Promise<voi
       },
     });
     if (!user) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
     const missions = await prisma.userMission.count({
@@ -67,8 +67,8 @@ export async function getMinorProgress(req: Request, res: Response): Promise<voi
       },
     });
   } catch (e) {
-    logError("minorsApi.getMinorProgress", e);
-    res.status(500).json({ error: "Error al cargar progreso." });
+    logError('minorsApi.getMinorProgress', e);
+    res.status(500).json({ error: 'Error al cargar progreso.' });
   }
 }
 
@@ -76,7 +76,7 @@ export async function getMinorProgress(req: Request, res: Response): Promise<voi
 export async function getMinorActivity(req: Request, res: Response): Promise<void> {
   const minorId = req.params.minorId?.trim();
   if (!minorId) {
-    res.status(400).json({ error: "minorId inválido." });
+    res.status(400).json({ error: 'minorId inválido.' });
     return;
   }
   if (!(await assertMinorAccess(req, res, minorId))) return;
@@ -84,14 +84,14 @@ export async function getMinorActivity(req: Request, res: Response): Promise<voi
   try {
     const events = await prisma.analyticsEvent.findMany({
       where: { userId: minorId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 40,
       select: { eventName: true, metadata: true, createdAt: true },
     });
     res.json({ activity: events });
   } catch (e) {
-    logError("minorsApi.getMinorActivity", e);
-    res.status(500).json({ error: "Error al cargar actividad." });
+    logError('minorsApi.getMinorActivity', e);
+    res.status(500).json({ error: 'Error al cargar actividad.' });
   }
 }
 
@@ -99,7 +99,7 @@ export async function getMinorActivity(req: Request, res: Response): Promise<voi
 export async function getMinorStats(req: Request, res: Response): Promise<void> {
   const minorId = req.params.minorId?.trim();
   if (!minorId) {
-    res.status(400).json({ error: "minorId inválido." });
+    res.status(400).json({ error: 'minorId inválido.' });
     return;
   }
   if (!(await assertMinorAccess(req, res, minorId))) return;
@@ -121,8 +121,8 @@ export async function getMinorStats(req: Request, res: Response): Promise<void> 
       },
     });
   } catch (e) {
-    logError("minorsApi.getMinorStats", e);
-    res.status(500).json({ error: "Error al cargar estadísticas." });
+    logError('minorsApi.getMinorStats', e);
+    res.status(500).json({ error: 'Error al cargar estadísticas.' });
   }
 }
 
@@ -130,7 +130,7 @@ export async function getMinorStats(req: Request, res: Response): Promise<void> 
 export async function getMinorFriends(req: Request, res: Response): Promise<void> {
   const minorId = req.params.minorId?.trim();
   if (!minorId) {
-    res.status(400).json({ error: "minorId inválido." });
+    res.status(400).json({ error: 'minorId inválido.' });
     return;
   }
   if (!(await assertMinorAccess(req, res, minorId))) return;
@@ -155,8 +155,8 @@ export async function getMinorFriends(req: Request, res: Response): Promise<void
     });
     res.json({ friends: users });
   } catch (e) {
-    logError("minorsApi.getMinorFriends", e);
-    res.status(500).json({ error: "Error al listar amigos." });
+    logError('minorsApi.getMinorFriends', e);
+    res.status(500).json({ error: 'Error al listar amigos.' });
   }
 }
 
@@ -168,12 +168,12 @@ const timeUsageQuerySchema = z.object({
 export async function getMinorTimeUsage(req: Request, res: Response): Promise<void> {
   const minorId = req.params.minorId?.trim();
   if (!minorId) {
-    res.status(400).json({ error: "minorId inválido." });
+    res.status(400).json({ error: 'minorId inválido.' });
     return;
   }
   const auth = req.auth;
-  if (auth?.kind !== "parent") {
-    res.status(403).json({ error: "Solo el tutor puede ver el uso de tiempo detallado." });
+  if (auth?.kind !== 'parent') {
+    res.status(403).json({ error: 'Solo el tutor puede ver el uso de tiempo detallado.' });
     return;
   }
   if (!(await assertMinorAccess(req, res, minorId))) return;
@@ -196,7 +196,7 @@ export async function getMinorTimeUsage(req: Request, res: Response): Promise<vo
       },
     });
   } catch (e) {
-    logError("minorsApi.getMinorTimeUsage", e);
-    res.status(500).json({ error: "Error al cargar tiempo de pantalla." });
+    logError('minorsApi.getMinorTimeUsage', e);
+    res.status(500).json({ error: 'Error al cargar tiempo de pantalla.' });
   }
 }

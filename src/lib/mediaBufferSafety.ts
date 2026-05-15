@@ -41,18 +41,21 @@ function readJpegDimensions(buf: Buffer): { w: number; h: number } | null {
   return null;
 }
 
-export function validateBufferMatchesMime(buffer: Buffer, mimeType: string): { ok: true } | { ok: false; error: string } {
+export function validateBufferMatchesMime(
+  buffer: Buffer,
+  mimeType: string,
+): { ok: true } | { ok: false; error: string } {
   if (buffer.length < 12) {
-    return { ok: false, error: "Archivo demasiado pequeño." };
+    return { ok: false, error: 'Archivo demasiado pequeño.' };
   }
 
   switch (mimeType) {
-    case "image/jpeg":
+    case 'image/jpeg':
       if (buffer[0] !== 0xff || buffer[1] !== 0xd8) {
-        return { ok: false, error: "El archivo no es un JPEG válido." };
+        return { ok: false, error: 'El archivo no es un JPEG válido.' };
       }
       break;
-    case "image/png":
+    case 'image/png':
       if (
         buffer[0] !== 0x89 ||
         buffer[1] !== 0x50 ||
@@ -63,41 +66,41 @@ export function validateBufferMatchesMime(buffer: Buffer, mimeType: string): { o
         buffer[6] !== 0x1a ||
         buffer[7] !== 0x0a
       ) {
-        return { ok: false, error: "El archivo no es un PNG válido." };
+        return { ok: false, error: 'El archivo no es un PNG válido.' };
       }
       break;
-    case "image/gif":
+    case 'image/gif':
       if (buffer[0] !== 0x47 || buffer[1] !== 0x49 || buffer[2] !== 0x46 || buffer[3] !== 0x38) {
-        return { ok: false, error: "El archivo no es un GIF válido." };
+        return { ok: false, error: 'El archivo no es un GIF válido.' };
       }
       break;
-    case "image/webp": {
-      if (buffer.toString("ascii", 0, 4) !== "RIFF" || buffer.toString("ascii", 8, 12) !== "WEBP") {
-        return { ok: false, error: "El archivo no es un WebP válido." };
+    case 'image/webp': {
+      if (buffer.toString('ascii', 0, 4) !== 'RIFF' || buffer.toString('ascii', 8, 12) !== 'WEBP') {
+        return { ok: false, error: 'El archivo no es un WebP válido.' };
       }
       break;
     }
-    case "video/mp4":
-    case "video/quicktime":
-    case "video/webm": {
+    case 'video/mp4':
+    case 'video/quicktime':
+    case 'video/webm': {
       const head = buffer.subarray(0, Math.min(32, buffer.length));
-      const asAscii = head.toString("ascii", 0, head.length);
-      if (mimeType === "video/webm") {
-        if (!asAscii.includes("webm") && !asAscii.includes("EBML")) {
-          return { ok: false, error: "El archivo no parece un WebM válido." };
+      const asAscii = head.toString('ascii', 0, head.length);
+      if (mimeType === 'video/webm') {
+        if (!asAscii.includes('webm') && !asAscii.includes('EBML')) {
+          return { ok: false, error: 'El archivo no parece un WebM válido.' };
         }
         break;
       }
       if (head[4] === 0x66 && head[5] === 0x74 && head[6] === 0x79 && head[7] === 0x70) {
         break;
       }
-      if (asAscii.includes("ftyp") || asAscii.includes("moov") || asAscii.includes("mdat")) {
+      if (asAscii.includes('ftyp') || asAscii.includes('moov') || asAscii.includes('mdat')) {
         break;
       }
-      return { ok: false, error: "El archivo no parece un MP4/MOV válido." };
+      return { ok: false, error: 'El archivo no parece un MP4/MOV válido.' };
     }
     default:
-      return { ok: false, error: "Tipo no soportado para validación." };
+      return { ok: false, error: 'Tipo no soportado para validación.' };
   }
 
   return { ok: true };
@@ -107,23 +110,23 @@ export function validateBufferMatchesMime(buffer: Buffer, mimeType: string): { o
  * Heurística básica: dimensiones extremas o miniatura sospechosa → marcar para revisión (no rechaza).
  */
 export function basicImageSafetyFlag(buffer: Buffer, mimeType: string): string | null {
-  if (!mimeType.startsWith("image/")) {
+  if (!mimeType.startsWith('image/')) {
     return null;
   }
   let dim: { w: number; h: number } | null = null;
-  if (mimeType === "image/png") {
+  if (mimeType === 'image/png') {
     dim = readPngDimensions(buffer);
-  } else if (mimeType === "image/jpeg") {
+  } else if (mimeType === 'image/jpeg') {
     dim = readJpegDimensions(buffer);
   }
   if (!dim) {
-    return "basic_image_dimensions_unverified";
+    return 'basic_image_dimensions_unverified';
   }
   if (dim.w * dim.h < 64) {
-    return "basic_tiny_image";
+    return 'basic_tiny_image';
   }
   if (dim.w > 12_000 || dim.h > 12_000) {
-    return "basic_extreme_dimensions";
+    return 'basic_extreme_dimensions';
   }
   return null;
 }

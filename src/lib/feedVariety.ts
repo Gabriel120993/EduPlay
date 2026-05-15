@@ -1,10 +1,10 @@
-import { PostType } from "@prisma/client";
+import { PostType } from '@prisma/client';
 
 /** Etiquetas del feed (posts manuales, resultados de juego, logros). */
 export const FEED_TYPE_LABEL_ES: Record<PostType, string> = {
-  [PostType.POST]: "📚 Aprendizaje",
-  [PostType.GAME_RESULT]: "🎮 Juego",
-  [PostType.ACHIEVEMENT]: "🏆 Logro",
+  [PostType.POST]: '📚 Aprendizaje',
+  [PostType.GAME_RESULT]: '🎮 Juego',
+  [PostType.ACHIEVEMENT]: '🏆 Logro',
 };
 
 export function feedLabelForPostType(type: PostType): string {

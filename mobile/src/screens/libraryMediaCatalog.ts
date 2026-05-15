@@ -101,55 +101,122 @@ function durationBucketFromMinutes(m: number): DurationBucket {
 
 /** Plantillas alineadas a las temáticas pedidas (se combinan en 52+ episodios). */
 const DOC_SEEDS: Array<{ title: string; emoji: string; synopsis: string }> = [
-  { title: "¿Cómo funciona el corazón?", emoji: "❤️", synopsis: "Animación del ciclo cardíaco, válvulas y oxígeno." },
-  { title: "¿Por qué el cielo es azul?", emoji: "🌤️", synopsis: "Dispersión de la luz y colores del espectro." },
-  { title: "La historia de los dinosaurios", emoji: "🦕", synopsis: "Eras geológicas y extinciones explicadas simple." },
-  { title: "¿Qué es la fotosíntesis?", emoji: "🌿", synopsis: "Del sol al azúcar: clorofila y oxígeno." },
-  { title: "Grandes inventos: la rueda", emoji: "🛞", synopsis: "De Mesopotamia a los transportes modernos." },
-  { title: "Grandes inventos: la electricidad", emoji: "⚡", synopsis: "Circuitos, seguridad y energía limpia." },
-  { title: "Grandes inventos: internet", emoji: "🌐", synopsis: "Redes, datos y ciudadanía digital." },
-  { title: "Culturas del mundo: Egipto", emoji: "🏺", synopsis: "Nilo, jeroglíficos y vida cotidiana." },
+  {
+    title: "¿Cómo funciona el corazón?",
+    emoji: "❤️",
+    synopsis: "Animación del ciclo cardíaco, válvulas y oxígeno.",
+  },
+  {
+    title: "¿Por qué el cielo es azul?",
+    emoji: "🌤️",
+    synopsis: "Dispersión de la luz y colores del espectro.",
+  },
+  {
+    title: "La historia de los dinosaurios",
+    emoji: "🦕",
+    synopsis: "Eras geológicas y extinciones explicadas simple.",
+  },
+  {
+    title: "¿Qué es la fotosíntesis?",
+    emoji: "🌿",
+    synopsis: "Del sol al azúcar: clorofila y oxígeno.",
+  },
+  {
+    title: "Grandes inventos: la rueda",
+    emoji: "🛞",
+    synopsis: "De Mesopotamia a los transportes modernos.",
+  },
+  {
+    title: "Grandes inventos: la electricidad",
+    emoji: "⚡",
+    synopsis: "Circuitos, seguridad y energía limpia.",
+  },
+  {
+    title: "Grandes inventos: internet",
+    emoji: "🌐",
+    synopsis: "Redes, datos y ciudadanía digital.",
+  },
+  {
+    title: "Culturas del mundo: Egipto",
+    emoji: "🏺",
+    synopsis: "Nilo, jeroglíficos y vida cotidiana.",
+  },
   { title: "Culturas del mundo: Roma", emoji: "🏛️", synopsis: "República, imperio y legado." },
-  { title: "Culturas del mundo: Aztecas", emoji: "🌽", synopsis: "Chinampas, astronomía y mitología." },
-  { title: "Culturas del mundo: Incas", emoji: "⛰️", synopsis: "Caminos, agricultura en terrazas y quipus." },
-  { title: "El espacio: agujeros negros", emoji: "🕳️", synopsis: "Gravedad, horizonte de eventos y curiosidades." },
-  { title: "El espacio: estrellas", emoji: "✨", synopsis: "Nacimiento, vida y muerte de una estrella." },
-  { title: "El espacio: planetas", emoji: "🪐", synopsis: "Sistema solar y mundos rocosos vs gaseosos." },
-  { title: "Cuerpo humano: los sentidos", emoji: "👂", synopsis: "Vista, oído, tacto, gusto y olfato." },
+  {
+    title: "Culturas del mundo: Aztecas",
+    emoji: "🌽",
+    synopsis: "Chinampas, astronomía y mitología.",
+  },
+  {
+    title: "Culturas del mundo: Incas",
+    emoji: "⛰️",
+    synopsis: "Caminos, agricultura en terrazas y quipus.",
+  },
+  {
+    title: "El espacio: agujeros negros",
+    emoji: "🕳️",
+    synopsis: "Gravedad, horizonte de eventos y curiosidades.",
+  },
+  {
+    title: "El espacio: estrellas",
+    emoji: "✨",
+    synopsis: "Nacimiento, vida y muerte de una estrella.",
+  },
+  {
+    title: "El espacio: planetas",
+    emoji: "🪐",
+    synopsis: "Sistema solar y mundos rocosos vs gaseosos.",
+  },
+  {
+    title: "Cuerpo humano: los sentidos",
+    emoji: "👂",
+    synopsis: "Vista, oído, tacto, gusto y olfato.",
+  },
   { title: "Cuerpo humano: huesos", emoji: "🦴", synopsis: "Esqueleto, protección y crecimiento." },
   { title: "Cuerpo humano: músculos", emoji: "💪", synopsis: "Contracción, postura y descanso." },
-  { title: "Animales: migraciones épicas", emoji: "🦋", synopsis: "Brujulas internas y rutas milenarias." },
+  {
+    title: "Animales: migraciones épicas",
+    emoji: "🦋",
+    synopsis: "Brujulas internas y rutas milenarias.",
+  },
   { title: "Animales: camuflaje", emoji: "🦎", synopsis: "Colores, texturas y supervivencia." },
-  { title: "Animales: supervivencia extrema", emoji: "🐧", synopsis: "Adaptaciones en desiertos, hielo y océano." },
+  {
+    title: "Animales: supervivencia extrema",
+    emoji: "🐧",
+    synopsis: "Adaptaciones en desiertos, hielo y océano.",
+  },
 ];
 
 const TARGET_MIN_DOCS = 52;
 
-export const MINI_DOCUMENTARIES: MiniDocumentary[] = Array.from({ length: TARGET_MIN_DOCS }, (_, i) => {
-  const seed = DOC_SEEDS[i % DOC_SEEDS.length]!;
-  const part = Math.floor(i / DOC_SEEDS.length) + 1;
-  const title = part > 1 ? `${seed.title} (ep. ${part})` : seed.title;
-  /** Variar duración para que el filtro "> 15 min" no deje la lista vacía. */
-  const durationMin = i % 6 === 0 ? 18 : 2 + (i % 4);
-  const subject = SUBJECTS_ROTATION[i % SUBJECTS_ROTATION.length]!;
-  const ageBand = AGE_ROTATION[i % AGE_ROTATION.length]!;
-  const difficulty: Difficulty = i % 3 === 0 ? "facil" : i % 3 === 1 ? "medio" : "avanzado";
-  return {
-    id: `mini-doc-${i + 1}`,
-    title,
-    synopsis: seed.synopsis,
-    subject,
-    ageBand,
-    durationMin,
-    durationBucket: durationBucketFromMinutes(durationMin),
-    difficulty,
-    popularityScore: 100 - (i % 40),
-    isNew: i < 8,
-    hasSubtitles: true,
-    voiceAgeAppropriate: true,
-    thumbnailEmoji: seed.emoji,
-  };
-});
+export const MINI_DOCUMENTARIES: MiniDocumentary[] = Array.from(
+  { length: TARGET_MIN_DOCS },
+  (_, i) => {
+    const seed = DOC_SEEDS[i % DOC_SEEDS.length]!;
+    const part = Math.floor(i / DOC_SEEDS.length) + 1;
+    const title = part > 1 ? `${seed.title} (ep. ${part})` : seed.title;
+    /** Variar duración para que el filtro "> 15 min" no deje la lista vacía. */
+    const durationMin = i % 6 === 0 ? 18 : 2 + (i % 4);
+    const subject = SUBJECTS_ROTATION[i % SUBJECTS_ROTATION.length]!;
+    const ageBand = AGE_ROTATION[i % AGE_ROTATION.length]!;
+    const difficulty: Difficulty = i % 3 === 0 ? "facil" : i % 3 === 1 ? "medio" : "avanzado";
+    return {
+      id: `mini-doc-${i + 1}`,
+      title,
+      synopsis: seed.synopsis,
+      subject,
+      ageBand,
+      durationMin,
+      durationBucket: durationBucketFromMinutes(durationMin),
+      difficulty,
+      popularityScore: 100 - (i % 40),
+      isNew: i < 8,
+      hasSubtitles: true,
+      voiceAgeAppropriate: true,
+      thumbnailEmoji: seed.emoji,
+    };
+  },
+);
 
 export const INTERACTIVE_STORIES: InteractiveStory[] = [
   {
@@ -396,7 +463,9 @@ export function findLibraryEducationalContentById(id: string): EducationalConten
     const metaLines = [
       `• Formato libro interactivo: ${story.pages} páginas aproximadas.`,
       `• Cada ${story.comprehensionEveryPages} páginas aparece una pausa cortita de comprensión.`,
-      story.hasChoosePath ? "• Tus decisiones abren caminos distintos (varios finales posibles)." : "• Esta historia sigue una traza lineal muy guiada.",
+      story.hasChoosePath
+        ? "• Tus decisiones abren caminos distintos (varios finales posibles)."
+        : "• Esta historia sigue una traza lineal muy guiada.",
       story.hasDictionaryTap
         ? "• Podés tocar algunas palabras para ver definiciones simples cuando la app lo sugiera."
         : "",

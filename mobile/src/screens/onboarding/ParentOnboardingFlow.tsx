@@ -1,14 +1,7 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BrandLogo } from "../../components/BrandLogo";
@@ -56,7 +49,7 @@ export function ParentOnboardingFlow() {
   useFocusEffect(
     useCallback(() => {
       void refreshMinors();
-    }, [refreshMinors])
+    }, [refreshMinors]),
   );
 
   const goAddMinor = () => {
@@ -95,7 +88,11 @@ export function ParentOnboardingFlow() {
       ]}
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.onboardingHeader} accessibilityRole="image" accessibilityLabel="Logo de EduPlay">
+        <View
+          style={styles.onboardingHeader}
+          accessibilityRole="image"
+          accessibilityLabel="Logo de EduPlay"
+        >
           <BrandLogo width={120} height={120} />
         </View>
 
@@ -157,7 +154,9 @@ export function ParentOnboardingFlow() {
               accessibilityRole="button"
               accessibilityLabel="Agregar perfil de hijo"
             >
-              <Text style={[styles.addBigBtnText, { color: colors.primary }]}>+ Agregar perfil de hijo</Text>
+              <Text style={[styles.addBigBtnText, { color: colors.primary }]}>
+                + Agregar perfil de hijo
+              </Text>
             </Pressable>
             <Text style={[styles.hint, { color: colors.textMuted }]}>
               Podés agregar más hijos después desde el dashboard
@@ -211,8 +210,12 @@ export function ParentOnboardingFlow() {
           <View style={styles.block}>
             <Text style={[styles.title, { color: colors.text }]}>¡Todo configurado!</Text>
             <View style={styles.checkList}>
-              <Text style={[styles.checkItem, { color: colors.text }]}>✅ Perfil de padre creado</Text>
-              <Text style={[styles.checkItem, { color: colors.text }]}>✅ Perfil de hijo agregado</Text>
+              <Text style={[styles.checkItem, { color: colors.text }]}>
+                ✅ Perfil de padre creado
+              </Text>
+              <Text style={[styles.checkItem, { color: colors.text }]}>
+                ✅ Perfil de hijo agregado
+              </Text>
               <Text style={[styles.checkItem, { color: colors.text }]}>✅ Listo para empezar</Text>
             </View>
             <Pressable

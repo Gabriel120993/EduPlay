@@ -1,0 +1,4 @@
+{
+  "npm.autoDetect": "on",
+  "npm.exclude": ["**/mobile/EduPlay/**", "**/.prisma-client/**"]
+}

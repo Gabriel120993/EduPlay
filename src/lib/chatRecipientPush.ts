@@ -1,9 +1,9 @@
-import { sendExpoPushToToken } from "./expoPushSend";
-import { prisma } from "./prisma";
+import { sendExpoPushToToken } from './expoPushSend';
+import { prisma } from './prisma';
 
 const PREVIEW_MAX = 140;
-const PUSH_SOUND = "eduplay-push-chime.wav";
-const ANDROID_CHANNEL = "default";
+const PUSH_SOUND = 'eduplay-push-chime.wav';
+const ANDROID_CHANNEL = 'default';
 
 function displayLabel(u: { username: string; realName: string }): string {
   return u.realName?.trim() || `@${u.username}`;
@@ -48,12 +48,12 @@ export async function notifyRecipientNewChatMessage(params: {
     title,
     preview,
     {
-      kind: "CHAT_MESSAGE",
+      kind: 'CHAT_MESSAGE',
       senderId,
       senderUsername: sender.username,
       peerName,
       messageId,
     },
-    { sound: PUSH_SOUND, channelId: ANDROID_CHANNEL }
+    { sound: PUSH_SOUND, channelId: ANDROID_CHANNEL },
   );
 }

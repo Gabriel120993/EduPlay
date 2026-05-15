@@ -4,15 +4,15 @@ import {
   MissionType,
   type Prisma,
   XpGainSource,
-} from "@prisma/client";
+} from '@prisma/client';
 
 import {
   DAILY_CHALLENGE_ACHIEVEMENT_ID,
   DAILY_CHALLENGE_BONUS_XP,
   DAILY_CHALLENGE_ORDER,
-} from "./dailyChallengeConstants";
-import { addExperience } from "./xpLevel";
-import { recordXpGain } from "./xpLedger";
+} from './dailyChallengeConstants';
+import { addExperience } from './xpLevel';
+import { recordXpGain } from './xpLedger';
 
 /** Día calendario UTC alineado con `UserMission.date` (@db.Date). */
 export function utcMissionDate(at: Date = new Date()): Date {
@@ -57,7 +57,7 @@ async function updateUserMissionProgress(
   userId: string,
   row: MissionRowForProgress,
   nextProgress: number,
-  nextCompleted: boolean
+  nextCompleted: boolean,
 ): Promise<MissionCompletionReward | null> {
   if (!nextCompleted) {
     await tx.userMission.update({
@@ -117,7 +117,7 @@ export async function applyPlayGamesMissionProgress(
   tx: Prisma.TransactionClient,
   userId: string,
   gameCategory: string,
-  at: Date = new Date()
+  at: Date = new Date(),
 ): Promise<MissionCompletionReward[]> {
   const date = utcMissionDate(at);
   const rows = await tx.userMission.findMany({
@@ -132,8 +132,8 @@ export async function applyPlayGamesMissionProgress(
   const g = gameCategory.trim();
   const rewards: MissionCompletionReward[] = [];
   for (const row of rows) {
-    const mCat = row.mission.category?.trim() ?? "";
-    if (mCat !== "" && mCat !== g) continue;
+    const mCat = row.mission.category?.trim() ?? '';
+    if (mCat !== '' && mCat !== g) continue;
     const next = row.progress + 1;
     const completed = next >= row.mission.targetValue;
     const r = await updateUserMissionProgress(tx, userId, row, next, completed);
@@ -147,7 +147,7 @@ export async function applyEarnXpMissionProgress(
   tx: Prisma.TransactionClient,
   userId: string,
   xpGained: number,
-  at: Date = new Date()
+  at: Date = new Date(),
 ): Promise<MissionCompletionReward[]> {
   if (xpGained <= 0) return [];
   const date = utcMissionDate(at);
@@ -174,7 +174,7 @@ export async function applyEarnXpMissionProgress(
 export async function applyReadContentMissionProgress(
   tx: Prisma.TransactionClient,
   userId: string,
-  at: Date = new Date()
+  at: Date = new Date(),
 ): Promise<MissionCompletionReward[]> {
   const date = utcMissionDate(at);
   const rows = await tx.userMission.findMany({
@@ -201,7 +201,7 @@ export async function applyCorrectAnswersMissionProgress(
   tx: Prisma.TransactionClient,
   userId: string,
   correctDelta: number,
-  at: Date = new Date()
+  at: Date = new Date(),
 ): Promise<MissionCompletionReward[]> {
   if (correctDelta <= 0) return [];
   const date = utcMissionDate(at);
@@ -233,11 +233,12 @@ async function ensureDailyChallengeAchievement(tx: Prisma.TransactionClient) {
   await tx.achievement.create({
     data: {
       id: DAILY_CHALLENGE_ACHIEVEMENT_ID,
-      title: "Campeón del día",
-      description: "Completaste el reto diario: jugar una partida, leer un contenido y acertar 3 respuestas.",
+      title: 'Campeón del día',
+      description:
+        'Completaste el reto diario: jugar una partida, leer un contenido y acertar 3 respuestas.',
       category: ContentCategory.education,
-      badgeIcon: "🏆",
-      badgeColor: "#d97706",
+      badgeIcon: '🏆',
+      badgeColor: '#d97706',
       rarity: AchievementRarity.RARE,
     },
   });
@@ -249,7 +250,7 @@ async function ensureDailyChallengeAchievement(tx: Prisma.TransactionClient) {
 export async function maybeGrantDailyChallengeBonus(
   tx: Prisma.TransactionClient,
   userId: string,
-  at: Date = new Date()
+  at: Date = new Date(),
 ): Promise<DailyChallengeBonusReward | null> {
   const date = utcMissionDate(at);
   const rows = await tx.userMission.findMany({
@@ -304,8 +305,8 @@ export async function maybeGrantDailyChallengeBonus(
   return {
     bonusXp,
     badgeUnlocked,
-    badgeTitle: "Campeón del día",
-    badgeIcon: "🏆",
+    badgeTitle: 'Campeón del día',
+    badgeIcon: '🏆',
   };
 }
 
@@ -313,7 +314,7 @@ export async function maybeGrantDailyChallengeBonus(
 export async function applyAchievementMissionProgress(
   tx: Prisma.TransactionClient,
   userId: string,
-  at: Date = new Date()
+  at: Date = new Date(),
 ): Promise<MissionCompletionReward[]> {
   const date = utcMissionDate(at);
   const rows = await tx.userMission.findMany({

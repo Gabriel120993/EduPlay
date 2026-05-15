@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -103,10 +103,12 @@ function ChildPanel({
   const styles = useParentStyles();
   const { colors, mode } = useTheme();
   const isDark = mode === "dark";
-  const limitMin = row.dailyScreenLimitMinutes;
+  const limitMin = row.settings.dailyScreenTimeLimit ?? row.dailyScreenLimitMinutes;
   const unlimited = limitMin === 0;
   const limitSec = unlimited ? 1 : Math.max(1, limitMin * 60);
-  const pct = unlimited ? 0 : Math.min(100, Math.round((row.timeSpentTodaySeconds / limitSec) * 100));
+  const pct = unlimited
+    ? 0
+    : Math.min(100, Math.round((row.timeSpentTodaySeconds / limitSec) * 100));
   const [chatLog, setChatLog] = useState<ParentChildChatMessageRow[] | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [childFriends, setChildFriends] = useState<ParentChildFriendEntry[] | null>(null);
@@ -124,7 +126,9 @@ function ChildPanel({
     const key = `${row.child.id}:screenTime`;
     setBusyKey(key);
     try {
-      const res = await patchChildParentSettings(parentId, row.child.id, { dailyScreenTimeLimit: next });
+      const res = await patchChildParentSettings(parentId, row.child.id, {
+        dailyScreenTimeLimit: next,
+      });
       onSettingsChange(row.child.id, { dailyScreenTimeLimit: res.dailyScreenTimeLimit });
       await onRefreshQuiet();
       showToast("Tiempo de pantalla actualizado.", "success");
@@ -158,13 +162,17 @@ function ChildPanel({
   };
 
   const confirmDeleteChildAccount = () => {
-    if (Platform.OS === "web" && typeof window !== "undefined" && typeof window.confirm === "function") {
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined" &&
+      typeof window.confirm === "function"
+    ) {
       const ok1 = window.confirm(
-        `¿Eliminar cuenta del menor?\n\nSe borrarán de forma permanente la cuenta de ${row.child.realName} (@${row.child.username}), publicaciones, progreso y datos asociados.`
+        `¿Eliminar cuenta del menor?\n\nSe borrarán de forma permanente la cuenta de ${row.child.realName} (@${row.child.username}), publicaciones, progreso y datos asociados.`,
       );
       if (!ok1) return;
       const ok2 = window.confirm(
-        "Confirmación final\n\nEsta acción no se puede deshacer. ¿Eliminar la cuenta ahora?"
+        "Confirmación final\n\nEsta acción no se puede deshacer. ¿Eliminar la cuenta ahora?",
       );
       if (!ok2) return;
       void runDeleteChildAccount();
@@ -194,11 +202,11 @@ function ChildPanel({
                   style: "destructive",
                   onPress: () => void runDeleteChildAccount(),
                 },
-              ]
+              ],
             );
           },
         },
-      ]
+      ],
     );
   };
 
@@ -377,7 +385,8 @@ function ChildPanel({
         <View style={[styles.activityRow, { borderLeftWidth: 4, borderLeftColor: "#ca8a04" }]}>
           <Text style={styles.activityBadge}>Cuenta pendiente</Text>
           <Text style={styles.subHint}>
-            El menor no puede usar la app hasta que apruebes su cuenta. Cuando esté listo, pulsá el botón.
+            El menor no puede usar la app hasta que apruebes su cuenta. Cuando esté listo, pulsá el
+            botón.
           </Text>
           <Pressable
             onPress={() => void approveChildAccount()}
@@ -395,7 +404,9 @@ function ChildPanel({
 
       {pendingFriends.length > 0 ? (
         <>
-          <Text style={[styles.sectionLabel, styles.sectionSpaced]}>Amistades pendientes de tu OK</Text>
+          <Text style={[styles.sectionLabel, styles.sectionSpaced]}>
+            Amistades pendientes de tu OK
+          </Text>
           <Text style={styles.subHint}>
             El menor aceptó la solicitud; falta que vos confirmes como tutor.
           </Text>
@@ -431,15 +442,21 @@ function ChildPanel({
 
       <Text style={styles.sectionLabel}>Tiempo de pantalla hoy</Text>
       {unlimited ? (
-        <Text style={[styles.subHint, { marginBottom: 8 }]}>Sin límite · el uso de hoy es solo informativo</Text>
+        <Text style={[styles.subHint, { marginBottom: 8 }]}>
+          Sin límite · el uso de hoy es solo informativo
+        </Text>
       ) : null}
       <View style={styles.timeRow}>
         <Text style={styles.timeUsed}>{formatUsedTime(row.timeSpentTodaySeconds)}</Text>
-        <Text style={styles.timeLimit}>{unlimited ? "sin tope" : `de ${row.dailyScreenLimitMinutes} min`}</Text>
+        <Text style={styles.timeLimit}>{unlimited ? "sin tope" : `de ${limitMin} min`}</Text>
       </View>
       {!unlimited ? (
         <>
-          <View style={styles.progressTrack} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: pct }}>
+          <View
+            style={styles.progressTrack}
+            accessibilityRole="progressbar"
+            accessibilityValue={{ min: 0, max: 100, now: pct }}
+          >
             <View style={[styles.progressFill, { width: `${pct}%` }]} />
           </View>
           <Text style={styles.progressHint}>{pct}% del límite diario (UTC)</Text>
@@ -447,7 +464,9 @@ function ChildPanel({
       ) : null}
 
       <Text style={[styles.sectionLabel, styles.sectionSpaced]}>Límite diario (UTC)</Text>
-      <Text style={styles.subHint}>Activá ilimitado o elegí un tope rápido (15–1440 min también desde la API).</Text>
+      <Text style={styles.subHint}>
+        Activá ilimitado o elegí un tope rápido (15–1440 min también desde la API).
+      </Text>
       <View style={styles.toggleRow}>
         <View style={styles.toggleLabels}>
           <Text style={styles.toggleTitle}>Uso ilimitado</Text>
@@ -460,7 +479,9 @@ function ChildPanel({
           }}
           disabled={busyKey != null}
           trackColor={{ false: colors.border, true: colors.primarySoft }}
-          thumbColor={Platform.OS === "android" ? (unlimited ? colors.primary : colors.card) : undefined}
+          thumbColor={
+            Platform.OS === "android" ? (unlimited ? colors.primary : colors.card) : undefined
+          }
         />
       </View>
       {!unlimited ? (
@@ -478,7 +499,10 @@ function ChildPanel({
                   borderWidth: 1,
                 },
                 { borderColor: colors.borderSubtle, backgroundColor: colors.card },
-                limitMin === m && { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+                limitMin === m && {
+                  borderColor: colors.primary,
+                  backgroundColor: colors.primarySoft,
+                },
               ]}
             >
               <Text style={{ color: colors.text, fontWeight: "700" }}>{m} min</Text>
@@ -499,7 +523,10 @@ function ChildPanel({
           return (
             <View
               key={p.id}
-              style={[styles.activityRow, cat && { borderLeftWidth: 4, borderLeftColor: cat.highlight }]}
+              style={[
+                styles.activityRow,
+                cat && { borderLeftWidth: 4, borderLeftColor: cat.highlight },
+              ]}
             >
               <View style={styles.activityRowHeader}>
                 <Text style={styles.activityBadge}>{postTypeLabel(p.type)}</Text>
@@ -523,7 +550,9 @@ function ChildPanel({
             <Text style={styles.achievementIcon}>{a.badgeIcon}</Text>
             <View style={styles.achievementBody}>
               <Text style={styles.achievementTitle}>{a.title}</Text>
-              <Text style={[styles.achievementRarity, { color: rarityColor(a.rarity) }]}>{a.rarity}</Text>
+              <Text style={[styles.achievementRarity, { color: rarityColor(a.rarity) }]}>
+                {a.rarity}
+              </Text>
             </View>
           </View>
         ))
@@ -601,14 +630,19 @@ function ChildPanel({
           disabled={busyKey?.startsWith(row.child.id) ?? false}
           trackColor={{ false: colors.border, true: colors.primarySoft }}
           thumbColor={
-            Platform.OS === "android" ? (chatSupervisionOn ? colors.primary : colors.card) : undefined
+            Platform.OS === "android"
+              ? chatSupervisionOn
+                ? colors.primary
+                : colors.card
+              : undefined
           }
         />
       </View>
 
       <Text style={[styles.sectionLabel, styles.sectionSpaced]}>Avisos al tutor</Text>
       <Text style={styles.subHint}>
-        Requieren token de notificaciones en la cuenta del tutor. También aparecen en «Novedades» del panel.
+        Requieren token de notificaciones en la cuenta del tutor. También aparecen en «Novedades»
+        del panel.
       </Text>
       <View style={styles.toggleRow}>
         <View style={styles.toggleLabels}>
@@ -621,7 +655,11 @@ function ChildPanel({
           disabled={busyKey?.startsWith(row.child.id) ?? false}
           trackColor={{ false: colors.border, true: colors.primarySoft }}
           thumbColor={
-            Platform.OS === "android" ? (notifyNewContactOn ? colors.primary : colors.card) : undefined
+            Platform.OS === "android"
+              ? notifyNewContactOn
+                ? colors.primary
+                : colors.card
+              : undefined
           }
         />
       </View>
@@ -636,7 +674,11 @@ function ChildPanel({
           disabled={busyKey?.startsWith(row.child.id) ?? false}
           trackColor={{ false: colors.border, true: colors.primarySoft }}
           thumbColor={
-            Platform.OS === "android" ? (notifySuspiciousChatOn ? colors.primary : colors.card) : undefined
+            Platform.OS === "android"
+              ? notifySuspiciousChatOn
+                ? colors.primary
+                : colors.card
+              : undefined
           }
         />
       </View>
@@ -670,7 +712,8 @@ function ChildPanel({
 
       <Text style={[styles.sectionLabel, styles.sectionSpaced]}>Bloquear usuario</Text>
       <Text style={styles.subHint}>
-        El menor no podrá ser amigo ni chatear con esa cuenta. Podés usar el nombre de usuario exacto.
+        El menor no podrá ser amigo ni chatear con esa cuenta. Podés usar el nombre de usuario
+        exacto.
       </Text>
       <TextInput
         value={blockUsername}
@@ -732,11 +775,14 @@ function ChildPanel({
       <Text style={[styles.sectionLabel, styles.sectionSpaced]}>Supervisión de chat</Text>
       {!chatSupervisionOn ? (
         <Text style={styles.subHint}>
-          Activá «Ver historial de chat en el panel» en controles parentales para cargar mensajes aquí.
+          Activá «Ver historial de chat en el panel» en controles parentales para cargar mensajes
+          aquí.
         </Text>
       ) : (
         <>
-          <Text style={styles.subHint}>Solo lectura: mensajes del menor (incluye intentos bloqueados por filtro).</Text>
+          <Text style={styles.subHint}>
+            Solo lectura: mensajes del menor (incluye intentos bloqueados por filtro).
+          </Text>
           <Pressable
             onPress={() => void loadChatSupervision()}
             disabled={chatLoading}
@@ -745,7 +791,11 @@ function ChildPanel({
             accessibilityLabel="Cargar mensajes de chat del menor"
           >
             <Text style={styles.analyticsCtaText}>
-              {chatLoading ? "Cargando…" : chatLog ? "Actualizar mensajes" : "Cargar mensajes del menor"}
+              {chatLoading
+                ? "Cargando…"
+                : chatLog
+                  ? "Actualizar mensajes"
+                  : "Cargar mensajes del menor"}
             </Text>
           </Pressable>
         </>
@@ -771,12 +821,16 @@ function ChildPanel({
                   {shown}
                 </Text>
                 {m.blocked ? (
-                  <Text style={styles.toggleSub}>Estado: bloqueado{m.blockReason ? ` · ${m.blockReason}` : ""}</Text>
+                  <Text style={styles.toggleSub}>
+                    Estado: bloqueado{m.blockReason ? ` · ${m.blockReason}` : ""}
+                  </Text>
                 ) : null}
                 {m.moderationFlagged && !m.blocked ? (
                   <Text style={styles.toggleSub}>Marcado para revisión (p. ej. enlace)</Text>
                 ) : null}
-                <Text style={styles.activityDate}>{m.createdAt.slice(0, 16).replace("T", " ")}</Text>
+                <Text style={styles.activityDate}>
+                  {m.createdAt.slice(0, 16).replace("T", " ")}
+                </Text>
               </View>
             );
           })
@@ -784,8 +838,8 @@ function ChildPanel({
 
       <Text style={[styles.sectionLabel, styles.sectionSpaced]}>Eliminar cuenta del menor</Text>
       <Text style={styles.subHint}>
-        Borrá de forma permanente esta cuenta, publicaciones, progreso y datos. Podés dar de alta un perfil nuevo más
-        adelante si lo necesitás.
+        Borrá de forma permanente esta cuenta, publicaciones, progreso y datos. Podés dar de alta un
+        perfil nuevo más adelante si lo necesitás.
       </Text>
       <Pressable
         onPress={confirmDeleteChildAccount}
@@ -799,7 +853,9 @@ function ChildPanel({
         accessibilityLabel={`Eliminar cuenta de ${row.child.realName}`}
       >
         <Text style={styles.dangerDeleteBtnText}>
-          {busyKey === `${row.child.id}:deleteAccount` ? "Eliminando…" : `Eliminar cuenta de ${row.child.realName}`}
+          {busyKey === `${row.child.id}:deleteAccount`
+            ? "Eliminando…"
+            : `Eliminar cuenta de ${row.child.realName}`}
         </Text>
       </Pressable>
     </View>
@@ -810,9 +866,23 @@ export function ParentScreen({ route }: Props) {
   const styles = useParentStyles();
   const { colors } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<ParentStackParamList>>();
-  const { parent } = useAuth();
-  const parentId =
-    parent?.id?.trim() || route.params?.parentId?.trim() || PARENT_USER_ID;
+  const { parent, loading: authLoading, sessionRole, token } = useAuth();
+  /**
+   * Con sesión de tutor, hasta que `/api/auth/me` devuelve `parent` no debemos usar
+   * `EXPO_PUBLIC_PARENT_ID` del .env (suele ser de otro entorno) → evita 403 en el dashboard.
+   */
+  const parentId = useMemo(() => {
+    const fromParent = parent?.id?.trim() ?? "";
+    const fromRoute = route.params?.parentId?.trim() ?? "";
+    if (fromParent) return fromParent;
+    if (fromRoute) return fromRoute;
+    const envId = PARENT_USER_ID.trim();
+    if (token) {
+      if (authLoading) return null;
+      if (sessionRole === "parent") return null;
+    }
+    return envId || null;
+  }, [parent?.id, route.params?.parentId, token, authLoading, sessionRole]);
   const [data, setData] = useState<ParentDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -851,20 +921,43 @@ export function ParentScreen({ route }: Props) {
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [load])
+    }, [load]),
   );
 
-  const onSettingsChange = useCallback((childId: string, patch: Partial<ParentDashboardChildRow["settings"]>) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        children: prev.children.map((c) =>
-          c.child.id === childId ? { ...c, settings: { ...c.settings, ...patch } } : c
-        ),
-      };
-    });
-  }, []);
+  useEffect(() => {
+    if (!parentId) return;
+    void load();
+  }, [parentId, load]);
+
+  const onSettingsChange = useCallback(
+    (childId: string, patch: Partial<ParentDashboardChildRow["settings"]>) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          children: prev.children.map((c) => {
+            if (c.child.id !== childId) return c;
+            const nextSettings = { ...c.settings, ...patch };
+            const updated: ParentDashboardChildRow = { ...c, settings: nextSettings };
+            if (typeof patch.dailyScreenTimeLimit === "number") {
+              updated.dailyScreenLimitMinutes = patch.dailyScreenTimeLimit;
+            }
+            return updated;
+          }),
+        };
+      });
+    },
+    [],
+  );
+
+  if (token && authLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingHint}>Cargando sesión…</Text>
+      </View>
+    );
+  }
 
   if (!parentId) {
     return (
@@ -872,7 +965,11 @@ export function ParentScreen({ route }: Props) {
         <BrandEmptyState
           emoji="👨‍👩‍👧"
           title="No hay cuenta de tutor vinculada"
-          subtitle="Volvé a iniciar sesión o configurá EXPO_PUBLIC_PARENT_ID."
+          subtitle={
+            token && sessionRole === "parent"
+              ? "No pudimos obtener tu cuenta de tutor. Cerrá sesión y volvé a entrar."
+              : "Iniciá sesión como tutor o configurá EXPO_PUBLIC_PARENT_ID en mobile/.env (solo desarrollo)."
+          }
         />
       </View>
     );
@@ -890,11 +987,7 @@ export function ParentScreen({ route }: Props) {
   if (error && !data) {
     return (
       <View style={styles.centered}>
-        <BrandEmptyState
-          emoji="⚠️"
-          title="No se pudo cargar el panel familiar"
-          subtitle={error}
-        />
+        <BrandEmptyState emoji="⚠️" title="No se pudo cargar el panel familiar" subtitle={error} />
         <Text style={styles.retry} onPress={() => void load()}>
           Reintentar
         </Text>
@@ -970,7 +1063,9 @@ export function ParentScreen({ route }: Props) {
       {data.familyEvents && data.familyEvents.length > 0 ? (
         <View style={styles.childCard}>
           <Text style={styles.sectionLabel}>Novedades</Text>
-          <Text style={styles.subHint}>Avisos recientes: amistades, mensajes revisables por filtro, etc.</Text>
+          <Text style={styles.subHint}>
+            Avisos recientes: amistades, mensajes revisables por filtro, etc.
+          </Text>
           {data.familyEvents.slice(0, 15).map((ev) => (
             <View key={ev.id} style={styles.activityRow}>
               <Text style={styles.activityBadge}>{ev.title}</Text>

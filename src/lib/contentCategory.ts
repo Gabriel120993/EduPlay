@@ -1,4 +1,4 @@
-import { ContentCategory } from "@prisma/client";
+import { ContentCategory } from '@prisma/client';
 
 /** Lista canónica alineada con el enum Prisma `ContentCategory`. */
 export const CONTENT_CATEGORY_VALUES = Object.values(ContentCategory) as ContentCategory[];
@@ -18,18 +18,20 @@ export function parseContentCategory(value: string | null | undefined): ContentC
 }
 
 /** Para APIs: categoría obligatoria. */
-export function parseRequiredContentCategory(value: unknown): { ok: true; category: ContentCategory } | { ok: false; error: string } {
-  if (value == null || (typeof value === "string" && value.trim() === "")) {
-    return { ok: false, error: "category es obligatorio." };
+export function parseRequiredContentCategory(
+  value: unknown,
+): { ok: true; category: ContentCategory } | { ok: false; error: string } {
+  if (value == null || (typeof value === 'string' && value.trim() === '')) {
+    return { ok: false, error: 'category es obligatorio.' };
   }
-  if (typeof value !== "string") {
-    return { ok: false, error: "category debe ser texto." };
+  if (typeof value !== 'string') {
+    return { ok: false, error: 'category debe ser texto.' };
   }
   const c = parseContentCategory(value);
   if (!c) {
     return {
       ok: false,
-      error: `category inválida. Usá una de: ${CONTENT_CATEGORY_VALUES.join(", ")}.`,
+      error: `category inválida. Usá una de: ${CONTENT_CATEGORY_VALUES.join(', ')}.`,
     };
   }
   return { ok: true, category: c };
@@ -56,22 +58,24 @@ export function educationalCategoryToContentCategory(raw: string): ContentCatego
   return map[t] ?? null;
 }
 
-export function parseOptionalContentCategory(value: unknown): { ok: true; category: ContentCategory | null } | { ok: false; error: string } {
+export function parseOptionalContentCategory(
+  value: unknown,
+): { ok: true; category: ContentCategory | null } | { ok: false; error: string } {
   if (value === undefined || value === null) {
     return { ok: true, category: null };
   }
-  if (typeof value !== "string") {
-    return { ok: false, error: "category debe ser texto." };
+  if (typeof value !== 'string') {
+    return { ok: false, error: 'category debe ser texto.' };
   }
   const t = value.trim();
-  if (t === "") {
+  if (t === '') {
     return { ok: true, category: null };
   }
   const c = parseContentCategory(t);
   if (!c) {
     return {
       ok: false,
-      error: `category inválida. Usá una de: ${CONTENT_CATEGORY_VALUES.join(", ")}.`,
+      error: `category inválida. Usá una de: ${CONTENT_CATEGORY_VALUES.join(', ')}.`,
     };
   }
   return { ok: true, category: c };

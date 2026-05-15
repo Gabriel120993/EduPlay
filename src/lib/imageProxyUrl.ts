@@ -7,10 +7,10 @@
  * con caché en disco evita esos errores y unifica el origen.
  */
 
-export type ImageProxySize = "small" | "medium" | "large";
+export type ImageProxySize = 'small' | 'medium' | 'large';
 
 /** URL relativa del proxy. El cliente la resuelve contra `API_BASE_URL`. */
-export function imageProxyUrl(assetId: string, size: ImageProxySize = "medium"): string {
+export function imageProxyUrl(assetId: string, size: ImageProxySize = 'medium'): string {
   return `/api/image-proxy/${assetId}-${size}`;
 }
 
@@ -22,9 +22,9 @@ export function imageProxyUrl(assetId: string, size: ImageProxySize = "medium"):
 export function pickImageUrl(
   asset: { id?: string | null } | null | undefined,
   legacyUrl: string | null | undefined,
-  size: ImageProxySize = "medium",
+  size: ImageProxySize = 'medium',
 ): string | null {
   if (asset?.id) return imageProxyUrl(asset.id, size);
-  const trimmed = legacyUrl?.trim() ?? "";
+  const trimmed = legacyUrl?.trim() ?? '';
   return trimmed.length > 0 ? trimmed : null;
 }

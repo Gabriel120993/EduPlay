@@ -26,7 +26,12 @@ function activeColorForType(t: ReactionType): string {
   }
 }
 
-const ACTIONS: { type: ReactionType; ionOutline: IoniconName; ionFilled: IoniconName; a11y: string }[] = [
+const ACTIONS: {
+  type: ReactionType;
+  ionOutline: IoniconName;
+  ionFilled: IoniconName;
+  a11y: string;
+}[] = [
   { type: "LIKE", ionOutline: "heart-outline", ionFilled: "heart", a11y: "Like" },
   { type: "CLAP", ionOutline: "hand-left-outline", ionFilled: "hand-left", a11y: "Aplauso" },
   { type: "STAR", ionOutline: "star-outline", ionFilled: "star", a11y: "Estrella" },
@@ -56,7 +61,14 @@ type Props = {
   onReact: (postId: string, type: ReactionType) => void;
 };
 
-export function PostReactionBar({ postId, counts, userReaction, pending, readOnly, onReact }: Props) {
+export function PostReactionBar({
+  postId,
+  counts,
+  userReaction,
+  pending,
+  readOnly,
+  onReact,
+}: Props) {
   const { colors } = useTheme();
   const inactive = colors.reactionIconMuted;
   return (
@@ -151,17 +163,9 @@ function ReactionSlot({
       style={styles.slot}
     >
       <Animated.View
-        style={[
-          styles.slotInner,
-          { transform: [{ scale }] },
-          pending && { opacity: 0.55 },
-        ]}
+        style={[styles.slotInner, { transform: [{ scale }] }, pending && { opacity: 0.55 }]}
       >
-        <AppIcon
-          name={isActive ? ionFilled : ionOutline}
-          size={ICON_PX}
-          color={accentColor}
-        />
+        <AppIcon name={isActive ? ionFilled : ionOutline} size={ICON_PX} color={accentColor} />
         <Text style={[styles.count, { color: accentColor }]}>{count}</Text>
       </Animated.View>
     </Pressable>

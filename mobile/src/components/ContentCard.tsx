@@ -19,7 +19,14 @@ import { useTheme } from "../contexts/ThemeContext";
 import { SafePressable } from "./SafePressable";
 
 export type ContentCardType = "learn" | "quiz" | "game" | "mission" | "video" | "reading";
-export type ContentCardCategory = "matematicas" | "ciencias" | "historia" | "geografia" | "arte" | "lenguaje" | string;
+export type ContentCardCategory =
+  | "matematicas"
+  | "ciencias"
+  | "historia"
+  | "geografia"
+  | "arte"
+  | "lenguaje"
+  | string;
 export type ContentCardDifficulty = "easy" | "medium" | "hard";
 
 export type ContentCardProps = {
@@ -45,7 +52,10 @@ export type ContentCardProps = {
 const FAVORITES_KEY = "@eduplay/content_card_favorites_v1";
 const HIDDEN_KEY = "@eduplay/content_card_hidden_v1";
 
-const TYPE_META: Record<ContentCardType, { label: string; icon: string; bg: string; text: string }> = {
+const TYPE_META: Record<
+  ContentCardType,
+  { label: string; icon: string; bg: string; text: string }
+> = {
   learn: { label: "APRENDER", icon: "📚", bg: "#DCFCE7", text: "#15803D" },
   quiz: { label: "CUESTIONARIO", icon: "🎯", bg: "#DBEAFE", text: "#1D4ED8" },
   game: { label: "JUEGO", icon: "🎮", bg: "#EDE9FE", text: "#6D28D9" },
@@ -54,11 +64,12 @@ const TYPE_META: Record<ContentCardType, { label: string; icon: string; bg: stri
   reading: { label: "LECTURA", icon: "📖", bg: "#FEF3C7", text: "#A16207" },
 };
 
-const DIFFICULTY_META: Record<ContentCardDifficulty, { label: string; bg: string; text: string }> = {
-  easy: { label: "FÁCIL", bg: "#DCFCE7", text: "#166534" },
-  medium: { label: "MEDIO", bg: "#FEF3C7", text: "#A16207" },
-  hard: { label: "DIFÍCIL", bg: "#FEE2E2", text: "#B91C1C" },
-};
+const DIFFICULTY_META: Record<ContentCardDifficulty, { label: string; bg: string; text: string }> =
+  {
+    easy: { label: "FÁCIL", bg: "#DCFCE7", text: "#166534" },
+    medium: { label: "MEDIO", bg: "#FEF3C7", text: "#A16207" },
+    hard: { label: "DIFÍCIL", bg: "#FEE2E2", text: "#B91C1C" },
+  };
 
 const CATEGORY_META: Record<string, { color: string; emoji: string }> = {
   matematicas: { color: "#4F46E5", emoji: "🔢" },
@@ -113,14 +124,18 @@ export function ContentCard({
   const translateX = useRef(new Animated.Value(0)).current;
   const typeMeta = TYPE_META[type];
   const difficultyMeta = DIFFICULTY_META[difficulty];
-  const categoryMeta = CATEGORY_META[String(category).toLowerCase()] ?? { color: colors.primary, emoji: "📚" };
+  const categoryMeta = CATEGORY_META[String(category).toLowerCase()] ?? {
+    color: colors.primary,
+    emoji: "📚",
+  };
   const normalizedProgress = clampProgress(progress);
   const showProgress = normalizedProgress != null && normalizedProgress > 0 && !isCompleted;
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 18 && Math.abs(gesture.dy) < 12,
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          Math.abs(gesture.dx) > 18 && Math.abs(gesture.dy) < 12,
         onPanResponderMove: (_, gesture) => {
           translateX.setValue(Math.max(-90, Math.min(90, gesture.dx)));
         },
@@ -140,7 +155,7 @@ export function ContentCard({
           Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
         },
       }),
-    [id, onFavorite, onHide, translateX]
+    [id, onFavorite, onHide, translateX],
   );
 
   const defaultPress = () => {
@@ -259,7 +274,9 @@ export function ContentCard({
                     ]}
                   />
                 </View>
-                <Text style={[styles.progressText, { color: colors.textMuted }]}>{normalizedProgress}%</Text>
+                <Text style={[styles.progressText, { color: colors.textMuted }]}>
+                  {normalizedProgress}%
+                </Text>
               </View>
             ) : null}
           </View>

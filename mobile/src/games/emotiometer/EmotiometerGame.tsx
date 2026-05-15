@@ -3,7 +3,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { space } from "../../theme/tokens";
-import { bumpUnlocksAfterLevel, getStarsForLevel, setMaxUnlockedLevel, setStarsForLevel } from "../storage/gameProgressStore";
+import {
+  bumpUnlocksAfterLevel,
+  getStarsForLevel,
+  setMaxUnlockedLevel,
+  setStarsForLevel,
+} from "../storage/gameProgressStore";
 import { MiniGameChrome } from "../shared/MiniGameChrome";
 import { starsFromAttempts } from "../shared/starsFromScore";
 import { TutorialOverlay, type TutorialStep } from "../shared/TutorialOverlay";
@@ -36,7 +41,12 @@ const ROUNDS = [
     emoOpts: ["Alegría", "Tristeza", "Enojo", "Miedo"],
     react: "¿Qué podés decirle?",
     good: "Te entiendo, ¿querés jugar otro día juntos?",
-    reactOpts: ["No seas dramático", "Te entiendo, ¿querés jugar otro día juntos?", "Gané yo, punto.", "Ignoralo"],
+    reactOpts: [
+      "No seas dramático",
+      "Te entiendo, ¿querés jugar otro día juntos?",
+      "Gané yo, punto.",
+      "Ignoralo",
+    ],
   },
   {
     situation: "Le gritaron sin razón en el patio.",
@@ -44,11 +54,20 @@ const ROUNDS = [
     emoOpts: ["Calma", "Enojo", "Aburrimiento", "Sorpresa"],
     react: "Mejor respuesta:",
     good: "Respirá hondo; después hablamos con calma.",
-    reactOpts: ["Pelear a gritos", "Respirá hondo; después hablamos con calma.", "Chismeá con otros", "Te lo guardás para siempre"],
+    reactOpts: [
+      "Pelear a gritos",
+      "Respirá hondo; después hablamos con calma.",
+      "Chismeá con otros",
+      "Te lo guardás para siempre",
+    ],
   },
 ];
 
-export default function EmotiometerGame({ levelIndex, onCompleteLevel, onRequestExit }: MiniGameProps) {
+export default function EmotiometerGame({
+  levelIndex,
+  onCompleteLevel,
+  onRequestExit,
+}: MiniGameProps) {
   const { colors } = useTheme();
   const [showTutorial, tutorialDone] = useTutorialSeen(META.id);
   const r = ROUNDS[levelIndex % ROUNDS.length]!;
@@ -89,23 +108,59 @@ export default function EmotiometerGame({ levelIndex, onCompleteLevel, onRequest
 
   return (
     <View style={{ flex: 1 }}>
-      {showTutorial ? <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} /> : null}
-      <MiniGameChrome meta={META} levelIndex={levelIndex} totalLevels={TOTAL_LEVELS} bestStars={best || undefined} onBack={onRequestExit}>
-        <Text style={{ color: colors.text, fontWeight: "800", marginBottom: space.md }}>{r.situation}</Text>
+      {showTutorial ? (
+        <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} />
+      ) : null}
+      <MiniGameChrome
+        meta={META}
+        levelIndex={levelIndex}
+        totalLevels={TOTAL_LEVELS}
+        bestStars={best || undefined}
+        onBack={onRequestExit}
+      >
+        <Text style={{ color: colors.text, fontWeight: "800", marginBottom: space.md }}>
+          {r.situation}
+        </Text>
         {step === "emo" ? (
           <>
-            <Text style={{ color: colors.textMuted, marginBottom: space.sm, fontWeight: "700" }}>¿Qué emoción siente?</Text>
+            <Text style={{ color: colors.textMuted, marginBottom: space.sm, fontWeight: "700" }}>
+              ¿Qué emoción siente?
+            </Text>
             {r.emoOpts.map((o) => (
-              <Pressable key={o} onPress={() => pickEmo(o)} style={{ marginBottom: space.sm, padding: space.md, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.borderSubtle }}>
+              <Pressable
+                key={o}
+                onPress={() => pickEmo(o)}
+                style={{
+                  marginBottom: space.sm,
+                  padding: space.md,
+                  borderRadius: 12,
+                  backgroundColor: colors.card,
+                  borderWidth: 1,
+                  borderColor: colors.borderSubtle,
+                }}
+              >
                 <Text style={{ fontWeight: "800", color: colors.text }}>{o}</Text>
               </Pressable>
             ))}
           </>
         ) : (
           <>
-            <Text style={{ color: colors.textMuted, marginBottom: space.sm, fontWeight: "700" }}>{r.react}</Text>
+            <Text style={{ color: colors.textMuted, marginBottom: space.sm, fontWeight: "700" }}>
+              {r.react}
+            </Text>
             {r.reactOpts.map((o) => (
-              <Pressable key={o} onPress={() => pickReact(o)} style={{ marginBottom: space.sm, padding: space.md, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.borderSubtle }}>
+              <Pressable
+                key={o}
+                onPress={() => pickReact(o)}
+                style={{
+                  marginBottom: space.sm,
+                  padding: space.md,
+                  borderRadius: 12,
+                  backgroundColor: colors.card,
+                  borderWidth: 1,
+                  borderColor: colors.borderSubtle,
+                }}
+              >
                 <Text style={{ fontWeight: "800", color: colors.text }}>{o}</Text>
               </Pressable>
             ))}

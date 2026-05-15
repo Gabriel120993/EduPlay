@@ -18,7 +18,7 @@ export function MiniGamesHubScreen() {
     (gameId: (typeof MINI_GAME_REGISTRY)[number]["id"]) => {
       navigation.navigate("MiniGamePlayer", { gameId });
     },
-    [navigation]
+    [navigation],
   );
 
   return (
@@ -33,16 +33,37 @@ export function MiniGamesHubScreen() {
           borderBottomColor: colors.borderSubtle,
         }}
       >
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Volver">
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Volver"
+        >
           <Text style={{ color: colors.link, fontWeight: "900", fontSize: 16 }}>‹ Volver</Text>
         </Pressable>
-        <Text style={{ flex: 1, marginLeft: space.sm, color: colors.text, fontWeight: "900", fontSize: 18 }} numberOfLines={1}>
+        <Text
+          style={{
+            flex: 1,
+            marginLeft: space.sm,
+            color: colors.text,
+            fontWeight: "900",
+            fontSize: 18,
+          }}
+          numberOfLines={1}
+        >
           Minijuegos EduPlay
         </Text>
       </View>
-      <ScrollView contentContainerStyle={{ padding: space.md, paddingBottom: insets.bottom + space.xl, gap: space.sm }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: space.md,
+          paddingBottom: insets.bottom + space.xl,
+          gap: space.sm,
+        }}
+      >
         <Text style={{ color: colors.textMuted, fontWeight: "600", marginBottom: space.sm }}>
-          10 experiencias con tutorial (~30 s), 22 niveles, estrellas, ranking entre amigos y recompensas cosméticas.
+          10 experiencias con tutorial (~30 s), 22 niveles, estrellas, ranking entre amigos y
+          recompensas cosméticas.
         </Text>
         {MINI_GAME_REGISTRY.map((g) => (
           <Pressable
@@ -61,8 +82,12 @@ export function MiniGamesHubScreen() {
             <Text style={{ fontWeight: "900", color: colors.text, fontSize: 16 }}>
               {g.meta.icon} {g.meta.title}
             </Text>
-            <Text style={{ color: colors.textSecondary, fontWeight: "600", marginTop: 4 }}>{g.meta.subtitle}</Text>
-            <Text style={{ color: colors.textMuted, fontWeight: "700", fontSize: 12, marginTop: 6 }}>
+            <Text style={{ color: colors.textSecondary, fontWeight: "600", marginTop: 4 }}>
+              {g.meta.subtitle}
+            </Text>
+            <Text
+              style={{ color: colors.textMuted, fontWeight: "700", fontSize: 12, marginTop: 6 }}
+            >
               {g.meta.subject} · {g.totalLevels} niveles
             </Text>
           </Pressable>

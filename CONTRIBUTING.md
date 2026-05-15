@@ -82,6 +82,25 @@ Ejemplos:
 
 ---
 
+## Calidad de código (backend)
+
+Antes de commitear o abrir un PR, conviene ejecutar:
+
+```bash
+npm run lint
+npm run format:check
+```
+
+Para formatear automáticamente:
+
+```bash
+npm run format
+```
+
+**CORS:** en entornos distintos de desarrollo, definir `CORS_ALLOWED_ORIGINS` con los orígenes reales de la app web/Expo (CSV). Los tests de integración usan una lista fija sin `*`; si agregás un origen nuevo que deba pasar CORS en producción, documentalo en el PR y actualizá `.env.example` si aplica.
+
+---
+
 ## Antes de abrir un Pull Request
 
 Ejecutar localmente:
@@ -89,6 +108,8 @@ Ejecutar localmente:
 ```bash
 npm run test:prepare
 npm test
+npm run lint
+npm run format:check
 npm run test:db
 npm run build
 ```

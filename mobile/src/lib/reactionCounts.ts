@@ -17,7 +17,9 @@ function ensureReactionsCountByType(p: FeedPost): ReactionsCountByType {
   return { LIKE: rc.like, CLAP: rc.clap, STAR: rc.star };
 }
 
-function reactionCountsFromByType(by: ReactionsCountByType): NonNullable<FeedPost["reactionCounts"]> {
+function reactionCountsFromByType(
+  by: ReactionsCountByType,
+): NonNullable<FeedPost["reactionCounts"]> {
   return { like: by.LIKE, clap: by.CLAP, star: by.STAR };
 }
 

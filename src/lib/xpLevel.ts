@@ -10,7 +10,7 @@ export function xpFromGameScore(score: number): number {
 export function addExperience(
   level: number,
   experience: number,
-  xpGain: number
+  xpGain: number,
 ): { level: number; experience: number } {
   let l = Math.max(1, level);
   let xp = experience + Math.max(0, xpGain);

@@ -1,21 +1,31 @@
-import type { Request, Response } from "express";
-import { ContentCategory, ContentFilterLevel, FriendStatus, PostType, Prisma, Visibility } from "@prisma/client";
-import { toApiBadge } from "../lib/achievementApi";
-import { parseOptionalContentCategory } from "../lib/contentCategory";
-import { feedLabelForPostType, interleaveFeedByPostType } from "../lib/feedVariety";
-import { assertAllowPosting } from "../lib/parentalRestrictions";
+import type { Request, Response } from 'express';
+import {
+  ContentCategory,
+  ContentFilterLevel,
+  FriendStatus,
+  PostType,
+  Prisma,
+  Visibility,
+} from '@prisma/client';
+import { toApiBadge } from '../lib/achievementApi';
+import { parseOptionalContentCategory } from '../lib/contentCategory';
+import { feedLabelForPostType, interleaveFeedByPostType } from '../lib/feedVariety';
+import { assertAllowPosting } from '../lib/parentalRestrictions';
 import {
   getReactionCountsByPostIds,
   getUserReactionsByPostIds,
   reactionCountsDtoToByType,
   ZERO_REACTION_COUNTS_DTO,
-} from "../lib/reactionCounts";
-import { moderatePlainTextForLevel, textModerationErrorMessage } from "../lib/contentModerationText";
-import { buildPublicFeedVisibilityWhere } from "../lib/postFeedVisibility";
-import { recordAndNotifyParentForModerationFlaggedPost } from "../lib/parentSuspiciousNotify";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { userIdOnlySelect } from "../lib/prismaPublicSelects";
+} from '../lib/reactionCounts';
+import {
+  moderatePlainTextForLevel,
+  textModerationErrorMessage,
+} from '../lib/contentModerationText';
+import { buildPublicFeedVisibilityWhere } from '../lib/postFeedVisibility';
+import { recordAndNotifyParentForModerationFlaggedPost } from '../lib/parentSuspiciousNotify';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { userIdOnlySelect } from '../lib/prismaPublicSelects';
 
 const POST_TYPE_VALUES = Object.values(PostType) as string[];
 const VISIBILITY_VALUES = Object.values(Visibility) as string[];
@@ -34,7 +44,7 @@ function computeFeedRanking(
   reactionsTotal: number,
   interestBoost: number,
   createdAt: Date,
-  now: Date
+  now: Date,
 ): { score: number; recencyScore: number } {
   const msPerHour = 3_600_000;
   const hoursAgo = Math.max(0, (now.getTime() - createdAt.getTime()) / msPerHour);
@@ -45,7 +55,10 @@ function computeFeedRanking(
 }
 
 /** Alinea categoría del post con el top 3 de intereses del viewer (orden score DESC). */
-function interestBoostForCategory(postCategory: string | null | undefined, topCategories: readonly string[]): number {
+function interestBoostForCategory(
+  postCategory: string | null | undefined,
+  topCategories: readonly string[],
+): number {
   if (!postCategory?.trim()) return 0;
   const c = postCategory.trim();
   const t1 = topCategories[0]?.trim();
@@ -66,14 +79,14 @@ function isVisibility(value: string): value is Visibility {
 }
 
 function formatCreatedAtLocal(date: Date): string {
-  return new Intl.DateTimeFormat("es-AR", {
-    timeZone: "UTC",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
     hour12: false,
   }).format(date);
 }
@@ -96,9 +109,9 @@ export async function getAcceptedFriendUserIds(viewerId: string): Promise<string
 
 function parseFeedUserId(req: Request): string {
   const raw = req.query.userId;
-  if (typeof raw === "string") return raw.trim();
+  if (typeof raw === 'string') return raw.trim();
   if (Array.isArray(raw) && raw[0] != null) return String(raw[0]).trim();
-  return "";
+  return '';
 }
 
 type CreatePostPayload = {
@@ -113,40 +126,47 @@ type CreatePostPayload = {
   visibility: Visibility;
 };
 
-function validateCreatePost(body: unknown): { ok: true; data: CreatePostPayload } | { ok: false; error: string } {
-  if (body === null || typeof body !== "object") {
-    return { ok: false, error: "El cuerpo debe ser un objeto JSON." };
+function validateCreatePost(
+  body: unknown,
+): { ok: true; data: CreatePostPayload } | { ok: false; error: string } {
+  if (body === null || typeof body !== 'object') {
+    return { ok: false, error: 'El cuerpo debe ser un objeto JSON.' };
   }
 
   const b = body as Record<string, unknown>;
 
-  if (b.userId === undefined || b.userId === null || String(b.userId).trim() === "") {
-    return { ok: false, error: "userId es obligatorio." };
+  if (b.userId === undefined || b.userId === null || String(b.userId).trim() === '') {
+    return { ok: false, error: 'userId es obligatorio.' };
   }
 
-  if (b.type === undefined || b.type === null || typeof b.type !== "string" || !isPostType(b.type)) {
+  if (
+    b.type === undefined ||
+    b.type === null ||
+    typeof b.type !== 'string' ||
+    !isPostType(b.type)
+  ) {
     return {
       ok: false,
-      error: `type es obligatorio y debe ser uno de: ${POST_TYPE_VALUES.join(", ")}.`,
+      error: `type es obligatorio y debe ser uno de: ${POST_TYPE_VALUES.join(', ')}.`,
     };
   }
 
   if (
     b.visibility === undefined ||
     b.visibility === null ||
-    typeof b.visibility !== "string" ||
+    typeof b.visibility !== 'string' ||
     !isVisibility(b.visibility)
   ) {
     return {
       ok: false,
-      error: `visibility es obligatorio y debe ser uno de: ${VISIBILITY_VALUES.join(", ")}.`,
+      error: `visibility es obligatorio y debe ser uno de: ${VISIBILITY_VALUES.join(', ')}.`,
     };
   }
 
   let content: string | null = null;
   if (b.content !== undefined && b.content !== null) {
-    if (typeof b.content !== "string") {
-      return { ok: false, error: "content debe ser texto." };
+    if (typeof b.content !== 'string') {
+      return { ok: false, error: 'content debe ser texto.' };
     }
     const t = b.content.trim();
     content = t.length > 0 ? t : null;
@@ -154,8 +174,8 @@ function validateCreatePost(body: unknown): { ok: true; data: CreatePostPayload 
 
   let imageUrl: string | null = null;
   if (b.imageUrl !== undefined && b.imageUrl !== null) {
-    if (typeof b.imageUrl !== "string") {
-      return { ok: false, error: "imageUrl debe ser texto." };
+    if (typeof b.imageUrl !== 'string') {
+      return { ok: false, error: 'imageUrl debe ser texto.' };
     }
     const u = b.imageUrl.trim();
     imageUrl = u.length > 0 ? u : null;
@@ -163,8 +183,8 @@ function validateCreatePost(body: unknown): { ok: true; data: CreatePostPayload 
 
   let videoUrl: string | null = null;
   if (b.videoUrl !== undefined && b.videoUrl !== null) {
-    if (typeof b.videoUrl !== "string") {
-      return { ok: false, error: "videoUrl debe ser texto." };
+    if (typeof b.videoUrl !== 'string') {
+      return { ok: false, error: 'videoUrl debe ser texto.' };
     }
     const u = b.videoUrl.trim();
     videoUrl = u.length > 0 ? u : null;
@@ -172,8 +192,8 @@ function validateCreatePost(body: unknown): { ok: true; data: CreatePostPayload 
 
   let mediaUploadId: string | null = null;
   if (b.mediaUploadId !== undefined && b.mediaUploadId !== null) {
-    if (typeof b.mediaUploadId !== "string") {
-      return { ok: false, error: "mediaUploadId debe ser texto." };
+    if (typeof b.mediaUploadId !== 'string') {
+      return { ok: false, error: 'mediaUploadId debe ser texto.' };
     }
     const id = b.mediaUploadId.trim();
     mediaUploadId = id.length > 0 ? id : null;
@@ -182,12 +202,12 @@ function validateCreatePost(body: unknown): { ok: true; data: CreatePostPayload 
   if (mediaUploadId && (imageUrl || videoUrl)) {
     return {
       ok: false,
-      error: "No uses imageUrl ni videoUrl junto con mediaUploadId (la subida ya define el medio).",
+      error: 'No uses imageUrl ni videoUrl junto con mediaUploadId (la subida ya define el medio).',
     };
   }
 
   if (imageUrl && videoUrl) {
-    return { ok: false, error: "Elegí solo imagen o solo video, no ambos." };
+    return { ok: false, error: 'Elegí solo imagen o solo video, no ambos.' };
   }
 
   let category: ContentCategory | null = null;
@@ -203,7 +223,8 @@ function validateCreatePost(body: unknown): { ok: true; data: CreatePostPayload 
   if (postType !== PostType.POST && category !== null) {
     return {
       ok: false,
-      error: "category solo aplica a posts de tipo POST; para GAME_RESULT y ACHIEVEMENT usá los endpoints automáticos.",
+      error:
+        'category solo aplica a posts de tipo POST; para GAME_RESULT y ACHIEVEMENT usá los endpoints automáticos.',
     };
   }
 
@@ -229,12 +250,13 @@ export async function createPost(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const { userId, content, imageUrl, videoUrl, mediaUploadId, category, type, visibility } = validation.data;
+  const { userId, content, imageUrl, videoUrl, mediaUploadId, category, type, visibility } =
+    validation.data;
 
   if (type === PostType.GAME_RESULT || type === PostType.ACHIEVEMENT) {
     res.status(400).json({
       error:
-        "Los posts de tipo GAME_RESULT o ACHIEVEMENT solo se crean automáticamente al registrar un resultado de juego o un logro. Usá POST /game-results o POST /user-achievements.",
+        'Los posts de tipo GAME_RESULT o ACHIEVEMENT solo se crean automáticamente al registrar un resultado de juego o un logro. Usá POST /game-results o POST /user-achievements.',
     });
     return;
   }
@@ -242,7 +264,7 @@ export async function createPost(req: Request, res: Response): Promise<void> {
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: userIdOnlySelect });
     if (!user) {
-      res.status(400).json({ error: "userId no corresponde a un usuario existente." });
+      res.status(400).json({ error: 'userId no corresponde a un usuario existente.' });
       return;
     }
 
@@ -263,7 +285,7 @@ export async function createPost(req: Request, res: Response): Promise<void> {
       const level = settings?.contentFilterLevel ?? ContentFilterLevel.MEDIUM;
       const mod = moderatePlainTextForLevel(content, level);
       if (!mod.allowed) {
-        if (mod.blockReason === "EMPTY") {
+        if (mod.blockReason === 'EMPTY') {
           res.status(400).json({ error: textModerationErrorMessage(mod.blockReason) });
           return;
         }
@@ -284,11 +306,11 @@ export async function createPost(req: Request, res: Response): Promise<void> {
         where: { id: mediaUploadId, userId, consumedAt: null },
       });
       if (!uploadRow) {
-        res.status(400).json({ error: "Subida no encontrada, ya usada o no te pertenece." });
+        res.status(400).json({ error: 'Subida no encontrada, ya usada o no te pertenece.' });
         return;
       }
       linkUploadId = uploadRow.id;
-      if (uploadRow.resourceType === "video") {
+      if (uploadRow.resourceType === 'video') {
         finalVideoUrl = uploadRow.url;
         finalImageUrl = null;
       } else {
@@ -329,12 +351,12 @@ export async function createPost(req: Request, res: Response): Promise<void> {
 
     res.status(201).json(post);
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
-      res.status(400).json({ error: "Referencia inválida (usuario u otro recurso)." });
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
+      res.status(400).json({ error: 'Referencia inválida (usuario u otro recurso).' });
       return;
     }
-    logError("post", err);
-    res.status(500).json({ error: "Error al crear el post." });
+    logError('post', err);
+    res.status(500).json({ error: 'Error al crear el post.' });
   }
 }
 
@@ -344,7 +366,7 @@ export async function createPost(req: Request, res: Response): Promise<void> {
 export async function patchPost(req: Request, res: Response): Promise<void> {
   const owned = req.ownedPost;
   if (!owned || owned.type !== PostType.POST) {
-    res.status(500).json({ error: "Estado interno inválido." });
+    res.status(500).json({ error: 'Estado interno inválido.' });
     return;
   }
   const postId = owned.id;
@@ -356,8 +378,8 @@ export async function patchPost(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  if (req.body === null || typeof req.body !== "object") {
-    res.status(400).json({ error: "El cuerpo debe ser un objeto JSON." });
+  if (req.body === null || typeof req.body !== 'object') {
+    res.status(400).json({ error: 'El cuerpo debe ser un objeto JSON.' });
     return;
   }
 
@@ -365,11 +387,11 @@ export async function patchPost(req: Request, res: Response): Promise<void> {
   const data: Prisma.PostUpdateInput = {};
 
   if (b.content !== undefined) {
-    if (b.content !== null && typeof b.content !== "string") {
-      res.status(400).json({ error: "content debe ser texto o null." });
+    if (b.content !== null && typeof b.content !== 'string') {
+      res.status(400).json({ error: 'content debe ser texto o null.' });
       return;
     }
-    const raw = b.content === null ? "" : b.content.trim();
+    const raw = b.content === null ? '' : b.content.trim();
     if (raw.length === 0) {
       data.content = null;
     } else {
@@ -380,7 +402,7 @@ export async function patchPost(req: Request, res: Response): Promise<void> {
       const level = settings?.contentFilterLevel ?? ContentFilterLevel.MEDIUM;
       const mod = moderatePlainTextForLevel(raw, level);
       if (!mod.allowed) {
-        if (mod.blockReason === "EMPTY") {
+        if (mod.blockReason === 'EMPTY') {
           res.status(400).json({ error: textModerationErrorMessage(mod.blockReason) });
           return;
         }
@@ -392,9 +414,9 @@ export async function patchPost(req: Request, res: Response): Promise<void> {
   }
 
   if (b.visibility !== undefined) {
-    if (typeof b.visibility !== "string" || !isVisibility(b.visibility)) {
+    if (typeof b.visibility !== 'string' || !isVisibility(b.visibility)) {
       res.status(400).json({
-        error: `visibility debe ser uno de: ${VISIBILITY_VALUES.join(", ")}.`,
+        error: `visibility debe ser uno de: ${VISIBILITY_VALUES.join(', ')}.`,
       });
       return;
     }
@@ -415,7 +437,7 @@ export async function patchPost(req: Request, res: Response): Promise<void> {
   }
 
   if (Object.keys(data).length === 0) {
-    res.status(400).json({ error: "Enviá al menos un campo: content, visibility o category." });
+    res.status(400).json({ error: 'Enviá al menos un campo: content, visibility o category.' });
     return;
   }
 
@@ -437,8 +459,8 @@ export async function patchPost(req: Request, res: Response): Promise<void> {
     });
     res.json(updated);
   } catch (err) {
-    logError("post", err);
-    res.status(500).json({ error: "Error al actualizar la publicación." });
+    logError('post', err);
+    res.status(500).json({ error: 'Error al actualizar la publicación.' });
   }
 }
 
@@ -448,7 +470,7 @@ export async function patchPost(req: Request, res: Response): Promise<void> {
 export async function deletePost(req: Request, res: Response): Promise<void> {
   const owned = req.ownedPost;
   if (!owned || owned.type !== PostType.POST) {
-    res.status(500).json({ error: "Estado interno inválido." });
+    res.status(500).json({ error: 'Estado interno inválido.' });
     return;
   }
   const postId = owned.id;
@@ -460,8 +482,8 @@ export async function deletePost(req: Request, res: Response): Promise<void> {
     ]);
     res.status(204).end();
   } catch (err) {
-    logError("post", err);
-    res.status(500).json({ error: "Error al eliminar la publicación." });
+    logError('post', err);
+    res.status(500).json({ error: 'Error al eliminar la publicación.' });
   }
 }
 
@@ -472,7 +494,7 @@ export async function deletePost(req: Request, res: Response): Promise<void> {
 export async function listPosts(req: Request, res: Response): Promise<void> {
   const viewerId = parseFeedUserId(req);
   if (!viewerId) {
-    res.status(400).json({ error: "Query param userId es obligatorio." });
+    res.status(400).json({ error: 'Query param userId es obligatorio.' });
     return;
   }
 
@@ -482,7 +504,7 @@ export async function listPosts(req: Request, res: Response): Promise<void> {
       select: { id: true },
     });
     if (!viewer) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
 
@@ -493,13 +515,13 @@ export async function listPosts(req: Request, res: Response): Promise<void> {
     try {
       const topInterests = await prisma.userInterest.findMany({
         where: { userId: viewerId },
-        orderBy: { score: "desc" },
+        orderBy: { score: 'desc' },
         take: 3,
         select: { category: true },
       });
       topCategories = topInterests.map((i) => i.category);
     } catch (interestErr) {
-      logError("post.listPosts.interests", interestErr);
+      logError('post.listPosts.interests', interestErr);
     }
 
     const rows = await prisma.post.findMany({
@@ -562,7 +584,7 @@ export async function listPosts(req: Request, res: Response): Promise<void> {
     const posts = rows.map((p) => {
       const reactionsTotal = p._count.reactions;
       const postCategory =
-        p.category != null && String(p.category).trim() !== ""
+        p.category != null && String(p.category).trim() !== ''
           ? String(p.category).trim()
           : p.type === PostType.ACHIEVEMENT
             ? (p.userAchievement?.achievement?.category ?? null)
@@ -570,10 +592,14 @@ export async function listPosts(req: Request, res: Response): Promise<void> {
               ? (p.gameResult?.game?.category ?? null)
               : null;
       const interestBoost = interestBoostForCategory(postCategory, topCategories);
-      const { score, recencyScore } = computeFeedRanking(reactionsTotal, interestBoost, p.createdAt, now);
+      const { score, recencyScore } = computeFeedRanking(
+        reactionsTotal,
+        interestBoost,
+        p.createdAt,
+        now,
+      );
       const ach = p.userAchievement?.achievement;
-      const badge =
-        p.type === PostType.ACHIEVEMENT && ach ? toApiBadge(ach) : undefined;
+      const badge = p.type === PostType.ACHIEVEMENT && ach ? toApiBadge(ach) : undefined;
 
       return {
         id: p.id,
@@ -590,7 +616,9 @@ export async function listPosts(req: Request, res: Response): Promise<void> {
         createdAt: p.createdAt.toISOString(),
         createdAtFormatted: formatCreatedAtLocal(p.createdAt),
         reactionsTotal,
-        reactionsCountByType: reactionCountsDtoToByType(reactionCountMap.get(p.id) ?? ZERO_REACTION_COUNTS_DTO),
+        reactionsCountByType: reactionCountsDtoToByType(
+          reactionCountMap.get(p.id) ?? ZERO_REACTION_COUNTS_DTO,
+        ),
         userReaction: userReactionMap.get(p.id) ?? null,
         category: postCategory ?? undefined,
         interestBoost,
@@ -609,13 +637,12 @@ export async function listPosts(req: Request, res: Response): Promise<void> {
     const mixed = interleaveFeedByPostType(posts);
     res.json(mixed);
   } catch (err) {
-    logError("post.listPosts", err);
+    logError('post.listPosts', err);
     const detail = err instanceof Error ? err.message : String(err);
     res.status(500).json({
-      error: "Error al listar los posts.",
-      hint:
-        "Si recién actualizaste el proyecto, sincronizá la base: en la carpeta del API ejecutá `npx prisma db push` y `npx prisma generate`, luego reiniciá `npm run dev`.",
-      ...(process.env.NODE_ENV !== "production" ? { detail } : {}),
+      error: 'Error al listar los posts.',
+      hint: 'Si recién actualizaste el proyecto, sincronizá la base: en la carpeta del API ejecutá `npx prisma db push` y `npx prisma generate`, luego reiniciá `npm run dev`.',
+      ...(process.env.NODE_ENV !== 'production' ? { detail } : {}),
     });
   }
 }

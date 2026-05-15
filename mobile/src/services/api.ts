@@ -3,7 +3,10 @@ import axios from "axios";
 import { API_BASE_URL } from "../config";
 import { learnMarkdownForTopicSlug } from "../data/learnBodies";
 import { educationalMetaToMarkdown } from "../lib/educationalMetaMarkdown";
-import { queueCelebrationsAfterContentLearn, queueCelebrationsAfterQuizComplete } from "../lib/celebrationQueue";
+import {
+  queueCelebrationsAfterContentLearn,
+  queueCelebrationsAfterQuizComplete,
+} from "../lib/celebrationQueue";
 import { tryAlertMissionCompletions } from "../lib/missionCompletionFeedback";
 import {
   FALLBACK_CONTENT,
@@ -147,8 +150,13 @@ export type VerifyPremiumIapResponse = {
   parent: AuthResponse["parent"];
 };
 
-export async function verifyPremiumIapPurchase(body: VerifyPremiumIapBody): Promise<VerifyPremiumIapResponse> {
-  const { data } = await api.post<VerifyPremiumIapResponse>("/api/parents/premium/iap/verify", body);
+export async function verifyPremiumIapPurchase(
+  body: VerifyPremiumIapBody,
+): Promise<VerifyPremiumIapResponse> {
+  const { data } = await api.post<VerifyPremiumIapResponse>(
+    "/api/parents/premium/iap/verify",
+    body,
+  );
   return data;
 }
 
@@ -158,7 +166,10 @@ export type LoginChildResponse = {
 };
 
 export async function loginChild(username: string, password: string): Promise<LoginChildResponse> {
-  const { data } = await api.post<LoginChildResponse>("/api/auth/login-child", { username, password });
+  const { data } = await api.post<LoginChildResponse>("/api/auth/login-child", {
+    username,
+    password,
+  });
   return data;
 }
 
@@ -170,7 +181,7 @@ export type LoginMinorWithCodeResponse = {
 
 export async function loginMinorWithCode(
   username: string,
-  accessCode: string
+  accessCode: string,
 ): Promise<LoginMinorWithCodeResponse> {
   const { data } = await api.post<LoginMinorWithCodeResponse>("/api/auth/minor/login-with-code", {
     username,
@@ -222,7 +233,9 @@ export type ParentMinorsListItem = {
 };
 
 export async function getParentMinors(parentId: string): Promise<ParentMinorsListItem[]> {
-  const { data } = await api.get<ParentMinorsListItem[]>(`/api/parents/${encodeURIComponent(parentId)}/minors`);
+  const { data } = await api.get<ParentMinorsListItem[]>(
+    `/api/parents/${encodeURIComponent(parentId)}/minors`,
+  );
   return data;
 }
 
@@ -235,13 +248,15 @@ export type MinorApprovalItem = {
 };
 
 export async function getParentPendingApprovals(parentId: string): Promise<MinorApprovalItem[]> {
-  const { data } = await api.get<MinorApprovalItem[]>(`/api/parents/${encodeURIComponent(parentId)}/approvals`);
+  const { data } = await api.get<MinorApprovalItem[]>(
+    `/api/parents/${encodeURIComponent(parentId)}/approvals`,
+  );
   return data;
 }
 
 export async function patchMinorApproval(
   minorId: string,
-  payload: { approvalId: string; status: "approved" | "rejected" }
+  payload: { approvalId: string; status: "approved" | "rejected" },
 ): Promise<void> {
   await api.patch(`/api/minors/${encodeURIComponent(minorId)}/approve`, payload);
 }
@@ -261,14 +276,14 @@ export type FirstActionChoice = "PLAY_GAME" | "FOLLOW_USERS";
 
 export async function getOnboardingStatus(userId: string): Promise<OnboardingStatusResponse> {
   const { data } = await api.get<OnboardingStatusResponse>(
-    `/api/users/${encodeURIComponent(userId)}/onboarding`
+    `/api/users/${encodeURIComponent(userId)}/onboarding`,
   );
   return data;
 }
 
 export async function postOnboardingPreferences(
   userId: string,
-  payload: { interests: string[]; firstAction: FirstActionChoice }
+  payload: { interests: string[]; firstAction: FirstActionChoice },
 ): Promise<void> {
   await api.post(`/api/users/${encodeURIComponent(userId)}/onboarding`, payload);
 }
@@ -290,7 +305,7 @@ export async function getPosts(userId: string): Promise<FeedPost[]> {
 
 export async function getExploreFeed(
   userId: string,
-  opts?: { limit?: number; excludeIds?: string[] }
+  opts?: { limit?: number; excludeIds?: string[] },
 ): Promise<ExploreFeedResponse> {
   const params: Record<string, string | number> = { userId };
   if (opts?.limit != null) params.limit = opts.limit;
@@ -304,7 +319,9 @@ export async function getEducationalContent(params?: {
   difficulty?: "EASY" | "MEDIUM" | "HARD";
 }): Promise<EducationalContentItem[]> {
   try {
-    const { data } = await api.get<{ content: EducationalContentItem[] }>("/api/content", { params });
+    const { data } = await api.get<{ content: EducationalContentItem[] }>("/api/content", {
+      params,
+    });
     const content = data.content ?? [];
     if (content.length > 0) return content;
   } catch {
@@ -374,9 +391,13 @@ function resolveEducationalBody(row: ApiEducationalContentDetail): string {
   return educationalMetaToMarkdown(row.meta);
 }
 
-export async function getEducationalContentById(contentId: string): Promise<EducationalContentItem> {
+export async function getEducationalContentById(
+  contentId: string,
+): Promise<EducationalContentItem> {
   try {
-    const { data } = await api.get<{ content: ApiEducationalContentDetail }>(`/api/content/${contentId}`);
+    const { data } = await api.get<{ content: ApiEducationalContentDetail }>(
+      `/api/content/${contentId}`,
+    );
     const row = data.content;
     const text = resolveEducationalBody(row);
     const contentType = row.contentType ?? row.type;
@@ -488,7 +509,7 @@ export async function getAvailableMissions(): Promise<ApiAvailableMission[]> {
 
 export async function completeEducationalContent(
   contentId: string,
-  payload: { userId: string; createPost?: boolean }
+  payload: { userId: string; createPost?: boolean },
 ): Promise<{
   xpGained: number;
   createdPost: boolean;
@@ -531,7 +552,9 @@ export async function getQuizQuestions(params: {
   if (params.adaptive) query.adaptive = "1";
   if (params.limit != null) query.limit = String(params.limit);
   try {
-    const { data } = await api.get<{ questions: QuizQuestionItem[] }>("/api/quiz", { params: query });
+    const { data } = await api.get<{ questions: QuizQuestionItem[] }>("/api/quiz", {
+      params: query,
+    });
     const questions = (data.questions ?? []).map((q) => {
       const extra = q as QuizQuestionItem & { image_url?: string };
       const raw = (extra.imageUrl ?? extra.image_url ?? "").trim();
@@ -556,7 +579,9 @@ export async function getVisualQuestions(params: {
   if (params.excludeIds?.length) {
     query.excludeIds = params.excludeIds.join(",");
   }
-  const { data } = await api.get<{ questions: VisualQuestionItem[] }>("/api/visual-quiz", { params: query });
+  const { data } = await api.get<{ questions: VisualQuestionItem[] }>("/api/visual-quiz", {
+    params: query,
+  });
   const rows = data.questions ?? [];
   return rows.map((q) => {
     const extra = q as VisualQuestionItem & { image_url?: string };
@@ -596,8 +621,12 @@ export async function completeQuizSession(payload: {
   return data;
 }
 
-export async function unlockQuizHintApi(questionId: string): Promise<{ hintText: string; coinsRemaining: number }> {
-  const { data } = await api.post<{ hintText: string; coinsRemaining: number }>("/api/quiz/hint", { questionId });
+export async function unlockQuizHintApi(
+  questionId: string,
+): Promise<{ hintText: string; coinsRemaining: number }> {
+  const { data } = await api.post<{ hintText: string; coinsRemaining: number }>("/api/quiz/hint", {
+    questionId,
+  });
   return data;
 }
 
@@ -615,10 +644,16 @@ export type FriendWeekXpRow = {
   xpThisWeek: number;
 };
 
-export async function getFriendsWeekXpRanking(): Promise<{ weekStartUtc: string; users: FriendWeekXpRow[] }> {
-  const { data } = await api.get<{ weekStartUtc: string; users: FriendWeekXpRow[] }>("/api/quiz/friends-week", {
-    params: { limit: 8 },
-  });
+export async function getFriendsWeekXpRanking(): Promise<{
+  weekStartUtc: string;
+  users: FriendWeekXpRow[];
+}> {
+  const { data } = await api.get<{ weekStartUtc: string; users: FriendWeekXpRow[] }>(
+    "/api/quiz/friends-week",
+    {
+      params: { limit: 8 },
+    },
+  );
   return data;
 }
 
@@ -628,7 +663,9 @@ export async function getUserRecommendations(userId: string): Promise<Recommenda
 }
 
 /** Recomendaciones compactas: contenido educativo + preguntas quiz/visual (mezcla 70/30 en API). */
-export async function getExploreRecommendations(userId: string): Promise<ExploreRecommendationsResponse> {
+export async function getExploreRecommendations(
+  userId: string,
+): Promise<ExploreRecommendationsResponse> {
   const { data } = await api.get<ExploreRecommendationsResponse>("/api/recommendations", {
     params: { userId, limit: 8 },
   });
@@ -640,14 +677,22 @@ export async function getUserProfile(userId: string): Promise<UserProfileRespons
   return data;
 }
 
-export async function getAchievementSystemOverview(userId: string): Promise<AchievementSystemOverviewResponse> {
-  const { data } = await api.get<AchievementSystemOverviewResponse>("/achievements/system/overview", {
-    params: { userId },
-  });
+export async function getAchievementSystemOverview(
+  userId: string,
+): Promise<AchievementSystemOverviewResponse> {
+  const { data } = await api.get<AchievementSystemOverviewResponse>(
+    "/achievements/system/overview",
+    {
+      params: { userId },
+    },
+  );
   return data;
 }
 
-export async function getAchievementSystemCompare(userId: string, peerId: string): Promise<AchievementCompareResponse> {
+export async function getAchievementSystemCompare(
+  userId: string,
+  peerId: string,
+): Promise<AchievementCompareResponse> {
   const { data } = await api.get<AchievementCompareResponse>("/achievements/system/compare", {
     params: { userId, peerId },
   });
@@ -656,28 +701,35 @@ export async function getAchievementSystemCompare(userId: string, peerId: string
 
 export async function patchAchievementProfileVisibility(
   userId: string,
-  publicAchievements: boolean
+  publicAchievements: boolean,
 ): Promise<{ achievementsPublicOnProfile: boolean }> {
-  const { data } = await api.patch<{ achievementsPublicOnProfile: boolean }>("/achievements/system/profile-visibility", {
-    userId,
-    public: publicAchievements,
-  });
+  const { data } = await api.patch<{ achievementsPublicOnProfile: boolean }>(
+    "/achievements/system/profile-visibility",
+    {
+      userId,
+      public: publicAchievements,
+    },
+  );
   return data;
 }
 
 export async function patchUserPreferences(
   userId: string,
-  payload: Partial<Pick<UserNotificationPreferences, "notificationsEnabled" | "notificationSoundsEnabled">>
+  payload: Partial<
+    Pick<UserNotificationPreferences, "notificationsEnabled" | "notificationSoundsEnabled">
+  >,
 ): Promise<{ preferences: UserNotificationPreferences }> {
   const { data } = await api.patch<{ preferences: UserNotificationPreferences }>(
     `/api/users/${encodeURIComponent(userId)}/preferences`,
-    payload
+    payload,
   );
   return data;
 }
 
 export async function getTodayDailyMissions(userId: string): Promise<TodayMissionsResponse> {
-  const { data } = await api.get<TodayMissionsResponse>(`/api/users/${userId}/daily-missions/today`);
+  const { data } = await api.get<TodayMissionsResponse>(
+    `/api/users/${userId}/daily-missions/today`,
+  );
   return data;
 }
 
@@ -688,7 +740,7 @@ export async function getParentDashboard(parentId: string): Promise<ParentDashbo
 
 export async function postApproveChildAccount(parentId: string, childId: string): Promise<void> {
   await api.post(
-    `/api/parents/${encodeURIComponent(parentId)}/children/${encodeURIComponent(childId)}/approve-account`
+    `/api/parents/${encodeURIComponent(parentId)}/children/${encodeURIComponent(childId)}/approve-account`,
   );
 }
 
@@ -713,24 +765,29 @@ export async function postParentApproveFriend(body: ParentFriendDecisionBody): P
   return data;
 }
 
-export async function postParentRejectFriendAwaiting(body: ParentFriendDecisionBody): Promise<unknown> {
+export async function postParentRejectFriendAwaiting(
+  body: ParentFriendDecisionBody,
+): Promise<unknown> {
   const { data } = await api.post<unknown>("/api/friends/parent-reject-awaiting", body);
   return data;
 }
 
-export async function getParentChildFriends(parentId: string, childId: string): Promise<ParentChildFriendsResponse> {
+export async function getParentChildFriends(
+  parentId: string,
+  childId: string,
+): Promise<ParentChildFriendsResponse> {
   const { data } = await api.get<ParentChildFriendsResponse>(
-    `/api/parents/${encodeURIComponent(parentId)}/children/${encodeURIComponent(childId)}/friends`
+    `/api/parents/${encodeURIComponent(parentId)}/children/${encodeURIComponent(childId)}/friends`,
   );
   return data;
 }
 
 export async function getParentChildBlockedUsers(
   parentId: string,
-  childId: string
+  childId: string,
 ): Promise<ParentChildBlockedUsersResponse> {
   const { data } = await api.get<ParentChildBlockedUsersResponse>(
-    `/api/parents/${encodeURIComponent(parentId)}/children/${encodeURIComponent(childId)}/blocked-users`
+    `/api/parents/${encodeURIComponent(parentId)}/children/${encodeURIComponent(childId)}/blocked-users`,
   );
   return data;
 }
@@ -738,11 +795,11 @@ export async function getParentChildBlockedUsers(
 export async function postParentChildBlockUser(
   parentId: string,
   childId: string,
-  body: { username?: string; blockedUserId?: string }
+  body: { username?: string; blockedUserId?: string },
 ): Promise<{ childId: string; blockedUserId: string; username: string }> {
   const { data } = await api.post(
     `/api/parents/${encodeURIComponent(parentId)}/children/${encodeURIComponent(childId)}/blocked-users`,
-    body
+    body,
   );
   return data;
 }
@@ -750,10 +807,10 @@ export async function postParentChildBlockUser(
 export async function deleteParentChildBlockUser(
   parentId: string,
   childId: string,
-  blockedUserId: string
+  blockedUserId: string,
 ): Promise<void> {
   await api.delete(
-    `/api/parents/${encodeURIComponent(parentId)}/children/${encodeURIComponent(childId)}/blocked-users/${encodeURIComponent(blockedUserId)}`
+    `/api/parents/${encodeURIComponent(parentId)}/children/${encodeURIComponent(childId)}/blocked-users/${encodeURIComponent(blockedUserId)}`,
   );
 }
 
@@ -763,19 +820,23 @@ export async function postParentPushToken(parentId: string, token: string | null
     await api.post(`/api/parents/${encodeURIComponent(parentId)}/push-token`, { token: null });
     return;
   }
-  await api.post(`/api/parents/${encodeURIComponent(parentId)}/push-token`, { token: token.trim() });
+  await api.post(`/api/parents/${encodeURIComponent(parentId)}/push-token`, {
+    token: token.trim(),
+  });
 }
 
-export async function getParentChildAnalytics(parentId: string): Promise<ParentChildAnalyticsResponse> {
+export async function getParentChildAnalytics(
+  parentId: string,
+): Promise<ParentChildAnalyticsResponse> {
   const { data } = await api.get<ParentChildAnalyticsResponse>(
-    `/api/analytics/parent/${encodeURIComponent(parentId)}`
+    `/api/analytics/parent/${encodeURIComponent(parentId)}`,
   );
   return data;
 }
 
 export async function getParentCoach(parentId: string): Promise<ParentCoachPayload> {
   const { data } = await api.get<ParentCoachPayload>(
-    `/api/coach/parent/${encodeURIComponent(parentId)}`
+    `/api/coach/parent/${encodeURIComponent(parentId)}`,
   );
   return data;
 }
@@ -805,7 +866,7 @@ export type PatchChildParentSettingsResponse = {
 export async function patchChildParentSettings(
   parentId: string,
   childId: string,
-  patch: PatchChildParentSettingsBody
+  patch: PatchChildParentSettingsBody,
 ): Promise<PatchChildParentSettingsResponse> {
   const { data } = await api.patch(`/api/parents/${parentId}/children/${childId}/settings`, patch);
   return data;
@@ -816,26 +877,38 @@ export async function getChatConversations(): Promise<ChatConversationsResponse>
   return data;
 }
 
-export async function getChatThread(peerId: string, opts?: { before?: string }): Promise<ChatThreadResponse> {
-  const { data } = await api.get<ChatThreadResponse>(`/api/chat/threads/${encodeURIComponent(peerId)}`, {
-    params: opts?.before ? { before: opts.before } : undefined,
-  });
+export async function getChatThread(
+  peerId: string,
+  opts?: { before?: string },
+): Promise<ChatThreadResponse> {
+  const { data } = await api.get<ChatThreadResponse>(
+    `/api/chat/threads/${encodeURIComponent(peerId)}`,
+    {
+      params: opts?.before ? { before: opts.before } : undefined,
+    },
+  );
   return data;
 }
 
-export async function postChatMessage(recipientId: string, text: string): Promise<PostChatMessageResponse> {
-  const { data } = await api.post<PostChatMessageResponse>("/api/chat/messages", { recipientId, text });
+export async function postChatMessage(
+  recipientId: string,
+  text: string,
+): Promise<PostChatMessageResponse> {
+  const { data } = await api.post<PostChatMessageResponse>("/api/chat/messages", {
+    recipientId,
+    text,
+  });
   return data;
 }
 
 export async function getParentChildChatMessages(
   parentId: string,
   childId: string,
-  limit?: number
+  limit?: number,
 ): Promise<ParentChildChatMessagesResponse> {
   const { data } = await api.get<ParentChildChatMessagesResponse>(
     `/api/parents/${encodeURIComponent(parentId)}/children/${encodeURIComponent(childId)}/chat-messages`,
-    { params: limit != null ? { limit } : undefined }
+    { params: limit != null ? { limit } : undefined },
   );
   return data;
 }
@@ -854,7 +927,10 @@ export async function getScreenTime(userId: string): Promise<ScreenTimeResponse>
   return data;
 }
 
-export async function postScreenTimeTick(userId: string, deltaSeconds: number): Promise<ScreenTimeResponse> {
+export async function postScreenTimeTick(
+  userId: string,
+  deltaSeconds: number,
+): Promise<ScreenTimeResponse> {
   const { data } = await api.post<ScreenTimeResponse>(`/api/users/${userId}/screen-time/tick`, {
     deltaSeconds,
   });
@@ -864,9 +940,13 @@ export async function postScreenTimeTick(userId: string, deltaSeconds: number): 
 /**
  * Popup de misión completada desde la respuesta del servidor (evita duplicar con el mismo `userMissionId` que en Perfil).
  */
-export function notifyMissionRewardsFromApiResponse(rewards: MissionCompletionRewardApi[] | undefined): void {
+export function notifyMissionRewardsFromApiResponse(
+  rewards: MissionCompletionRewardApi[] | undefined,
+): void {
   if (!rewards?.length) return;
-  tryAlertMissionCompletions(rewards.map((r) => ({ userMissionId: r.userMissionId, xpReward: r.xpReward })));
+  tryAlertMissionCompletions(
+    rewards.map((r) => ({ userMissionId: r.userMissionId, xpReward: r.xpReward })),
+  );
 }
 
 export async function createReaction(payload: {
@@ -926,13 +1006,13 @@ export async function postContentReport(payload: {
 
 export async function getParentModerationReports(
   parentId: string,
-  opts?: { status?: ContentReportStatus }
+  opts?: { status?: ContentReportStatus },
 ): Promise<ParentModerationReportsResponse> {
   const params: Record<string, string> = {};
   if (opts?.status) params.status = opts.status;
   const { data } = await api.get<ParentModerationReportsResponse>(
     `/api/parents/${encodeURIComponent(parentId)}/moderation/reports`,
-    { params }
+    { params },
   );
   return data;
 }
@@ -940,7 +1020,7 @@ export async function getParentModerationReports(
 export async function patchParentModerationReport(
   parentId: string,
   reportId: string,
-  body: { status: "DISMISSED" | "ESCALATED"; resolutionNote?: string | null }
+  body: { status: "DISMISSED" | "ESCALATED"; resolutionNote?: string | null },
 ): Promise<{
   id: string;
   status: ContentReportStatus;
@@ -951,14 +1031,14 @@ export async function patchParentModerationReport(
 }> {
   const { data } = await api.patch(
     `/api/parents/${encodeURIComponent(parentId)}/moderation/reports/${encodeURIComponent(reportId)}`,
-    body
+    body,
   );
   return data;
 }
 
 export async function postParentApprovePostModerationVisibility(
   parentId: string,
-  postId: string
+  postId: string,
 ): Promise<{
   id: string;
   mediaModerationFlagged: boolean;
@@ -966,7 +1046,7 @@ export async function postParentApprovePostModerationVisibility(
   parentModerationVisibleById: string | null;
 }> {
   const { data } = await api.post(
-    `/api/parents/${encodeURIComponent(parentId)}/moderation/posts/${encodeURIComponent(postId)}/approve-visible`
+    `/api/parents/${encodeURIComponent(parentId)}/moderation/posts/${encodeURIComponent(postId)}/approve-visible`,
   );
   return data;
 }

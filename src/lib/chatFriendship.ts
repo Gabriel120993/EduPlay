@@ -1,5 +1,5 @@
-import { FriendStatus } from "@prisma/client";
-import { prisma } from "./prisma";
+import { FriendStatus } from '@prisma/client';
+import { prisma } from './prisma';
 
 /** True si existe amistad ACCEPTED en cualquier dirección entre a y b. */
 export async function areAcceptedFriends(a: string, b: string): Promise<boolean> {

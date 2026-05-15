@@ -1,18 +1,18 @@
-import type { Request, Response } from "express";
-import { PostType, Visibility } from "@prisma/client";
-import { toApiBadge } from "../lib/achievementApi";
+import type { Request, Response } from 'express';
+import { PostType, Visibility } from '@prisma/client';
+import { toApiBadge } from '../lib/achievementApi';
 import {
   getReactionCountsByPostIds,
   getUserReactionsByPostIds,
   reactionCountsDtoToByType,
   ZERO_REACTION_COUNTS_DTO,
-} from "../lib/reactionCounts";
-import { feedLabelForPostType } from "../lib/feedVariety";
-import { interestBoostForTopCategories } from "../lib/recommendationBoost";
-import { buildPublicFeedVisibilityWhere } from "../lib/postFeedVisibility";
-import { getAcceptedFriendUserIds } from "./post.controller";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
+} from '../lib/reactionCounts';
+import { feedLabelForPostType } from '../lib/feedVariety';
+import { interestBoostForTopCategories } from '../lib/recommendationBoost';
+import { buildPublicFeedVisibilityWhere } from '../lib/postFeedVisibility';
+import { getAcceptedFriendUserIds } from './post.controller';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
 
 const DEFAULT_PAGE_SIZE = 15;
 const MIN_PAGE_SIZE = 5;
@@ -29,14 +29,19 @@ const TRENDING_POOL = 200;
 
 function parseUserId(req: Request): string {
   const raw = req.query.userId;
-  if (typeof raw === "string") return raw.trim();
+  if (typeof raw === 'string') return raw.trim();
   if (Array.isArray(raw) && raw[0] != null) return String(raw[0]).trim();
-  return "";
+  return '';
 }
 
 function parsePageSize(req: Request): number {
   const raw = req.query.limit;
-  const n = typeof raw === "string" ? Number.parseInt(raw, 10) : Array.isArray(raw) ? Number.parseInt(String(raw[0]), 10) : NaN;
+  const n =
+    typeof raw === 'string'
+      ? Number.parseInt(raw, 10)
+      : Array.isArray(raw)
+        ? Number.parseInt(String(raw[0]), 10)
+        : NaN;
   if (!Number.isFinite(n) || n < MIN_PAGE_SIZE) return DEFAULT_PAGE_SIZE;
   return Math.min(MAX_PAGE_SIZE, Math.max(MIN_PAGE_SIZE, Math.floor(n)));
 }
@@ -44,9 +49,9 @@ function parsePageSize(req: Request): number {
 /** IDs ya mostrados (scroll infinito): `exclude=id1,id2,...`). */
 function parseExcludeIds(req: Request): Set<string> {
   const raw = req.query.exclude;
-  if (typeof raw !== "string" || !raw.trim()) return new Set();
+  if (typeof raw !== 'string' || !raw.trim()) return new Set();
   const parts = raw
-    .split(",")
+    .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
     .slice(0, MAX_EXCLUDE_IDS);
@@ -64,14 +69,14 @@ function shuffleInPlace<T>(items: T[]): T[] {
 }
 
 function formatCreatedAtLocal(date: Date): string {
-  return new Intl.DateTimeFormat("es-AR", {
-    timeZone: "UTC",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
     hour12: false,
   }).format(date);
 }
@@ -132,7 +137,7 @@ type ExploreRow = {
   mediaModerationNote: string | null;
   parentModerationVisibleAt: Date | null;
   parentModerationVisibleById: string | null;
-  category: import("@prisma/client").ContentCategory | null;
+  category: import('@prisma/client').ContentCategory | null;
   type: PostType;
   visibility: Visibility;
   createdAt: Date;
@@ -140,18 +145,18 @@ type ExploreRow = {
   userAchievement: {
     achievement: {
       title: string;
-      category: import("@prisma/client").ContentCategory;
+      category: import('@prisma/client').ContentCategory;
       badgeIcon: string;
       badgeColor: string;
-      rarity: import("@prisma/client").AchievementRarity;
+      rarity: import('@prisma/client').AchievementRarity;
     };
   } | null;
-  gameResult: { game: { category: import("@prisma/client").ContentCategory } } | null;
+  gameResult: { game: { category: import('@prisma/client').ContentCategory } } | null;
   _count: { reactions: number };
 };
 
 function resolvePostCategory(p: ExploreRow): string | null {
-  if (p.category != null && String(p.category).trim() !== "") {
+  if (p.category != null && String(p.category).trim() !== '') {
     return String(p.category).trim();
   }
   if (p.type === PostType.ACHIEVEMENT) {
@@ -204,7 +209,7 @@ function mapExplorePost(p: ExploreRow) {
 export async function getExploreFeed(req: Request, res: Response): Promise<void> {
   const viewerId = parseUserId(req);
   if (!viewerId) {
-    res.status(400).json({ error: "Query param userId es obligatorio." });
+    res.status(400).json({ error: 'Query param userId es obligatorio.' });
     return;
   }
 
@@ -220,7 +225,7 @@ export async function getExploreFeed(req: Request, res: Response): Promise<void>
       select: { id: true },
     });
     if (!viewer) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
 
@@ -229,7 +234,7 @@ export async function getExploreFeed(req: Request, res: Response): Promise<void>
 
     const interestRows = await prisma.userInterest.findMany({
       where: { userId: viewerId },
-      orderBy: { score: "desc" },
+      orderBy: { score: 'desc' },
       select: { category: true },
     });
     const interestOrder = interestRows.map((r) => r.category);
@@ -238,13 +243,13 @@ export async function getExploreFeed(req: Request, res: Response): Promise<void>
     const [recentRows, trendingRows] = await Promise.all([
       prisma.post.findMany({
         where: visibilityWhere,
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         take: RECENT_POOL,
         select: postExploreSelect,
       }),
       prisma.post.findMany({
         where: visibilityWhere,
-        orderBy: { reactions: { _count: "desc" } },
+        orderBy: { reactions: { _count: 'desc' } },
         take: TRENDING_POOL,
         select: postExploreSelect,
       }),
@@ -259,7 +264,9 @@ export async function getExploreFeed(req: Request, res: Response): Promise<void>
     }
 
     const matchesInterest = (p: { category?: string }) =>
-      Boolean(p.category && interestSet.has(p.category as import("@prisma/client").ContentCategory));
+      Boolean(
+        p.category && interestSet.has(p.category as import('@prisma/client').ContentCategory),
+      );
 
     const interestRankScore = (p: { category?: string; reactionsTotal: number }): number => {
       const boost = interestBoostForTopCategories(p.category, interestOrder);
@@ -274,9 +281,7 @@ export async function getExploreFeed(req: Request, res: Response): Promise<void>
     }
 
     const exploreSource =
-      interestSet.size > 0
-        ? recentMapped.filter((p) => !matchesInterest(p))
-        : [...recentMapped];
+      interestSet.size > 0 ? recentMapped.filter((p) => !matchesInterest(p)) : [...recentMapped];
 
     const interestCandidates = shuffleInPlace([...interestSource]);
     const exploreCandidates = shuffleInPlace([...exploreSource]);
@@ -322,7 +327,9 @@ export async function getExploreFeed(req: Request, res: Response): Promise<void>
     ]);
     const postsWithCounts = trimmed.map((p) => ({
       ...p,
-      reactionsCountByType: reactionCountsDtoToByType(reactionCountMap.get(p.id) ?? ZERO_REACTION_COUNTS_DTO),
+      reactionsCountByType: reactionCountsDtoToByType(
+        reactionCountMap.get(p.id) ?? ZERO_REACTION_COUNTS_DTO,
+      ),
       userReaction: userReactionMap.get(p.id) ?? null,
     }));
 
@@ -331,11 +338,11 @@ export async function getExploreFeed(req: Request, res: Response): Promise<void>
       hasMore,
     });
   } catch (err) {
-    logError("explore.getExploreFeed", err);
+    logError('explore.getExploreFeed', err);
     const detail = err instanceof Error ? err.message : String(err);
     res.status(500).json({
-      error: "Error al cargar el feed de exploración.",
-      ...(process.env.NODE_ENV !== "production" ? { detail } : {}),
+      error: 'Error al cargar el feed de exploración.',
+      ...(process.env.NODE_ENV !== 'production' ? { detail } : {}),
     });
   }
 }

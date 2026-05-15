@@ -40,7 +40,9 @@ export const PREMIUM_STORE_PRODUCT_ID_TO_PLAN: Record<string, PremiumPlanId> = {
   eduplay_premium_yearly: "yearly_premium",
 };
 
-export function getPremiumPlanByStoreProductId(productId: string): PremiumPlanDefinition | undefined {
+export function getPremiumPlanByStoreProductId(
+  productId: string,
+): PremiumPlanDefinition | undefined {
   const planId = PREMIUM_STORE_PRODUCT_ID_TO_PLAN[productId];
   return planId ? PREMIUM_PLAN_BY_ID[planId] : undefined;
 }

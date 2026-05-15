@@ -1,11 +1,11 @@
-import type { NextFunction, Request, Response } from "express";
-import rateLimit from "express-rate-limit";
+import type { NextFunction, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 
-import { env } from "../config/env";
-import { logSuspicious } from "../lib/logger";
+import { env } from '../config/env';
+import { logSuspicious } from '../lib/logger';
 
 function clientKey(req: Request): string {
-  return req.ip ?? req.socket.remoteAddress ?? "unknown";
+  return req.ip ?? req.socket.remoteAddress ?? 'unknown';
 }
 
 function rateLimitMeta(req: Request, limiterName: string): Record<string, unknown> {
@@ -16,14 +16,19 @@ function rateLimitMeta(req: Request, limiterName: string): Record<string, unknow
     ip: clientKey(req),
   };
   const a = req.auth;
-  if (a?.kind === "child") meta.authenticatedChildUserId = a.userId;
-  else if (a?.kind === "parent") meta.authenticatedParentId = a.parentId;
+  if (a?.kind === 'child') meta.authenticatedChildUserId = a.userId;
+  else if (a?.kind === 'parent') meta.authenticatedParentId = a.parentId;
   return meta;
 }
 
 function limitExceededHandler(limiterName: string) {
-  return (req: Request, res: Response, _next: NextFunction, options: { statusCode: number; message: unknown }): void => {
-    logSuspicious("rate_limit_exceeded", rateLimitMeta(req, limiterName));
+  return (
+    req: Request,
+    res: Response,
+    _next: NextFunction,
+    options: { statusCode: number; message: unknown },
+  ): void => {
+    logSuspicious('rate_limit_exceeded', rateLimitMeta(req, limiterName));
     res.status(options.statusCode).json(options.message as object);
   };
 }
@@ -38,10 +43,11 @@ export const loginRegisterRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Demasiados intentos de inicio de sesión o registro desde esta red. Probá de nuevo más tarde.",
+    error:
+      'Demasiados intentos de inicio de sesión o registro desde esta red. Probá de nuevo más tarde.',
   },
   keyGenerator: (req) => `login-register:${clientKey(req)}`,
-  handler: limitExceededHandler("login-register"),
+  handler: limitExceededHandler('login-register'),
 });
 
 /**
@@ -52,9 +58,9 @@ export const authWriteLimiter = rateLimit({
   max: env.authRateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Demasiados intentos desde esta red. Probá de nuevo en unos minutos." },
+  message: { error: 'Demasiados intentos desde esta red. Probá de nuevo en unos minutos.' },
   keyGenerator: (req) => `auth-write:${clientKey(req)}`,
-  handler: limitExceededHandler("auth-write"),
+  handler: limitExceededHandler('auth-write'),
 });
 
 /**
@@ -66,11 +72,11 @@ export const apiGeneralLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Demasiadas solicitudes. Esperá un momento e intentá de nuevo.",
-    code: "RATE_LIMIT_IP",
+    error: 'Demasiadas solicitudes. Esperá un momento e intentá de nuevo.',
+    code: 'RATE_LIMIT_IP',
   },
   keyGenerator: (req) => `api:${clientKey(req)}`,
-  handler: limitExceededHandler("api-general"),
+  handler: limitExceededHandler('api-general'),
 });
 
 const childApiUserLimiter = rateLimit({
@@ -79,15 +85,15 @@ const childApiUserLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Demasiadas acciones en poco tiempo con tu cuenta. Hacé una pausa e intentá de nuevo.",
-    code: "RATE_LIMIT_USER",
+    error: 'Demasiadas acciones en poco tiempo con tu cuenta. Hacé una pausa e intentá de nuevo.',
+    code: 'RATE_LIMIT_USER',
   },
   keyGenerator: (req) => {
     const a = req.auth;
-    if (a?.kind === "child") return `api-user:child:${a.userId}`;
+    if (a?.kind === 'child') return `api-user:child:${a.userId}`;
     return `api-user:child-fallback:${clientKey(req)}`;
   },
-  handler: limitExceededHandler("api-user-child"),
+  handler: limitExceededHandler('api-user-child'),
 });
 
 const parentApiUserLimiter = rateLimit({
@@ -96,26 +102,30 @@ const parentApiUserLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Demasiadas solicitudes con tu sesión de tutor. Esperá un momento e intentá de nuevo.",
-    code: "RATE_LIMIT_USER",
+    error: 'Demasiadas solicitudes con tu sesión de tutor. Esperá un momento e intentá de nuevo.',
+    code: 'RATE_LIMIT_USER',
   },
   keyGenerator: (req) => {
     const a = req.auth;
-    if (a?.kind === "parent") return `api-user:parent:${a.parentId}`;
+    if (a?.kind === 'parent') return `api-user:parent:${a.parentId}`;
     return `api-user:parent-fallback:${clientKey(req)}`;
   },
-  handler: limitExceededHandler("api-user-parent"),
+  handler: limitExceededHandler('api-user-parent'),
 });
 
 /**
  * Tras `requireAuth`: límite adicional por cuenta (menor o tutor), independiente de la IP.
  */
-export function authenticatedUserRateLimiter(req: Request, res: Response, next: NextFunction): void {
-  if (req.auth?.kind === "parent") {
+export function authenticatedUserRateLimiter(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  if (req.auth?.kind === 'parent') {
     parentApiUserLimiter(req, res, next);
     return;
   }
-  if (req.auth?.kind === "child") {
+  if (req.auth?.kind === 'child') {
     childApiUserLimiter(req, res, next);
     return;
   }
@@ -129,15 +139,16 @@ export const friendRequestBurstLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Estás enviando solicitudes de amistad muy seguido. Esperá un minuto e intentá de nuevo.",
-    code: "FRIEND_REQUEST_BURST",
+    error:
+      'Estás enviando solicitudes de amistad muy seguido. Esperá un minuto e intentá de nuevo.',
+    code: 'FRIEND_REQUEST_BURST',
   },
   keyGenerator: (req) => {
     const a = req.auth;
-    if (a?.kind === "child") return `friend-req-burst:${a.userId}`;
+    if (a?.kind === 'child') return `friend-req-burst:${a.userId}`;
     return `friend-req-burst:n:${clientKey(req)}`;
   },
-  handler: limitExceededHandler("friend-request-burst"),
+  handler: limitExceededHandler('friend-request-burst'),
 });
 
 /** Límite sostenido de solicitudes de amistad salientes en una ventana más larga. */
@@ -147,15 +158,15 @@ export const friendRequestWindowLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Llegaste al límite de solicitudes de amistad por ahora. Probá más tarde.",
-    code: "FRIEND_REQUEST_LIMIT",
+    error: 'Llegaste al límite de solicitudes de amistad por ahora. Probá más tarde.',
+    code: 'FRIEND_REQUEST_LIMIT',
   },
   keyGenerator: (req) => {
     const a = req.auth;
-    if (a?.kind === "child") return `friend-req-win:${a.userId}`;
+    if (a?.kind === 'child') return `friend-req-win:${a.userId}`;
     return `friend-req-win:n:${clientKey(req)}`;
   },
-  handler: limitExceededHandler("friend-request-window"),
+  handler: limitExceededHandler('friend-request-window'),
 });
 
 /**
@@ -169,11 +180,11 @@ export const strictLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Demasiados intentos en poco tiempo. Esperá e intentá de nuevo.",
-    code: "RATE_LIMIT_STRICT",
+    error: 'Demasiados intentos en poco tiempo. Esperá e intentá de nuevo.',
+    code: 'RATE_LIMIT_STRICT',
   },
   keyGenerator: (req) => `rl-strict:${clientKey(req)}`,
-  handler: limitExceededHandler("strict"),
+  handler: limitExceededHandler('strict'),
 });
 
 /** Operaciones de escritura “normales” (distinto contador a `authWrite` por IP). */
@@ -182,9 +193,12 @@ export const mediumLimiter = rateLimit({
   max: env.rateLimitMediumMax,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Límite de solicitudes. Probá de nuevo en unos segundos.", code: "RATE_LIMIT_MEDIUM" },
+  message: {
+    error: 'Límite de solicitudes. Probá de nuevo en unos segundos.',
+    code: 'RATE_LIMIT_MEDIUM',
+  },
   keyGenerator: (req) => `rl-medium:${clientKey(req)}`,
-  handler: limitExceededHandler("medium"),
+  handler: limitExceededHandler('medium'),
 });
 
 /** Muchas lecturas puntuales (GET) sin compartir contador con el límite general de `/api` si se monta aparte). */
@@ -193,9 +207,9 @@ export const generousLimiter = rateLimit({
   max: env.rateLimitGenerousMax,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Demasiadas consultas. Esperá un momento.", code: "RATE_LIMIT_GENEROUS" },
+  message: { error: 'Demasiadas consultas. Esperá un momento.', code: 'RATE_LIMIT_GENEROUS' },
   keyGenerator: (req) => `rl-generous:${clientKey(req)}`,
-  handler: limitExceededHandler("generous"),
+  handler: limitExceededHandler('generous'),
 });
 
 /** Denuncias creadas por el mismo menor en 24 h (anti-spam de reportes). */
@@ -205,13 +219,13 @@ export const contentReportUserLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Llegaste al límite de denuncias por día. Si hace falta, pedí ayuda a un tutor.",
-    code: "CONTENT_REPORT_LIMIT",
+    error: 'Llegaste al límite de denuncias por día. Si hace falta, pedí ayuda a un tutor.',
+    code: 'CONTENT_REPORT_LIMIT',
   },
   keyGenerator: (req) => {
     const a = req.auth;
-    if (a?.kind === "child") return `content-report-user:${a.userId}`;
+    if (a?.kind === 'child') return `content-report-user:${a.userId}`;
     return `content-report-user:n:${clientKey(req)}`;
   },
-  handler: limitExceededHandler("content-report-user"),
+  handler: limitExceededHandler('content-report-user'),
 });

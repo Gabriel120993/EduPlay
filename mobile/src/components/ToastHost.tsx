@@ -6,7 +6,13 @@ import { pingNotificationBell } from "../lib/notificationBellBus";
 import { setToastListener, type ToastVariant, type ToastVisual } from "../lib/toastBus";
 import { playError, playReward, playSuccess } from "../services/soundManager";
 
-const SHOW_MS = { success: 2600, error: 4000, achievement: 3600, chat: 3200, parentAlert: 4200 } as const;
+const SHOW_MS = {
+  success: 2600,
+  error: 4000,
+  achievement: 3600,
+  chat: 3200,
+  parentAlert: 4200,
+} as const;
 const TAB_BAR_EXTRA = 52;
 
 export function ToastHost() {
@@ -119,7 +125,7 @@ export function ToastHost() {
               easing: Easing.inOut(Easing.sin),
               useNativeDriver: true,
             }),
-          ])
+          ]),
         );
         iconLoopRef.current.start();
       } else if (v === "error") {
@@ -144,7 +150,7 @@ export function ToastHost() {
         hide();
       }, duration);
     },
-    [hide, iconRotate, opacity, scale, shakeX, translateY]
+    [hide, iconRotate, opacity, scale, shakeX, translateY],
   );
 
   const showRef = useRef(show);
@@ -197,7 +203,9 @@ export function ToastHost() {
               >
                 🏆
               </Animated.Text>
-              <Text style={[styles.text, styles.textMultiline, styles.textAchievement]}>{message}</Text>
+              <Text style={[styles.text, styles.textMultiline, styles.textAchievement]}>
+                {message}
+              </Text>
             </View>
           ) : isChat ? (
             <View style={styles.row}>
@@ -211,7 +219,9 @@ export function ToastHost() {
               <Text style={styles.trophy} allowFontScaling={false}>
                 ⚠️
               </Text>
-              <Text style={[styles.text, styles.textMultiline, styles.textParentAlert]}>{message}</Text>
+              <Text style={[styles.text, styles.textMultiline, styles.textParentAlert]}>
+                {message}
+              </Text>
             </View>
           ) : (
             <Text style={styles.text}>{message}</Text>

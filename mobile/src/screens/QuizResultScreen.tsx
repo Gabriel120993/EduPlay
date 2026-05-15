@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -65,7 +59,9 @@ export function QuizResultScreen({ route, navigation }: Props) {
   const diffLabel = difficulty ?? "EASY";
   const otherGameTitle = useMemo(() => {
     const label = otherGameUi?.label ?? otherGameCategory;
-    return gameMode === "visual" ? `Juego visual · ${label} · ${diffLabel}` : `Quiz · ${label} · ${diffLabel}`;
+    return gameMode === "visual"
+      ? `Juego visual · ${label} · ${diffLabel}`
+      : `Quiz · ${label} · ${diffLabel}`;
   }, [gameMode, otherGameCategory, otherGameUi?.label, diffLabel]);
 
   useEffect(() => {
@@ -75,7 +71,9 @@ export function QuizResultScreen({ route, navigation }: Props) {
       try {
         const c = category?.trim().toLowerCase();
         const list =
-          c && c !== "mixed" ? await getEducationalContent({ category: c }) : await getEducationalContent();
+          c && c !== "mixed"
+            ? await getEducationalContent({ category: c })
+            : await getEducationalContent();
         if (!cancelled) setSuggestedContent(list[0] ?? null);
       } catch {
         if (!cancelled) setSuggestedContent(null);
@@ -131,7 +129,12 @@ export function QuizResultScreen({ route, navigation }: Props) {
     >
       <View style={styles.circleWrap}>
         <View style={styles.circleOuter}>
-          <View style={[styles.circleFill, { height: `${Math.round(pct * 100)}%`, backgroundColor: fillColor }]} />
+          <View
+            style={[
+              styles.circleFill,
+              { height: `${Math.round(pct * 100)}%`, backgroundColor: fillColor },
+            ]}
+          />
           <Text style={styles.scoreInCircle}>
             {score}/{total}
           </Text>
@@ -140,7 +143,12 @@ export function QuizResultScreen({ route, navigation }: Props) {
 
       <View style={styles.starsRow}>
         {Array.from({ length: 5 }).map((_, i) => (
-          <AppIcon key={`star-${i}`} name={i < stars ? "star" : "star-outline"} color={colors.primary} size="lg" />
+          <AppIcon
+            key={`star-${i}`}
+            name={i < stars ? "star" : "star-outline"}
+            color={colors.primary}
+            size="lg"
+          />
         ))}
       </View>
 
@@ -191,7 +199,9 @@ export function QuizResultScreen({ route, navigation }: Props) {
             style={({ pressed }) => [styles.suggestCard, pressed && styles.suggestCardPressed]}
             accessibilityRole="button"
             accessibilityLabel={
-              suggestedContent ? `Abrir contenido: ${suggestedContent.title}` : "Explorar más contenido"
+              suggestedContent
+                ? `Abrir contenido: ${suggestedContent.title}`
+                : "Explorar más contenido"
             }
           >
             <View style={styles.suggestIconWrap}>

@@ -22,9 +22,9 @@ export function ParentIapProvider({ children }: { children: ReactNode }) {
 
   const [productsLoading, setProductsLoading] = useState(true);
   const [storeQueryFailed, setStoreQueryFailed] = useState(false);
-  const [detailsByProductId, setDetailsByProductId] = useState<ReadonlyMap<string, PremiumStoreProductDetail>>(
-    () => new Map()
-  );
+  const [detailsByProductId, setDetailsByProductId] = useState<
+    ReadonlyMap<string, PremiumStoreProductDetail>
+  >(() => new Map());
   const [purchaseBusy, setPurchaseBusy] = useState(false);
   const [restoreBusy, setRestoreBusy] = useState(false);
 
@@ -58,7 +58,9 @@ export function ParentIapProvider({ children }: { children: ReactNode }) {
       try {
         await connectIapSafe();
         if (cancelled) return;
-        const { responseCode, results } = await InAppPurchases.getProductsAsync([...PREMIUM_STORE_PRODUCT_IDS]);
+        const { responseCode, results } = await InAppPurchases.getProductsAsync([
+          ...PREMIUM_STORE_PRODUCT_IDS,
+        ]);
         if (cancelled) return;
         if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
           const map = new Map<string, PremiumStoreProductDetail>();
@@ -126,7 +128,10 @@ export function ParentIapProvider({ children }: { children: ReactNode }) {
       }
 
       if (anyOk) {
-        return { ok: true, message: "Compras restauradas. Ya tenés acceso Premium en esta cuenta." };
+        return {
+          ok: true,
+          message: "Compras restauradas. Ya tenés acceso Premium en esta cuenta.",
+        };
       }
       return {
         ok: false,
@@ -157,7 +162,7 @@ export function ParentIapProvider({ children }: { children: ReactNode }) {
       restoreBusy,
       purchaseProduct,
       restorePurchases,
-    ]
+    ],
   );
 
   return <ParentIapContext.Provider value={value}>{children}</ParentIapContext.Provider>;
@@ -169,7 +174,7 @@ function isPremiumPurchaseState(state: InAppPurchaseState): boolean {
 
 async function syncPurchaseWithBackend(
   purchase: InAppPurchase,
-  refreshParent: () => Promise<void>
+  refreshParent: () => Promise<void>,
 ): Promise<boolean> {
   if (!getPremiumPlanByStoreProductId(purchase.productId)) return false;
   if (!isPremiumPurchaseState(purchase.purchaseState)) return false;

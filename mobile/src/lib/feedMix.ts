@@ -11,7 +11,9 @@ export const FEED_MIX_ORDER = ["GAME_RESULT", "POST", "ACHIEVEMENT"] as const;
  * (`interleaveFeedByPostType`). No volver a llamar esto con la lista completa: sería redundante.
  * Sí conviene después de **filtrar** (p. ej. por categoría), porque el orden global ya no aplica al subconjunto.
  */
-export function interleaveFeedPostsByType<T extends Pick<FeedPost, "type" | "createdAt" | "score">>(items: T[]): T[] {
+export function interleaveFeedPostsByType<T extends Pick<FeedPost, "type" | "createdAt" | "score">>(
+  items: T[],
+): T[] {
   const buckets = new Map<string, T[]>();
   for (const t of FEED_MIX_ORDER) {
     buckets.set(t, []);

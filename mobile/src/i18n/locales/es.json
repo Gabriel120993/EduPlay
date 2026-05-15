@@ -1,0 +1,39 @@
+{
+  "login": {
+    "title": "Iniciar sesión",
+    "registerTitle": "Crear cuenta",
+    "tutor": "Tutor",
+    "child": "Menor",
+    "email": "Correo electrónico",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "submitLogin": "Entrar",
+    "submitRegister": "Registrarme",
+    "switchToRegister": "¿No tenés cuenta? Registrate",
+    "switchToLogin": "¿Ya tenés cuenta? Iniciá sesión",
+    "rememberMe": "Recordar datos de acceso",
+    "acceptTerms": "Acepto términos y privacidad"
+  },
+  "home": {
+    "title": "Mi Inicio",
+    "ageSubtitle": "Contenido adaptado para tu edad ({{age}} años)",
+    "pendingBanner": "Tenés {{count}} aprobaciones pendientes de tu tutor.",
+    "recommendedTitle": "Recomendado para vos"
+  },
+  "explore": {
+    "title": "Explorar",
+    "loading": "Cargando contenido…",
+    "empty": "No hay contenido para mostrar todavía."
+  },
+  "profile": {
+    "title": "Logros",
+    "loading": "Cargando logros…"
+  },
+  "content": {
+    "loading": "Cargando…",
+    "saving": "Guardando...",
+    "complete": "Entendí / Aprendido",
+    "learned": "Aprendido",
+    "notFound": "Contenido no encontrado"
+  }
+}

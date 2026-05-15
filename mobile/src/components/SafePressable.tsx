@@ -28,7 +28,7 @@ export function SafePressable({
       lastPressRef.current = now;
       onPress(e);
     },
-    [onPress, minIntervalMs]
+    [onPress, minIntervalMs],
   );
 
   return <Pressable {...rest} disabled={disabled} onPress={handlePress} />;

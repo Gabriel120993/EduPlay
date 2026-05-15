@@ -9,7 +9,11 @@
     "start:clear": "expo start -c",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "lint": "eslint src index.ts",
+    "lint:fix": "eslint src index.ts --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" index.ts",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" index.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -26,25 +30,33 @@
     "expo-file-system": "55.0.13-canary-20260328-bdc6273",
     "expo-font": "55.0.5-canary-20260328-bdc6273",
     "expo-haptics": "55.0.10-canary-20260328-bdc6273",
+    "expo-localization": "55.0.10-canary-20260328-bdc6273",
     "expo-image": "55.0.7-canary-20260328-bdc6273",
     "expo-in-app-purchases": "^14.5.0",
     "expo-linear-gradient": "55.0.10-canary-20260328-bdc6273",
+    "i18next": "^24.2.3",
     "expo-notifications": "55.0.15-canary-20260328-bdc6273",
     "expo-secure-store": "55.0.10-canary-20260328-bdc6273",
     "expo-status-bar": "55.0.5-canary-20260328-bdc6273",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.4",
+    "react-i18next": "^15.4.1",
     "react-native-gesture-handler": "~2.30.0",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.23.0",
     "react-native-web": "~0.21.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.21.0",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "55.0.14-canary-20260328-bdc6273",
     "dotenv": "^17.3.1",
-    "typescript": "~5.9.2"
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.0.1",
+    "prettier": "^3.5.3",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.25.0"
   },
   "overrides": {
     "expo-font": "55.0.5-canary-20260328-bdc6273"

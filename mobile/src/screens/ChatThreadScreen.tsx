@@ -107,20 +107,17 @@ export function ChatThreadScreen({ route }: Props) {
 
   const canSend = draft.trim().length > 0 && !sending;
 
-  const submitReport = useCallback(
-    async (chatMessageId: string) => {
-      setReportingId(chatMessageId);
-      try {
-        await postContentReport({ targetType: "CHAT_MESSAGE", chatMessageId });
-        showToast("Gracias. Tu reporte fue enviado.", "success");
-      } catch (e) {
-        showToast(formatApiError(e, "No se pudo enviar el reporte."), "error");
-      } finally {
-        setReportingId(null);
-      }
-    },
-    []
-  );
+  const submitReport = useCallback(async (chatMessageId: string) => {
+    setReportingId(chatMessageId);
+    try {
+      await postContentReport({ targetType: "CHAT_MESSAGE", chatMessageId });
+      showToast("Gracias. Tu reporte fue enviado.", "success");
+    } catch (e) {
+      showToast(formatApiError(e, "No se pudo enviar el reporte."), "error");
+    } finally {
+      setReportingId(null);
+    }
+  }, []);
 
   const confirmReport = useCallback(
     (item: ChatThreadMessage) => {
@@ -134,10 +131,10 @@ export function ChatThreadScreen({ route }: Props) {
             style: "destructive",
             onPress: () => void submitReport(item.id),
           },
-        ]
+        ],
       );
     },
-    [submitReport]
+    [submitReport],
   );
 
   return (
@@ -172,7 +169,11 @@ export function ChatThreadScreen({ route }: Props) {
               : item.body || (item.blocked ? "" : "");
 
           const bubbleBg = blockedMine ? k.blockedMineBg : mine ? k.mineBubbleBg : k.peerBubbleBg;
-          const bubbleBorder = blockedMine ? k.blockedMineBorder : mine ? k.mineBubbleBorder : k.peerBubbleBorder;
+          const bubbleBorder = blockedMine
+            ? k.blockedMineBorder
+            : mine
+              ? k.mineBubbleBorder
+              : k.peerBubbleBorder;
           const textColor = blockedMine ? k.blockedMineText : mine ? k.mineText : k.peerText;
 
           const bubbleInner = (
@@ -267,19 +268,12 @@ export function ChatThreadScreen({ route }: Props) {
         <Pressable
           onPress={send}
           disabled={!canSend}
-          style={[
-            styles.sendFab,
-            { backgroundColor: canSend ? k.sendBg : k.sendBgDisabled },
-          ]}
+          style={[styles.sendFab, { backgroundColor: canSend ? k.sendBg : k.sendBgDisabled }]}
           accessibilityRole="button"
           accessibilityLabel="Enviar mensaje"
           accessibilityState={{ disabled: !canSend }}
         >
-          <AppIcon
-            name="send"
-            color={canSend ? k.sendIcon : k.sendIconDisabled}
-            size={22}
-          />
+          <AppIcon name="send" color={canSend ? k.sendIcon : k.sendIconDisabled} size={22} />
         </Pressable>
       </View>
     </KeyboardAvoidingView>

@@ -9,7 +9,11 @@ export function ParentOnboardingFinishProvider({
   children: ReactNode;
   onFinish: () => void;
 }) {
-  return <FinishParentOnboardingContext.Provider value={onFinish}>{children}</FinishParentOnboardingContext.Provider>;
+  return (
+    <FinishParentOnboardingContext.Provider value={onFinish}>
+      {children}
+    </FinishParentOnboardingContext.Provider>
+  );
 }
 
 export function useFinishParentOnboarding(): () => void {

@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import { prisma } from './prisma';
 
 /** Inicio del día UTC (00:00) para resets diarios y clave de `DailyTimeUsage.date`. */
 export function utcDayStart(d = new Date()): Date {
@@ -43,7 +43,7 @@ async function getTodayUsedSeconds(userId: string, day: Date): Promise<number> {
 function buildState(
   limitMin: number,
   usedSeconds: number,
-  dayStart: Date
+  dayStart: Date,
 ): Omit<ScreenTimeState, never> {
   const isUnlimited = limitMin === 0;
   if (isUnlimited) {
@@ -107,7 +107,7 @@ export async function getScreenTimeState(userId: string): Promise<ScreenTimeStat
   const usedSeconds = await getTodayUsedSeconds(userId, dayStart);
 
   const mirrorLimit = limitMin > 0 ? limitMin : DEFAULT_LIMIT_MINUTES;
-  let st = await prisma.screenTime.findUnique({ where: { userId } });
+  const st = await prisma.screenTime.findUnique({ where: { userId } });
   if (!st) {
     await prisma.screenTime.create({
       data: {
@@ -139,7 +139,10 @@ export async function getScreenTimeState(userId: string): Promise<ScreenTimeStat
 /**
  * Suma tiempo de uso (segundos) en el registro del día UTC actual.
  */
-export async function addScreenTimeSeconds(userId: string, deltaSeconds: number): Promise<ScreenTimeState | null> {
+export async function addScreenTimeSeconds(
+  userId: string,
+  deltaSeconds: number,
+): Promise<ScreenTimeState | null> {
   if (deltaSeconds <= 0) {
     return getScreenTimeState(userId);
   }

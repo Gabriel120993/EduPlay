@@ -1,17 +1,17 @@
-import type { Request, Response } from "express";
-import { ChallengeBucket } from "@prisma/client";
+import type { Request, Response } from 'express';
+import { ChallengeBucket } from '@prisma/client';
 
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
 import {
   applyGamifiedChallengeProgress,
   buildChallengeNotificationBlueprint,
   listGamifiedChallengesForUser,
-} from "../services/challenges.service";
+} from '../services/challenges.service';
 
 function assertChildSelf(req: Request, userId: string): boolean {
   const auth = req.auth;
-  return Boolean(auth && auth.kind === "child" && auth.userId === userId);
+  return Boolean(auth && auth.kind === 'child' && auth.userId === userId);
 }
 
 async function ensureUserExists(userId: string): Promise<boolean> {
@@ -20,27 +20,27 @@ async function ensureUserExists(userId: string): Promise<boolean> {
 }
 
 function parseBucket(raw: unknown): ChallengeBucket | null {
-  if (raw === "DAILY") return ChallengeBucket.DAILY;
-  if (raw === "WEEKLY") return ChallengeBucket.WEEKLY;
-  if (raw === "SPECIAL") return ChallengeBucket.SPECIAL;
+  if (raw === 'DAILY') return ChallengeBucket.DAILY;
+  if (raw === 'WEEKLY') return ChallengeBucket.WEEKLY;
+  if (raw === 'SPECIAL') return ChallengeBucket.SPECIAL;
   return null;
 }
 
 /** Retos diarios (3 rotativos), metas y progreso persistido. */
 export async function getChallengesDaily(req: Request, res: Response): Promise<void> {
-  const userId = req.params.id?.trim() ?? "";
+  const userId = req.params.id?.trim() ?? '';
   if (!userId) {
-    res.status(400).json({ error: "id de usuario es obligatorio." });
+    res.status(400).json({ error: 'id de usuario es obligatorio.' });
     return;
   }
   if (!assertChildSelf(req, userId)) {
-    res.status(403).json({ error: "Solo el menor puede consultar sus retos." });
+    res.status(403).json({ error: 'Solo el menor puede consultar sus retos.' });
     return;
   }
 
   try {
     if (!(await ensureUserExists(userId))) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
     const pack = await listGamifiedChallengesForUser(userId);
@@ -59,26 +59,26 @@ export async function getChallengesDaily(req: Request, res: Response): Promise<v
       })),
     });
   } catch (err) {
-    logError("challenges.daily", err);
-    res.status(500).json({ error: "Error al obtener los retos diarios." });
+    logError('challenges.daily', err);
+    res.status(500).json({ error: 'Error al obtener los retos diarios.' });
   }
 }
 
 /** Reto semanal grande (1 por semana lunes UTC). */
 export async function getChallengesWeekly(req: Request, res: Response): Promise<void> {
-  const userId = req.params.id?.trim() ?? "";
+  const userId = req.params.id?.trim() ?? '';
   if (!userId) {
-    res.status(400).json({ error: "id de usuario es obligatorio." });
+    res.status(400).json({ error: 'id de usuario es obligatorio.' });
     return;
   }
   if (!assertChildSelf(req, userId)) {
-    res.status(403).json({ error: "Solo el menor puede consultar sus retos." });
+    res.status(403).json({ error: 'Solo el menor puede consultar sus retos.' });
     return;
   }
 
   try {
     if (!(await ensureUserExists(userId))) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
     const pack = await listGamifiedChallengesForUser(userId);
@@ -102,26 +102,26 @@ export async function getChallengesWeekly(req: Request, res: Response): Promise<
       },
     });
   } catch (err) {
-    logError("challenges.weekly", err);
-    res.status(500).json({ error: "Error al obtener el reto semanal." });
+    logError('challenges.weekly', err);
+    res.status(500).json({ error: 'Error al obtener el reto semanal.' });
   }
 }
 
 /** Retos especiales de eventos activos en la ventana calendario configurada. */
 export async function getChallengesSpecials(req: Request, res: Response): Promise<void> {
-  const userId = req.params.id?.trim() ?? "";
+  const userId = req.params.id?.trim() ?? '';
   if (!userId) {
-    res.status(400).json({ error: "id de usuario es obligatorio." });
+    res.status(400).json({ error: 'id de usuario es obligatorio.' });
     return;
   }
   if (!assertChildSelf(req, userId)) {
-    res.status(403).json({ error: "Solo el menor puede consultar sus retos." });
+    res.status(403).json({ error: 'Solo el menor puede consultar sus retos.' });
     return;
   }
 
   try {
     if (!(await ensureUserExists(userId))) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
     const pack = await listGamifiedChallengesForUser(userId);
@@ -140,8 +140,8 @@ export async function getChallengesSpecials(req: Request, res: Response): Promis
       })),
     });
   } catch (err) {
-    logError("challenges.specials", err);
-    res.status(500).json({ error: "Error al obtener los retos especiales." });
+    logError('challenges.specials', err);
+    res.status(500).json({ error: 'Error al obtener los retos especiales.' });
   }
 }
 
@@ -152,19 +152,19 @@ export async function getChallengesSpecials(req: Request, res: Response): Promis
  * - Celebración al completar (payload sugerido para animación especial en app).
  */
 export async function getChallengesNotifications(req: Request, res: Response): Promise<void> {
-  const userId = req.params.id?.trim() ?? "";
+  const userId = req.params.id?.trim() ?? '';
   if (!userId) {
-    res.status(400).json({ error: "id de usuario es obligatorio." });
+    res.status(400).json({ error: 'id de usuario es obligatorio.' });
     return;
   }
   if (!assertChildSelf(req, userId)) {
-    res.status(403).json({ error: "Solo el menor puede consultar sus retos." });
+    res.status(403).json({ error: 'Solo el menor puede consultar sus retos.' });
     return;
   }
 
   try {
     if (!(await ensureUserExists(userId))) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
     const blueprint = buildChallengeNotificationBlueprint();
@@ -172,31 +172,31 @@ export async function getChallengesNotifications(req: Request, res: Response): P
       userId,
       ...blueprint,
       notes: [
-        "Programá estas notificaciones en hora local del dispositivo (expo-notifications) o enviá push desde un cron con la zona del usuario.",
-        "Al completar un reto, usá celebrationDefaults y el campo rewardsGranted.celebration devuelto en /progress.",
+        'Programá estas notificaciones en hora local del dispositivo (expo-notifications) o enviá push desde un cron con la zona del usuario.',
+        'Al completar un reto, usá celebrationDefaults y el campo rewardsGranted.celebration devuelto en /progress.',
       ],
     });
   } catch (err) {
-    logError("challenges.notifications", err);
-    res.status(500).json({ error: "Error al armar el plan de notificaciones." });
+    logError('challenges.notifications', err);
+    res.status(500).json({ error: 'Error al armar el plan de notificaciones.' });
   }
 }
 
 /** Resumen: diarios + semanal + especiales + catálogo de recompensas. */
 export async function getChallengesOverview(req: Request, res: Response): Promise<void> {
-  const userId = req.params.id?.trim() ?? "";
+  const userId = req.params.id?.trim() ?? '';
   if (!userId) {
-    res.status(400).json({ error: "id de usuario es obligatorio." });
+    res.status(400).json({ error: 'id de usuario es obligatorio.' });
     return;
   }
   if (!assertChildSelf(req, userId)) {
-    res.status(403).json({ error: "Solo el menor puede consultar sus retos." });
+    res.status(403).json({ error: 'Solo el menor puede consultar sus retos.' });
     return;
   }
 
   try {
     if (!(await ensureUserExists(userId))) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
     const pack = await listGamifiedChallengesForUser(userId);
@@ -211,8 +211,8 @@ export async function getChallengesOverview(req: Request, res: Response): Promis
       notifications,
     });
   } catch (err) {
-    logError("challenges.overview", err);
-    res.status(500).json({ error: "Error al obtener el resumen de retos." });
+    logError('challenges.overview', err);
+    res.status(500).json({ error: 'Error al obtener el resumen de retos.' });
   }
 }
 
@@ -221,13 +221,13 @@ export async function getChallengesOverview(req: Request, res: Response): Promis
  * Body: `{ bucket: "DAILY"|"WEEKLY"|"SPECIAL", challengeSlug: string, increment?: number, setProgress?: number }`
  */
 export async function postChallengeProgress(req: Request, res: Response): Promise<void> {
-  const userId = req.params.id?.trim() ?? "";
+  const userId = req.params.id?.trim() ?? '';
   if (!userId) {
-    res.status(400).json({ error: "id de usuario es obligatorio." });
+    res.status(400).json({ error: 'id de usuario es obligatorio.' });
     return;
   }
   if (!assertChildSelf(req, userId)) {
-    res.status(403).json({ error: "Solo el menor puede actualizar sus retos." });
+    res.status(403).json({ error: 'Solo el menor puede actualizar sus retos.' });
     return;
   }
 
@@ -239,32 +239,40 @@ export async function postChallengeProgress(req: Request, res: Response): Promis
   };
 
   const bucket = parseBucket(body.bucket);
-  const slug = typeof body.challengeSlug === "string" ? body.challengeSlug.trim() : "";
+  const slug = typeof body.challengeSlug === 'string' ? body.challengeSlug.trim() : '';
   if (!bucket || !slug) {
-    res.status(400).json({ error: "bucket y challengeSlug son obligatorios." });
+    res.status(400).json({ error: 'bucket y challengeSlug son obligatorios.' });
     return;
   }
 
   const increment =
-    body.increment == null ? undefined : Number.isFinite(Number(body.increment)) ? Number(body.increment) : NaN;
+    body.increment == null
+      ? undefined
+      : Number.isFinite(Number(body.increment))
+        ? Number(body.increment)
+        : NaN;
   const setProgress =
-    body.setProgress == null ? undefined : Number.isFinite(Number(body.setProgress)) ? Number(body.setProgress) : NaN;
+    body.setProgress == null
+      ? undefined
+      : Number.isFinite(Number(body.setProgress))
+        ? Number(body.setProgress)
+        : NaN;
   if (increment !== undefined && (Number.isNaN(increment) || increment < 0)) {
-    res.status(400).json({ error: "increment inválido." });
+    res.status(400).json({ error: 'increment inválido.' });
     return;
   }
   if (setProgress !== undefined && (Number.isNaN(setProgress) || setProgress < 0)) {
-    res.status(400).json({ error: "setProgress inválido." });
+    res.status(400).json({ error: 'setProgress inválido.' });
     return;
   }
   if (increment === undefined && setProgress === undefined) {
-    res.status(400).json({ error: "increment o setProgress es obligatorio." });
+    res.status(400).json({ error: 'increment o setProgress es obligatorio.' });
     return;
   }
 
   try {
     if (!(await ensureUserExists(userId))) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
     const result = await applyGamifiedChallengeProgress({
@@ -277,24 +285,24 @@ export async function postChallengeProgress(req: Request, res: Response): Promis
     res.json(result);
   } catch (err) {
     if (err instanceof Error) {
-      if (err.message === "INVALID_PROGRESS_DELTA") {
-        res.status(400).json({ error: "Progreso inválido." });
+      if (err.message === 'INVALID_PROGRESS_DELTA') {
+        res.status(400).json({ error: 'Progreso inválido.' });
         return;
       }
-      if (err.message === "SPECIAL_NOT_ACTIVE") {
-        res.status(400).json({ error: "Este reto especial no está activo en la fecha actual." });
+      if (err.message === 'SPECIAL_NOT_ACTIVE') {
+        res.status(400).json({ error: 'Este reto especial no está activo en la fecha actual.' });
         return;
       }
-      if (err.message === "CHALLENGE_ROW_NOT_FOUND") {
-        res.status(404).json({ error: "No existe el reto para el periodo actual." });
+      if (err.message === 'CHALLENGE_ROW_NOT_FOUND') {
+        res.status(404).json({ error: 'No existe el reto para el periodo actual.' });
         return;
       }
-      if (err.message === "UNKNOWN_CHALLENGE_DEF") {
-        res.status(400).json({ error: "Reto desconocido." });
+      if (err.message === 'UNKNOWN_CHALLENGE_DEF') {
+        res.status(400).json({ error: 'Reto desconocido.' });
         return;
       }
     }
-    logError("challenges.progress", err);
-    res.status(500).json({ error: "Error al actualizar el progreso del reto." });
+    logError('challenges.progress', err);
+    res.status(500).json({ error: 'Error al actualizar el progreso del reto.' });
   }
 }

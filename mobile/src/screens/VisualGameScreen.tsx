@@ -9,7 +9,10 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import type { NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -20,8 +23,17 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { formatVisualResumeLabel, saveLastPlayedGame } from "../lib/continueLearningStorage";
 import { showToast } from "../lib/toastBus";
-import { completeQuizSession, getVisualQuestions, notifyMissionRewardsFromApiResponse } from "../services/api";
-import { playClick, playError, playSuccess, preloadGameFeedbackSounds } from "../services/soundManager";
+import {
+  completeQuizSession,
+  getVisualQuestions,
+  notifyMissionRewardsFromApiResponse,
+} from "../services/api";
+import {
+  playClick,
+  playError,
+  playSuccess,
+  preloadGameFeedbackSounds,
+} from "../services/soundManager";
 import type { VisualQuestionItem } from "../types/api";
 import type { RootStackParamList } from "../navigation/types";
 import { screenEdge, space } from "../theme/tokens";
@@ -72,7 +84,7 @@ function question(
   options: string[],
   correct: number,
   category: string,
-  difficulty: QuizDifficulty
+  difficulty: QuizDifficulty,
 ): VisualQuestionItem {
   return {
     id,
@@ -94,16 +106,96 @@ const VISUAL_GAME_CONFIG: Record<VisualGameId, VisualGameConfig> = {
     xpPerLevel: 10,
     completionBonus: 50,
     fallbackQuestions: [
-      question("planet-mars", "Foto realista de Marte", "¿Qué planeta es?", ["Marte", "Venus", "Mercurio", "Júpiter"], 0, "astronomy", "EASY"),
-      question("planet-saturn", "Saturno con anillos", "¿Qué planeta tiene anillos?", ["Urano", "Saturno", "Neptuno", "Tierra"], 1, "astronomy", "EASY"),
-      question("planet-earth", "Planeta Tierra desde el espacio", "¿Nuestro planeta?", ["Marte", "Tierra", "Venus", "Júpiter"], 1, "astronomy", "EASY"),
-      question("planet-jupiter", "Júpiter gigante gaseoso", "¿Cuál es el planeta más grande?", ["Júpiter", "Marte", "Tierra", "Mercurio"], 0, "astronomy", "EASY"),
-      question("planet-venus", "Venus cubierto de nubes", "¿Cuál es el planeta más caliente?", ["Neptuno", "Venus", "Saturno", "Marte"], 1, "astronomy", "EASY"),
-      question("planet-mercury", "Mercurio gris rocoso", "¿Cuál está más cerca del Sol?", ["Mercurio", "Tierra", "Marte", "Urano"], 0, "astronomy", "EASY"),
-      question("planet-neptune", "Neptuno azul", "¿Qué planeta es azul intenso y lejano?", ["Saturno", "Neptuno", "Venus", "Mercurio"], 1, "astronomy", "EASY"),
-      question("planet-uranus", "Urano planeta helado", "¿Qué planeta gira casi de costado?", ["Urano", "Júpiter", "Marte", "Tierra"], 0, "astronomy", "EASY"),
-      question("moon", "La Luna", "¿Qué astro natural acompaña a la Tierra?", ["El Sol", "La Luna", "Marte", "Saturno"], 1, "astronomy", "EASY"),
-      question("sun", "El Sol estrella", "¿Qué estrella ilumina nuestro sistema?", ["Sirio", "El Sol", "La Luna", "Venus"], 1, "astronomy", "EASY"),
+      question(
+        "planet-mars",
+        "Foto realista de Marte",
+        "¿Qué planeta es?",
+        ["Marte", "Venus", "Mercurio", "Júpiter"],
+        0,
+        "astronomy",
+        "EASY",
+      ),
+      question(
+        "planet-saturn",
+        "Saturno con anillos",
+        "¿Qué planeta tiene anillos?",
+        ["Urano", "Saturno", "Neptuno", "Tierra"],
+        1,
+        "astronomy",
+        "EASY",
+      ),
+      question(
+        "planet-earth",
+        "Planeta Tierra desde el espacio",
+        "¿Nuestro planeta?",
+        ["Marte", "Tierra", "Venus", "Júpiter"],
+        1,
+        "astronomy",
+        "EASY",
+      ),
+      question(
+        "planet-jupiter",
+        "Júpiter gigante gaseoso",
+        "¿Cuál es el planeta más grande?",
+        ["Júpiter", "Marte", "Tierra", "Mercurio"],
+        0,
+        "astronomy",
+        "EASY",
+      ),
+      question(
+        "planet-venus",
+        "Venus cubierto de nubes",
+        "¿Cuál es el planeta más caliente?",
+        ["Neptuno", "Venus", "Saturno", "Marte"],
+        1,
+        "astronomy",
+        "EASY",
+      ),
+      question(
+        "planet-mercury",
+        "Mercurio gris rocoso",
+        "¿Cuál está más cerca del Sol?",
+        ["Mercurio", "Tierra", "Marte", "Urano"],
+        0,
+        "astronomy",
+        "EASY",
+      ),
+      question(
+        "planet-neptune",
+        "Neptuno azul",
+        "¿Qué planeta es azul intenso y lejano?",
+        ["Saturno", "Neptuno", "Venus", "Mercurio"],
+        1,
+        "astronomy",
+        "EASY",
+      ),
+      question(
+        "planet-uranus",
+        "Urano planeta helado",
+        "¿Qué planeta gira casi de costado?",
+        ["Urano", "Júpiter", "Marte", "Tierra"],
+        0,
+        "astronomy",
+        "EASY",
+      ),
+      question(
+        "moon",
+        "La Luna",
+        "¿Qué astro natural acompaña a la Tierra?",
+        ["El Sol", "La Luna", "Marte", "Saturno"],
+        1,
+        "astronomy",
+        "EASY",
+      ),
+      question(
+        "sun",
+        "El Sol estrella",
+        "¿Qué estrella ilumina nuestro sistema?",
+        ["Sirio", "El Sol", "La Luna", "Venus"],
+        1,
+        "astronomy",
+        "EASY",
+      ),
     ],
   },
   "identify-country": {
@@ -113,21 +205,141 @@ const VISUAL_GAME_CONFIG: Record<VisualGameId, VisualGameConfig> = {
     xpPerLevel: 15,
     completionBonus: 100,
     fallbackQuestions: [
-      question("flag-argentina", "Bandera de Argentina", "¿De qué país es esta bandera?", ["Argentina", "Uruguay", "Chile", "Perú"], 0, "geography", "EASY"),
-      question("map-brazil", "Mapa de Brasil", "¿Qué país tiene esta forma?", ["México", "Brasil", "Colombia", "España"], 1, "geography", "EASY"),
-      question("eiffel-tower", "Torre Eiffel", "¿En qué país está?", ["Italia", "Francia", "Alemania", "Brasil"], 1, "geography", "EASY"),
-      question("flag-japan", "Bandera de Japón", "¿Qué país usa esta bandera?", ["China", "Japón", "Corea", "India"], 1, "geography", "EASY"),
-      question("map-italy", "Mapa de Italia forma de bota", "¿Qué país tiene forma de bota?", ["Italia", "Grecia", "Portugal", "Noruega"], 0, "geography", "EASY"),
-      question("flag-canada", "Bandera de Canadá", "¿De qué país es la hoja de maple?", ["Canadá", "Estados Unidos", "Reino Unido", "Francia"], 0, "geography", "MEDIUM"),
-      question("pyramids", "Pirámides de Giza", "¿En qué país están estas pirámides?", ["Egipto", "Marruecos", "Grecia", "Perú"], 0, "geography", "MEDIUM"),
-      question("flag-brazil", "Bandera de Brasil", "¿Qué país tiene esta bandera?", ["Argentina", "Brasil", "Bolivia", "Chile"], 1, "geography", "EASY"),
-      question("map-australia", "Mapa de Australia", "¿Qué país y continente aparece?", ["Australia", "India", "Sudáfrica", "China"], 0, "geography", "MEDIUM"),
-      question("statue-liberty", "Estatua de la Libertad", "¿En qué país está?", ["Francia", "Estados Unidos", "Canadá", "Italia"], 1, "geography", "EASY"),
-      question("flag-spain", "Bandera de España", "¿De qué país es esta bandera?", ["México", "España", "Colombia", "Ecuador"], 1, "geography", "EASY"),
-      question("machu-picchu", "Machu Picchu", "¿En qué país está Machu Picchu?", ["Perú", "Chile", "Argentina", "Bolivia"], 0, "geography", "MEDIUM"),
-      question("flag-mexico", "Bandera de México", "¿De qué país es esta bandera?", ["Italia", "México", "Portugal", "Brasil"], 1, "geography", "EASY"),
-      question("big-ben", "Big Ben Londres", "¿En qué país está este monumento?", ["Irlanda", "Reino Unido", "España", "Francia"], 1, "geography", "MEDIUM"),
-      question("flag-chile", "Bandera de Chile", "¿De qué país es esta bandera?", ["Chile", "Cuba", "Panamá", "Paraguay"], 0, "geography", "EASY"),
+      question(
+        "flag-argentina",
+        "Bandera de Argentina",
+        "¿De qué país es esta bandera?",
+        ["Argentina", "Uruguay", "Chile", "Perú"],
+        0,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "map-brazil",
+        "Mapa de Brasil",
+        "¿Qué país tiene esta forma?",
+        ["México", "Brasil", "Colombia", "España"],
+        1,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "eiffel-tower",
+        "Torre Eiffel",
+        "¿En qué país está?",
+        ["Italia", "Francia", "Alemania", "Brasil"],
+        1,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "flag-japan",
+        "Bandera de Japón",
+        "¿Qué país usa esta bandera?",
+        ["China", "Japón", "Corea", "India"],
+        1,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "map-italy",
+        "Mapa de Italia forma de bota",
+        "¿Qué país tiene forma de bota?",
+        ["Italia", "Grecia", "Portugal", "Noruega"],
+        0,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "flag-canada",
+        "Bandera de Canadá",
+        "¿De qué país es la hoja de maple?",
+        ["Canadá", "Estados Unidos", "Reino Unido", "Francia"],
+        0,
+        "geography",
+        "MEDIUM",
+      ),
+      question(
+        "pyramids",
+        "Pirámides de Giza",
+        "¿En qué país están estas pirámides?",
+        ["Egipto", "Marruecos", "Grecia", "Perú"],
+        0,
+        "geography",
+        "MEDIUM",
+      ),
+      question(
+        "flag-brazil",
+        "Bandera de Brasil",
+        "¿Qué país tiene esta bandera?",
+        ["Argentina", "Brasil", "Bolivia", "Chile"],
+        1,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "map-australia",
+        "Mapa de Australia",
+        "¿Qué país y continente aparece?",
+        ["Australia", "India", "Sudáfrica", "China"],
+        0,
+        "geography",
+        "MEDIUM",
+      ),
+      question(
+        "statue-liberty",
+        "Estatua de la Libertad",
+        "¿En qué país está?",
+        ["Francia", "Estados Unidos", "Canadá", "Italia"],
+        1,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "flag-spain",
+        "Bandera de España",
+        "¿De qué país es esta bandera?",
+        ["México", "España", "Colombia", "Ecuador"],
+        1,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "machu-picchu",
+        "Machu Picchu",
+        "¿En qué país está Machu Picchu?",
+        ["Perú", "Chile", "Argentina", "Bolivia"],
+        0,
+        "geography",
+        "MEDIUM",
+      ),
+      question(
+        "flag-mexico",
+        "Bandera de México",
+        "¿De qué país es esta bandera?",
+        ["Italia", "México", "Portugal", "Brasil"],
+        1,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "big-ben",
+        "Big Ben Londres",
+        "¿En qué país está este monumento?",
+        ["Irlanda", "Reino Unido", "España", "Francia"],
+        1,
+        "geography",
+        "MEDIUM",
+      ),
+      question(
+        "flag-chile",
+        "Bandera de Chile",
+        "¿De qué país es esta bandera?",
+        ["Chile", "Cuba", "Panamá", "Paraguay"],
+        0,
+        "geography",
+        "EASY",
+      ),
     ],
   },
   "dino-names": {
@@ -137,16 +349,96 @@ const VISUAL_GAME_CONFIG: Record<VisualGameId, VisualGameConfig> = {
     xpPerLevel: 12,
     completionBonus: 60,
     fallbackQuestions: [
-      question("tyrannosaurus-rex", "Tyrannosaurus rex", "¿Qué dinosaurio es?", ["Triceratops", "Tiranosaurio rex", "Estegosaurio", "Velociraptor"], 1, "history", "EASY"),
-      question("triceratops", "Triceratops", "¿Cuál tenía tres cuernos?", ["Triceratops", "Diplodocus", "Anquilosaurio", "Spinosaurus"], 0, "history", "EASY"),
-      question("stegosaurus", "Stegosaurus placas dorsales", "¿Qué dinosaurio tenía placas en el lomo?", ["Estegosaurio", "T. rex", "Iguanodon", "Pteranodon"], 0, "history", "EASY"),
-      question("velociraptor", "Velociraptor", "¿Cuál era pequeño y veloz?", ["Velociraptor", "Braquiosaurio", "Triceratops", "Estegosaurio"], 0, "history", "EASY"),
-      question("brachiosaurus", "Braquiosaurio cuello largo", "¿Cuál tenía cuello muy largo?", ["Braquiosaurio", "T. rex", "Anquilosaurio", "Carnotaurus"], 0, "history", "EASY"),
-      question("spinosaurus", "Spinosaurus vela dorsal", "¿Cuál tenía una vela en la espalda?", ["Spinosaurus", "Diplodocus", "Triceratops", "Velociraptor"], 0, "history", "EASY"),
-      question("ankylosaurus", "Anquilosaurio armadura", "¿Cuál tenía armadura y cola fuerte?", ["Anquilosaurio", "Pteranodon", "Iguanodon", "T. rex"], 0, "history", "EASY"),
-      question("pteranodon", "Pteranodon volador", "¿Cuál podía volar?", ["Pteranodon", "Triceratops", "Braquiosaurio", "Estegosaurio"], 0, "history", "EASY"),
-      question("diplodocus", "Diplodocus", "¿Cuál era largo y herbívoro?", ["Diplodocus", "Velociraptor", "Carnotaurus", "Spinosaurus"], 0, "history", "EASY"),
-      question("carnotaurus", "Carnotaurus", "¿Cuál tenía cuernos cortos sobre los ojos?", ["Carnotaurus", "Diplodocus", "Anquilosaurio", "Pteranodon"], 0, "history", "EASY"),
+      question(
+        "tyrannosaurus-rex",
+        "Tyrannosaurus rex",
+        "¿Qué dinosaurio es?",
+        ["Triceratops", "Tiranosaurio rex", "Estegosaurio", "Velociraptor"],
+        1,
+        "history",
+        "EASY",
+      ),
+      question(
+        "triceratops",
+        "Triceratops",
+        "¿Cuál tenía tres cuernos?",
+        ["Triceratops", "Diplodocus", "Anquilosaurio", "Spinosaurus"],
+        0,
+        "history",
+        "EASY",
+      ),
+      question(
+        "stegosaurus",
+        "Stegosaurus placas dorsales",
+        "¿Qué dinosaurio tenía placas en el lomo?",
+        ["Estegosaurio", "T. rex", "Iguanodon", "Pteranodon"],
+        0,
+        "history",
+        "EASY",
+      ),
+      question(
+        "velociraptor",
+        "Velociraptor",
+        "¿Cuál era pequeño y veloz?",
+        ["Velociraptor", "Braquiosaurio", "Triceratops", "Estegosaurio"],
+        0,
+        "history",
+        "EASY",
+      ),
+      question(
+        "brachiosaurus",
+        "Braquiosaurio cuello largo",
+        "¿Cuál tenía cuello muy largo?",
+        ["Braquiosaurio", "T. rex", "Anquilosaurio", "Carnotaurus"],
+        0,
+        "history",
+        "EASY",
+      ),
+      question(
+        "spinosaurus",
+        "Spinosaurus vela dorsal",
+        "¿Cuál tenía una vela en la espalda?",
+        ["Spinosaurus", "Diplodocus", "Triceratops", "Velociraptor"],
+        0,
+        "history",
+        "EASY",
+      ),
+      question(
+        "ankylosaurus",
+        "Anquilosaurio armadura",
+        "¿Cuál tenía armadura y cola fuerte?",
+        ["Anquilosaurio", "Pteranodon", "Iguanodon", "T. rex"],
+        0,
+        "history",
+        "EASY",
+      ),
+      question(
+        "pteranodon",
+        "Pteranodon volador",
+        "¿Cuál podía volar?",
+        ["Pteranodon", "Triceratops", "Braquiosaurio", "Estegosaurio"],
+        0,
+        "history",
+        "EASY",
+      ),
+      question(
+        "diplodocus",
+        "Diplodocus",
+        "¿Cuál era largo y herbívoro?",
+        ["Diplodocus", "Velociraptor", "Carnotaurus", "Spinosaurus"],
+        0,
+        "history",
+        "EASY",
+      ),
+      question(
+        "carnotaurus",
+        "Carnotaurus",
+        "¿Cuál tenía cuernos cortos sobre los ojos?",
+        ["Carnotaurus", "Diplodocus", "Anquilosaurio", "Pteranodon"],
+        0,
+        "history",
+        "EASY",
+      ),
     ],
   },
   "color-mix": {
@@ -156,14 +448,78 @@ const VISUAL_GAME_CONFIG: Record<VisualGameId, VisualGameConfig> = {
     xpPerLevel: 10,
     completionBonus: 40,
     fallbackQuestions: [
-      question("blue-yellow-mix", "Azul + Amarillo", "¿Qué color se forma?", ["Verde", "Rojo", "Violeta", "Naranja"], 0, "creativity", "EASY"),
-      question("red-yellow-mix", "Rojo + Amarillo", "¿Qué color aparece?", ["Azul", "Naranja", "Verde", "Marrón"], 1, "creativity", "EASY"),
-      question("red-blue-mix", "Rojo + Azul", "¿Qué color se forma?", ["Violeta", "Amarillo", "Blanco", "Verde"], 0, "creativity", "EASY"),
-      question("black-white-mix", "Negro + Blanco", "¿Qué color se obtiene?", ["Gris", "Verde", "Rosa", "Azul"], 0, "creativity", "EASY"),
-      question("red-white-mix", "Rojo + Blanco", "¿Qué color aparece?", ["Rosa", "Negro", "Verde", "Azul"], 0, "creativity", "EASY"),
-      question("yellow-white-mix", "Amarillo + Blanco", "¿Qué pasa con el amarillo?", ["Se aclara", "Se vuelve negro", "Se vuelve azul", "Desaparece"], 0, "creativity", "EASY"),
-      question("blue-white-mix", "Azul + Blanco", "¿Qué color se forma?", ["Celeste", "Rojo", "Marrón", "Naranja"], 0, "creativity", "EASY"),
-      question("many-colors-rainbow", "Arcoiris", "¿Cuántos colores tiene el arcoíris?", ["5", "6", "7", "10"], 2, "creativity", "EASY"),
+      question(
+        "blue-yellow-mix",
+        "Azul + Amarillo",
+        "¿Qué color se forma?",
+        ["Verde", "Rojo", "Violeta", "Naranja"],
+        0,
+        "creativity",
+        "EASY",
+      ),
+      question(
+        "red-yellow-mix",
+        "Rojo + Amarillo",
+        "¿Qué color aparece?",
+        ["Azul", "Naranja", "Verde", "Marrón"],
+        1,
+        "creativity",
+        "EASY",
+      ),
+      question(
+        "red-blue-mix",
+        "Rojo + Azul",
+        "¿Qué color se forma?",
+        ["Violeta", "Amarillo", "Blanco", "Verde"],
+        0,
+        "creativity",
+        "EASY",
+      ),
+      question(
+        "black-white-mix",
+        "Negro + Blanco",
+        "¿Qué color se obtiene?",
+        ["Gris", "Verde", "Rosa", "Azul"],
+        0,
+        "creativity",
+        "EASY",
+      ),
+      question(
+        "red-white-mix",
+        "Rojo + Blanco",
+        "¿Qué color aparece?",
+        ["Rosa", "Negro", "Verde", "Azul"],
+        0,
+        "creativity",
+        "EASY",
+      ),
+      question(
+        "yellow-white-mix",
+        "Amarillo + Blanco",
+        "¿Qué pasa con el amarillo?",
+        ["Se aclara", "Se vuelve negro", "Se vuelve azul", "Desaparece"],
+        0,
+        "creativity",
+        "EASY",
+      ),
+      question(
+        "blue-white-mix",
+        "Azul + Blanco",
+        "¿Qué color se forma?",
+        ["Celeste", "Rojo", "Marrón", "Naranja"],
+        0,
+        "creativity",
+        "EASY",
+      ),
+      question(
+        "many-colors-rainbow",
+        "Arcoiris",
+        "¿Cuántos colores tiene el arcoíris?",
+        ["5", "6", "7", "10"],
+        2,
+        "creativity",
+        "EASY",
+      ),
     ],
   },
   "spot-difference": {
@@ -173,11 +529,51 @@ const VISUAL_GAME_CONFIG: Record<VisualGameId, VisualGameConfig> = {
     xpPerLevel: 20,
     completionBonus: 80,
     fallbackQuestions: [
-      question("difference-forest", "Bosque dos imágenes 5 diferencias", "Encontrá la diferencia principal.", ["Falta un árbol", "Hay otro planeta", "Cambia el océano", "No hay animales"], 0, "creativity", "MEDIUM"),
-      question("difference-classroom", "Aula dos imágenes 5 diferencias", "¿Qué cambió?", ["Un libro cambió de lugar", "Apareció nieve", "El techo desapareció", "Hay un volcán"], 0, "creativity", "MEDIUM"),
-      question("difference-beach", "Playa dos imágenes 5 diferencias", "¿Qué objeto falta?", ["Sombrilla", "Cohete", "Dinosaurio", "Piano"], 0, "creativity", "MEDIUM"),
-      question("difference-space", "Espacio dos imágenes 5 diferencias", "¿Qué aparece diferente?", ["Una estrella extra", "Una ciudad", "Un río", "Un castillo"], 0, "creativity", "MEDIUM"),
-      question("difference-jungle", "Selva dos imágenes 5 diferencias", "¿Qué animal cambió de posición?", ["Mono", "Ballena", "Pingüino", "Camello"], 0, "creativity", "MEDIUM"),
+      question(
+        "difference-forest",
+        "Bosque dos imágenes 5 diferencias",
+        "Encontrá la diferencia principal.",
+        ["Falta un árbol", "Hay otro planeta", "Cambia el océano", "No hay animales"],
+        0,
+        "creativity",
+        "MEDIUM",
+      ),
+      question(
+        "difference-classroom",
+        "Aula dos imágenes 5 diferencias",
+        "¿Qué cambió?",
+        ["Un libro cambió de lugar", "Apareció nieve", "El techo desapareció", "Hay un volcán"],
+        0,
+        "creativity",
+        "MEDIUM",
+      ),
+      question(
+        "difference-beach",
+        "Playa dos imágenes 5 diferencias",
+        "¿Qué objeto falta?",
+        ["Sombrilla", "Cohete", "Dinosaurio", "Piano"],
+        0,
+        "creativity",
+        "MEDIUM",
+      ),
+      question(
+        "difference-space",
+        "Espacio dos imágenes 5 diferencias",
+        "¿Qué aparece diferente?",
+        ["Una estrella extra", "Una ciudad", "Un río", "Un castillo"],
+        0,
+        "creativity",
+        "MEDIUM",
+      ),
+      question(
+        "difference-jungle",
+        "Selva dos imágenes 5 diferencias",
+        "¿Qué animal cambió de posición?",
+        ["Mono", "Ballena", "Pingüino", "Camello"],
+        0,
+        "creativity",
+        "MEDIUM",
+      ),
     ],
   },
   "world-puzzle": {
@@ -187,18 +583,114 @@ const VISUAL_GAME_CONFIG: Record<VisualGameId, VisualGameConfig> = {
     xpPerLevel: 15,
     completionBonus: 75,
     fallbackQuestions: [
-      question("puzzle-world-map-4", "Mapa mundial 4 piezas", "¿Qué estás armando?", ["Mapa del mundo", "Sistema solar", "Cuerpo humano", "Instrumento musical"], 0, "geography", "EASY"),
-      question("puzzle-lion-4", "León 4 piezas", "¿Qué animal aparece?", ["León", "Tiburón", "Águila", "Caballo"], 0, "geography", "EASY"),
-      question("puzzle-eiffel-4", "Torre Eiffel 4 piezas", "¿Qué monumento es?", ["Torre Eiffel", "Coliseo", "Pirámide", "Obelisco"], 0, "geography", "EASY"),
-      question("puzzle-south-america-9", "Sudamérica 9 piezas", "¿Qué región es?", ["América del Sur", "Europa", "Oceanía", "África"], 0, "geography", "MEDIUM"),
-      question("puzzle-elephant-9", "Elefante 9 piezas", "¿Qué animal estás armando?", ["Elefante", "Delfín", "Gato", "Oso polar"], 0, "geography", "MEDIUM"),
-      question("puzzle-colosseum-9", "Coliseo 9 piezas", "¿Qué monumento es?", ["Coliseo", "Torre Eiffel", "Machu Picchu", "Big Ben"], 0, "geography", "MEDIUM"),
-      question("puzzle-africa-16", "África 16 piezas", "¿Qué continente aparece?", ["África", "Asia", "Europa", "Antártida"], 0, "geography", "HARD"),
-      question("puzzle-toucan-16", "Tucán 16 piezas", "¿Qué animal aparece?", ["Tucán", "León", "Ballena", "Cóndor"], 0, "geography", "HARD"),
-      question("puzzle-machu-16", "Machu Picchu 16 piezas", "¿Qué lugar estás armando?", ["Machu Picchu", "Coliseo", "Taj Mahal", "Partenón"], 0, "geography", "HARD"),
-      question("puzzle-oceania-16", "Oceanía 16 piezas", "¿Qué región aparece?", ["Oceanía", "Europa", "América", "África"], 0, "geography", "HARD"),
-      question("puzzle-panda-16", "Panda 16 piezas", "¿Qué animal es?", ["Panda", "Tigre", "Cebra", "Koala"], 0, "geography", "HARD"),
-      question("puzzle-taj-mahal-16", "Taj Mahal 16 piezas", "¿Qué monumento es?", ["Taj Mahal", "Big Ben", "Coliseo", "Pirámide"], 0, "geography", "HARD"),
+      question(
+        "puzzle-world-map-4",
+        "Mapa mundial 4 piezas",
+        "¿Qué estás armando?",
+        ["Mapa del mundo", "Sistema solar", "Cuerpo humano", "Instrumento musical"],
+        0,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "puzzle-lion-4",
+        "León 4 piezas",
+        "¿Qué animal aparece?",
+        ["León", "Tiburón", "Águila", "Caballo"],
+        0,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "puzzle-eiffel-4",
+        "Torre Eiffel 4 piezas",
+        "¿Qué monumento es?",
+        ["Torre Eiffel", "Coliseo", "Pirámide", "Obelisco"],
+        0,
+        "geography",
+        "EASY",
+      ),
+      question(
+        "puzzle-south-america-9",
+        "Sudamérica 9 piezas",
+        "¿Qué región es?",
+        ["América del Sur", "Europa", "Oceanía", "África"],
+        0,
+        "geography",
+        "MEDIUM",
+      ),
+      question(
+        "puzzle-elephant-9",
+        "Elefante 9 piezas",
+        "¿Qué animal estás armando?",
+        ["Elefante", "Delfín", "Gato", "Oso polar"],
+        0,
+        "geography",
+        "MEDIUM",
+      ),
+      question(
+        "puzzle-colosseum-9",
+        "Coliseo 9 piezas",
+        "¿Qué monumento es?",
+        ["Coliseo", "Torre Eiffel", "Machu Picchu", "Big Ben"],
+        0,
+        "geography",
+        "MEDIUM",
+      ),
+      question(
+        "puzzle-africa-16",
+        "África 16 piezas",
+        "¿Qué continente aparece?",
+        ["África", "Asia", "Europa", "Antártida"],
+        0,
+        "geography",
+        "HARD",
+      ),
+      question(
+        "puzzle-toucan-16",
+        "Tucán 16 piezas",
+        "¿Qué animal aparece?",
+        ["Tucán", "León", "Ballena", "Cóndor"],
+        0,
+        "geography",
+        "HARD",
+      ),
+      question(
+        "puzzle-machu-16",
+        "Machu Picchu 16 piezas",
+        "¿Qué lugar estás armando?",
+        ["Machu Picchu", "Coliseo", "Taj Mahal", "Partenón"],
+        0,
+        "geography",
+        "HARD",
+      ),
+      question(
+        "puzzle-oceania-16",
+        "Oceanía 16 piezas",
+        "¿Qué región aparece?",
+        ["Oceanía", "Europa", "América", "África"],
+        0,
+        "geography",
+        "HARD",
+      ),
+      question(
+        "puzzle-panda-16",
+        "Panda 16 piezas",
+        "¿Qué animal es?",
+        ["Panda", "Tigre", "Cebra", "Koala"],
+        0,
+        "geography",
+        "HARD",
+      ),
+      question(
+        "puzzle-taj-mahal-16",
+        "Taj Mahal 16 piezas",
+        "¿Qué monumento es?",
+        ["Taj Mahal", "Big Ben", "Coliseo", "Pirámide"],
+        0,
+        "geography",
+        "HARD",
+      ),
     ],
   },
 };
@@ -221,7 +713,7 @@ async function readSeenVisualIds(category: string, difficulty: QuizDifficulty): 
 async function storeSeenVisualIds(
   category: string,
   difficulty: QuizDifficulty,
-  newIds: string[]
+  newIds: string[],
 ): Promise<void> {
   try {
     const previous = await readSeenVisualIds(category, difficulty);
@@ -239,12 +731,12 @@ function visualProgressKey(gameId: string, viewerUserId?: string): string {
 async function saveVisualProgress(
   gameId: string,
   viewerUserId: string | undefined,
-  progress: { completedLevels: number; totalLevels: number; xpEarned: number; completed: boolean }
+  progress: { completedLevels: number; totalLevels: number; xpEarned: number; completed: boolean },
 ): Promise<void> {
   try {
     await AsyncStorage.setItem(
       visualProgressKey(gameId, viewerUserId),
-      JSON.stringify({ ...progress, updatedAt: new Date().toISOString() })
+      JSON.stringify({ ...progress, updatedAt: new Date().toISOString() }),
     );
   } catch {
     // best effort
@@ -343,7 +835,7 @@ export function VisualGameScreen({ route }: Props) {
         void storeSeenVisualIds(
           category,
           difficulty,
-          rows.map((q) => q.id)
+          rows.map((q) => q.id),
         );
         correctRef.current = 0;
       } catch {
@@ -367,7 +859,7 @@ export function VisualGameScreen({ route }: Props) {
   const isIncorrectSelection = answered && question != null && selectedIndex !== question.correct;
   const progress = useMemo(
     () => (questions.length > 0 ? `${index + 1}/${questions.length}` : "0/0"),
-    [index, questions.length]
+    [index, questions.length],
   );
   const currentXpEarned = correctRef.current * gameConfig.xpPerLevel;
 
@@ -384,7 +876,14 @@ export function VisualGameScreen({ route }: Props) {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.background,
+        }}
+      >
         <ActivityIndicator color={colors.primary} />
       </View>
     );
@@ -437,7 +936,7 @@ export function VisualGameScreen({ route }: Props) {
       completedLevels: index + 1,
       totalLevels: questions.length,
       xpEarned:
-        (correctRef.current * gameConfig.xpPerLevel) +
+        correctRef.current * gameConfig.xpPerLevel +
         (gotIt && index === questions.length - 1 ? gameConfig.completionBonus : 0),
       completed: index === questions.length - 1,
     });
@@ -468,14 +967,16 @@ export function VisualGameScreen({ route }: Props) {
                   `¡Reto diario! +${res.dailyChallengeBonus.bonusXp} XP${
                     res.dailyChallengeBonus.badgeUnlocked ? " · insignia «Campeón del día»" : ""
                   }`,
-                  "success"
+                  "success",
                 );
               }
             } catch {
               // resultado local válido
             }
           }
-          const localXp = finalScore * gameConfig.xpPerLevel + (finalScore === totalQ ? gameConfig.completionBonus : 0);
+          const localXp =
+            finalScore * gameConfig.xpPerLevel +
+            (finalScore === totalQ ? gameConfig.completionBonus : 0);
           navigation.replace("QuizResult", {
             score: finalScore,
             total: totalQ,
@@ -492,7 +993,9 @@ export function VisualGameScreen({ route }: Props) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + space.sm }}>
+    <View
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + space.sm }}
+    >
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: screenEdge.horizontal,
@@ -502,7 +1005,9 @@ export function VisualGameScreen({ route }: Props) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={{ color: colors.text, fontWeight: "900", fontSize: 22, marginBottom: space.xs }}>
+        <Text
+          style={{ color: colors.text, fontWeight: "900", fontSize: 22, marginBottom: space.xs }}
+        >
           {gameConfig.title}
         </Text>
         <Text style={{ color: colors.textMuted, fontWeight: "800", marginBottom: space.sm }}>
@@ -519,7 +1024,11 @@ export function VisualGameScreen({ route }: Props) {
             marginBottom: space.lg,
             backgroundColor: colors.card,
             borderWidth: 3,
-            borderColor: isCorrectSelection ? colors.success : isIncorrectSelection ? colors.error : colors.borderSubtle,
+            borderColor: isCorrectSelection
+              ? colors.success
+              : isIncorrectSelection
+                ? colors.error
+                : colors.borderSubtle,
           }}
         >
           {imageUri.length > 0 ? (
@@ -552,7 +1061,14 @@ export function VisualGameScreen({ route }: Props) {
                     backgroundColor: colors.success,
                     alignItems: "center",
                     justifyContent: "center",
-                    transform: [{ scale: successScale.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) }],
+                    transform: [
+                      {
+                        scale: successScale.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.2, 1],
+                        }),
+                      },
+                    ],
                   }}
                 >
                   <AppIcon name="checkmark" size="md" color="#fff" />
@@ -587,7 +1103,14 @@ export function VisualGameScreen({ route }: Props) {
               >
                 <AppIcon name="image-outline" size={40} color={colors.textMuted} />
               </View>
-              <Text style={{ color: colors.textMuted, fontWeight: "600", textAlign: "center", fontSize: 15 }}>
+              <Text
+                style={{
+                  color: colors.textMuted,
+                  fontWeight: "600",
+                  textAlign: "center",
+                  fontSize: 15,
+                }}
+              >
                 Imagen no disponible
               </Text>
             </View>
@@ -642,9 +1165,20 @@ export function VisualGameScreen({ route }: Props) {
                 accessibilityRole="button"
                 accessibilityLabel={`Opción ${optIdx + 1}: ${opt}`}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <Text style={{ color: textColor, fontSize: 16, fontWeight: "700", flex: 1 }}>{opt}</Text>
-                  {answered && isCorrect ? <AppIcon name="checkmark-circle" size="md" color="#fff" /> : null}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                  }}
+                >
+                  <Text style={{ color: textColor, fontSize: 16, fontWeight: "700", flex: 1 }}>
+                    {opt}
+                  </Text>
+                  {answered && isCorrect ? (
+                    <AppIcon name="checkmark-circle" size="md" color="#fff" />
+                  ) : null}
                 </View>
               </Pressable>
             );

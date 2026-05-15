@@ -3,7 +3,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { space } from "../../theme/tokens";
-import { bumpUnlocksAfterLevel, getStarsForLevel, setMaxUnlockedLevel, setStarsForLevel } from "../storage/gameProgressStore";
+import {
+  bumpUnlocksAfterLevel,
+  getStarsForLevel,
+  setMaxUnlockedLevel,
+  setStarsForLevel,
+} from "../storage/gameProgressStore";
 import { MiniGameChrome } from "../shared/MiniGameChrome";
 import { starsFromAttempts } from "../shared/starsFromScore";
 import { TutorialOverlay, type TutorialStep } from "../shared/TutorialOverlay";
@@ -19,7 +24,10 @@ const META: MiniGameMeta = {
 };
 
 const TUTORIAL: TutorialStep[] = [
-  { title: "Islas", body: "Cada isla muestra un número. Tocá la que coincide con el objetivo de la brújula." },
+  {
+    title: "Islas",
+    body: "Cada isla muestra un número. Tocá la que coincide con el objetivo de la brújula.",
+  },
   { title: "Brújula", body: "Una pista resalta la isla correcta (un uso por nivel)." },
   { title: "Mapa", body: "Saltá un objetivo si te trabás (un uso por nivel)." },
   { title: "Tesoro", body: "Completá la cadena para sumar estrellas y desbloquear temas." },
@@ -40,7 +48,11 @@ function shuffle<T>(a: T[]): T[] {
   return x;
 }
 
-export default function TreasureMathGame({ levelIndex, onCompleteLevel, onRequestExit }: MiniGameProps) {
+export default function TreasureMathGame({
+  levelIndex,
+  onCompleteLevel,
+  onRequestExit,
+}: MiniGameProps) {
   const { colors } = useTheme();
   const [showTutorial, tutorialDone] = useTutorialSeen(META.id);
   const [cursor, setCursor] = useState(0);
@@ -79,7 +91,7 @@ export default function TreasureMathGame({ levelIndex, onCompleteLevel, onReques
       setBest(stars);
       onCompleteLevel({ levelIndex, stars, score: 100 - mistakes * 8 });
     },
-    [levelIndex, mistakes, onCompleteLevel]
+    [levelIndex, mistakes, onCompleteLevel],
   );
 
   const onPick = (n: number) => {
@@ -111,9 +123,19 @@ export default function TreasureMathGame({ levelIndex, onCompleteLevel, onReques
 
   return (
     <View style={{ flex: 1 }}>
-      {showTutorial ? <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} /> : null}
-      <MiniGameChrome meta={META} levelIndex={levelIndex} totalLevels={TOTAL_LEVELS} bestStars={best || undefined} onBack={onRequestExit}>
-        <Text style={{ color: colors.text, fontWeight: "900", fontSize: 18, marginBottom: space.xs }}>
+      {showTutorial ? (
+        <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} />
+      ) : null}
+      <MiniGameChrome
+        meta={META}
+        levelIndex={levelIndex}
+        totalLevels={TOTAL_LEVELS}
+        bestStars={best || undefined}
+        onBack={onRequestExit}
+      >
+        <Text
+          style={{ color: colors.text, fontWeight: "900", fontSize: 18, marginBottom: space.xs }}
+        >
           Objetivo: llegar al tesoro · paso {cursor + 1}/{targets.length}
         </Text>
         <Text style={{ color: colors.textSecondary, marginBottom: space.md, fontWeight: "700" }}>
@@ -122,18 +144,39 @@ export default function TreasureMathGame({ levelIndex, onCompleteLevel, onReques
         <View style={{ flexDirection: "row", gap: space.sm, marginBottom: space.md }}>
           <Pressable
             onPress={useCompassBtn}
-            style={{ flex: 1, padding: space.sm, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.borderSubtle }}
+            style={{
+              flex: 1,
+              padding: space.sm,
+              borderRadius: 12,
+              backgroundColor: colors.card,
+              borderWidth: 1,
+              borderColor: colors.borderSubtle,
+            }}
           >
             <Text style={{ fontWeight: "800", color: colors.primary }}>🧭 Brújula ({compass})</Text>
           </Pressable>
           <Pressable
             onPress={useMapBtn}
-            style={{ flex: 1, padding: space.sm, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.borderSubtle }}
+            style={{
+              flex: 1,
+              padding: space.sm,
+              borderRadius: 12,
+              backgroundColor: colors.card,
+              borderWidth: 1,
+              borderColor: colors.borderSubtle,
+            }}
           >
             <Text style={{ fontWeight: "800", color: colors.primary }}>🗺️ Mapa ({mapSkip})</Text>
           </Pressable>
         </View>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm, justifyContent: "center" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: space.sm,
+            justifyContent: "center",
+          }}
+        >
           {candidates.map((n) => (
             <Pressable
               key={`${n}-${cursor}`}

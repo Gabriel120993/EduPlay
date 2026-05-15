@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from '@prisma/client';
 
 /** Campos de `User` seguros para respuestas HTTP (sin `passwordHash` ni `expoPushToken`). */
 export const userPublicSelect = {

@@ -33,7 +33,11 @@ export async function getStarsForLevel(gameId: MiniGameId, levelIndex: number): 
   }
 }
 
-export async function setStarsForLevel(gameId: MiniGameId, levelIndex: number, stars: Stars): Promise<void> {
+export async function setStarsForLevel(
+  gameId: MiniGameId,
+  levelIndex: number,
+  stars: Stars,
+): Promise<void> {
   const prev = await getStarsForLevel(gameId, levelIndex);
   if (stars > prev) {
     await AsyncStorage.setItem(`${PREFIX}${gameId}:stars:${levelIndex}`, String(stars));
@@ -55,7 +59,10 @@ export async function getCosmeticUnlocks(gameId: MiniGameId): Promise<CosmeticUn
   }
 }
 
-export async function bumpUnlocksAfterLevel(gameId: MiniGameId, levelIndex: number): Promise<CosmeticUnlocks> {
+export async function bumpUnlocksAfterLevel(
+  gameId: MiniGameId,
+  levelIndex: number,
+): Promise<CosmeticUnlocks> {
   const cur = await getCosmeticUnlocks(gameId);
   let skinIndex = cur.skinIndex;
   if ((levelIndex + 1) % 5 === 0) skinIndex = Math.min(5, skinIndex + 1);

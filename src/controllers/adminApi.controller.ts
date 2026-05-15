@@ -1,9 +1,9 @@
-import type { Request, Response } from "express";
-import { ContentReportStatus, UserStatus } from "@prisma/client";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { formatZodError } from "../lib/validation/schemas";
+import type { Request, Response } from 'express';
+import { ContentReportStatus, UserStatus } from '@prisma/client';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { formatZodError } from '../lib/validation/schemas';
 
 const userStatusSchema = z.object({
   status: z.nativeEnum(UserStatus),
@@ -14,7 +14,7 @@ const contentBodySchema = z.object({
   description: z.string().trim().max(5000).optional(),
   content: z.string().trim().max(50000).optional(),
   category: z.string().trim().max(80).optional(),
-  difficulty: z.enum(["EASY", "MEDIUM", "HARD"]).optional(),
+  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
 });
 
 /** GET /api/admin/users */
@@ -23,7 +23,7 @@ export async function adminListUsers(req: Request, res: Response): Promise<void>
     const take = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
     const rows = await prisma.user.findMany({
       take,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         username: true,
@@ -35,8 +35,8 @@ export async function adminListUsers(req: Request, res: Response): Promise<void>
     });
     res.json({ users: rows });
   } catch (e) {
-    logError("admin.listUsers", e);
-    res.status(500).json({ error: "Error al listar usuarios." });
+    logError('admin.listUsers', e);
+    res.status(500).json({ error: 'Error al listar usuarios.' });
   }
 }
 
@@ -44,7 +44,7 @@ export async function adminListUsers(req: Request, res: Response): Promise<void>
 export async function adminPutUserStatus(req: Request, res: Response): Promise<void> {
   const userId = req.params.userId?.trim();
   if (!userId) {
-    res.status(400).json({ error: "userId inválido." });
+    res.status(400).json({ error: 'userId inválido.' });
     return;
   }
 
@@ -62,8 +62,8 @@ export async function adminPutUserStatus(req: Request, res: Response): Promise<v
     });
     res.json({ user: u });
   } catch (e) {
-    logError("admin.putUserStatus", e);
-    res.status(500).json({ error: "Error al actualizar estado." });
+    logError('admin.putUserStatus', e);
+    res.status(500).json({ error: 'Error al actualizar estado.' });
   }
 }
 
@@ -72,12 +72,12 @@ export async function adminListContent(req: Request, res: Response): Promise<voi
   try {
     const rows = await prisma.educationalContent.findMany({
       take: 100,
-      orderBy: { updatedAt: "desc" },
+      orderBy: { updatedAt: 'desc' },
     });
     res.json({ contents: rows });
   } catch (e) {
-    logError("admin.listContent", e);
-    res.status(500).json({ error: "Error al listar contenido." });
+    logError('admin.listContent', e);
+    res.status(500).json({ error: 'Error al listar contenido.' });
   }
 }
 
@@ -93,17 +93,17 @@ export async function adminCreateContent(req: Request, res: Response): Promise<v
     const row = await prisma.educationalContent.create({
       data: {
         title: parsed.data.title,
-        description: parsed.data.description ?? "",
-        content: parsed.data.content ?? "",
-        category: parsed.data.category ?? "general",
-        difficulty: (parsed.data.difficulty ?? "MEDIUM") as never,
+        description: parsed.data.description ?? '',
+        content: parsed.data.content ?? '',
+        category: parsed.data.category ?? 'general',
+        difficulty: (parsed.data.difficulty ?? 'MEDIUM') as never,
         published: true,
       },
     });
     res.status(201).json({ content: row });
   } catch (e) {
-    logError("admin.createContent", e);
-    res.status(500).json({ error: "Error al crear contenido." });
+    logError('admin.createContent', e);
+    res.status(500).json({ error: 'Error al crear contenido.' });
   }
 }
 
@@ -111,7 +111,7 @@ export async function adminCreateContent(req: Request, res: Response): Promise<v
 export async function adminUpdateContent(req: Request, res: Response): Promise<void> {
   const contentId = req.params.contentId?.trim();
   if (!contentId) {
-    res.status(400).json({ error: "contentId inválido." });
+    res.status(400).json({ error: 'contentId inválido.' });
     return;
   }
 
@@ -134,8 +134,8 @@ export async function adminUpdateContent(req: Request, res: Response): Promise<v
     });
     res.json({ content: row });
   } catch (e) {
-    logError("admin.updateContent", e);
-    res.status(500).json({ error: "Error al actualizar contenido." });
+    logError('admin.updateContent', e);
+    res.status(500).json({ error: 'Error al actualizar contenido.' });
   }
 }
 
@@ -143,7 +143,7 @@ export async function adminUpdateContent(req: Request, res: Response): Promise<v
 export async function adminDeleteContent(req: Request, res: Response): Promise<void> {
   const contentId = req.params.contentId?.trim();
   if (!contentId) {
-    res.status(400).json({ error: "contentId inválido." });
+    res.status(400).json({ error: 'contentId inválido.' });
     return;
   }
 
@@ -151,8 +151,8 @@ export async function adminDeleteContent(req: Request, res: Response): Promise<v
     await prisma.educationalContent.delete({ where: { id: contentId } });
     res.status(204).send();
   } catch (e) {
-    logError("admin.deleteContent", e);
-    res.status(500).json({ error: "Error al eliminar contenido." });
+    logError('admin.deleteContent', e);
+    res.status(500).json({ error: 'Error al eliminar contenido.' });
   }
 }
 
@@ -160,13 +160,13 @@ export async function adminDeleteContent(req: Request, res: Response): Promise<v
 export async function adminListReports(_req: Request, res: Response): Promise<void> {
   try {
     const rows = await prisma.contentReport.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 200,
     });
     res.json({ reports: rows });
   } catch (e) {
-    logError("admin.listReports", e);
-    res.status(500).json({ error: "Error al listar reportes." });
+    logError('admin.listReports', e);
+    res.status(500).json({ error: 'Error al listar reportes.' });
   }
 }
 
@@ -179,7 +179,7 @@ const resolveSchema = z.object({
 export async function adminResolveReport(req: Request, res: Response): Promise<void> {
   const reportId = req.params.reportId?.trim();
   if (!reportId) {
-    res.status(400).json({ error: "reportId inválido." });
+    res.status(400).json({ error: 'reportId inválido.' });
     return;
   }
 
@@ -200,8 +200,8 @@ export async function adminResolveReport(req: Request, res: Response): Promise<v
     });
     res.json({ report: row });
   } catch (e) {
-    logError("admin.resolveReport", e);
-    res.status(500).json({ error: "Error al resolver reporte." });
+    logError('admin.resolveReport', e);
+    res.status(500).json({ error: 'Error al resolver reporte.' });
   }
 }
 
@@ -210,7 +210,7 @@ export async function adminStats(_req: Request, res: Response): Promise<void> {
   try {
     const [users, minors, parents, contents, reportsOpen] = await Promise.all([
       prisma.user.count(),
-      prisma.user.count({ where: { type: "minor" } }),
+      prisma.user.count({ where: { type: 'minor' } }),
       prisma.parent.count(),
       prisma.educationalContent.count(),
       prisma.contentReport.count({ where: { status: ContentReportStatus.OPEN } }),
@@ -225,7 +225,7 @@ export async function adminStats(_req: Request, res: Response): Promise<void> {
       },
     });
   } catch (e) {
-    logError("admin.stats", e);
-    res.status(500).json({ error: "Error al obtener estadísticas." });
+    logError('admin.stats', e);
+    res.status(500).json({ error: 'Error al obtener estadísticas.' });
   }
 }

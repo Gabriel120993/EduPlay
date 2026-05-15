@@ -4,7 +4,7 @@ import {
   ContentCategory,
   Prisma,
   XpGainSource,
-} from "@prisma/client";
+} from '@prisma/client';
 
 import {
   activeSpecialWindows,
@@ -13,13 +13,15 @@ import {
   type GamifiedChallengeDef,
   type SpecialChallengeWindow,
   WEEKLY_CHALLENGE_POOL,
-} from "../lib/challengesCatalog";
-import { addExperience } from "../lib/xpLevel";
-import { recordXpGain } from "../lib/xpLedger";
-import { prisma } from "../lib/prisma";
+} from '../lib/challengesCatalog';
+import { addExperience } from '../lib/xpLevel';
+import { recordXpGain } from '../lib/xpLedger';
+import { prisma } from '../lib/prisma';
 
 export function utcDateKey(at: Date = new Date()): string {
-  return new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate())).toISOString().slice(0, 10);
+  return new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()))
+    .toISOString()
+    .slice(0, 10);
 }
 
 export function utcMondayKey(at: Date = new Date()): string {
@@ -102,8 +104,8 @@ async function ensureChallengeAchievements(tx: Prisma.TransactionClient): Promis
         title: d.title,
         description: d.description,
         category: ContentCategory.creativity,
-        badgeColor: "#f59e0b",
-        badgeIcon: "trophy",
+        badgeColor: '#f59e0b',
+        badgeIcon: 'trophy',
         rarity: AchievementRarity.EPIC,
       },
       update: {
@@ -117,7 +119,7 @@ async function ensureChallengeAchievements(tx: Prisma.TransactionClient): Promis
 async function maybeGrantDailyTripleBonus(
   tx: Prisma.TransactionClient,
   userId: string,
-  dateKey: string
+  dateKey: string,
 ): Promise<{ xp: number; coins: number } | null> {
   const rows = await tx.userGamifiedChallenge.findMany({
     where: { userId, bucket: ChallengeBucket.DAILY, periodKey: dateKey },
@@ -167,7 +169,7 @@ async function grantChallengeRewards(
   tx: Prisma.TransactionClient,
   userId: string,
   rowId: string,
-  def: GamifiedChallengeDef
+  def: GamifiedChallengeDef,
 ): Promise<Record<string, unknown>> {
   await ensureChallengeAchievements(tx);
   const user = await tx.user.findUniqueOrThrow({
@@ -214,8 +216,8 @@ async function grantChallengeRewards(
     certificateUrl,
     premiumTempHours: def.premiumTempHours,
     celebration: {
-      animation: "confetti",
-      title: "¡Reto completado!",
+      animation: 'confetti',
+      title: '¡Reto completado!',
       body: `Ganaste ${coins} monedas, ${xp} XP y recompensas extra.`,
     },
   };
@@ -233,7 +235,10 @@ async function grantChallengeRewards(
   return rewardsGranted;
 }
 
-export async function ensureGamifiedChallengesForUser(userId: string, at: Date = new Date()): Promise<void> {
+export async function ensureGamifiedChallengesForUser(
+  userId: string,
+  at: Date = new Date(),
+): Promise<void> {
   const dateKey = utcDateKey(at);
   const mondayKey = utcMondayKey(at);
   const specials = activeSpecialWindows(at);
@@ -246,11 +251,14 @@ export async function ensureGamifiedChallengesForUser(userId: string, at: Date =
       where: { userId, bucket: ChallengeBucket.DAILY, periodKey: dateKey },
       select: { challengeSlug: true },
     });
-    const expectedSlugs = dailyPicked.map((d) => d.slug).sort().join("|");
+    const expectedSlugs = dailyPicked
+      .map((d) => d.slug)
+      .sort()
+      .join('|');
     const actualSlugs = existingDaily
       .map((r) => r.challengeSlug)
       .sort()
-      .join("|");
+      .join('|');
     if (existingDaily.length !== 3 || expectedSlugs !== actualSlugs) {
       await tx.userGamifiedChallenge.deleteMany({
         where: { userId, bucket: ChallengeBucket.DAILY, periodKey: dateKey },
@@ -298,7 +306,9 @@ export async function ensureGamifiedChallengesForUser(userId: string, at: Date =
 
     const activeKeys = [...new Set(specials.map((s) => specialPeriodKey(s)))];
     if (activeKeys.length === 0) {
-      await tx.userGamifiedChallenge.deleteMany({ where: { userId, bucket: ChallengeBucket.SPECIAL } });
+      await tx.userGamifiedChallenge.deleteMany({
+        where: { userId, bucket: ChallengeBucket.SPECIAL },
+      });
     } else {
       await tx.userGamifiedChallenge.deleteMany({
         where: { userId, bucket: ChallengeBucket.SPECIAL, periodKey: { notIn: activeKeys } },
@@ -338,14 +348,21 @@ export async function ensureGamifiedChallengesForUser(userId: string, at: Date =
   });
 }
 
-function resolveDefForSlug(bucket: ChallengeBucket, periodKey: string, slug: string, at: Date): GamifiedChallengeDef | null {
+function resolveDefForSlug(
+  bucket: ChallengeBucket,
+  periodKey: string,
+  slug: string,
+  at: Date,
+): GamifiedChallengeDef | null {
   if (bucket === ChallengeBucket.DAILY) {
     return DAILY_CHALLENGE_POOL.find((d) => d.slug === slug) ?? null;
   }
   if (bucket === ChallengeBucket.WEEKLY) {
     return WEEKLY_CHALLENGE_POOL.find((d) => d.slug === slug) ?? null;
   }
-  const w = activeSpecialWindows(at).find((s) => specialPeriodKey(s) === periodKey && s.slug === slug);
+  const w = activeSpecialWindows(at).find(
+    (s) => specialPeriodKey(s) === periodKey && s.slug === slug,
+  );
   return w ? toWindowDef(w) : null;
 }
 
@@ -373,14 +390,15 @@ export async function applyGamifiedChallengeProgress(input: {
       : null;
 
   if (increment <= 0 && setProgress === null) {
-    throw new Error("INVALID_PROGRESS_DELTA");
+    throw new Error('INVALID_PROGRESS_DELTA');
   }
 
   await ensureGamifiedChallengesForUser(input.userId, at);
 
   const dateKey = utcDateKey(at);
   const mondayKey = utcMondayKey(at);
-  const activeSpecial = activeSpecialWindows(at).find((s) => s.slug === input.challengeSlug) ?? null;
+  const activeSpecial =
+    activeSpecialWindows(at).find((s) => s.slug === input.challengeSlug) ?? null;
 
   const periodKey =
     input.bucket === ChallengeBucket.DAILY
@@ -392,7 +410,7 @@ export async function applyGamifiedChallengeProgress(input: {
           : null;
 
   if (!periodKey) {
-    throw new Error("SPECIAL_NOT_ACTIVE");
+    throw new Error('SPECIAL_NOT_ACTIVE');
   }
 
   return prisma.$transaction(async (tx) => {
@@ -407,7 +425,7 @@ export async function applyGamifiedChallengeProgress(input: {
       },
     });
     if (!row) {
-      throw new Error("CHALLENGE_ROW_NOT_FOUND");
+      throw new Error('CHALLENGE_ROW_NOT_FOUND');
     }
     if (row.completed) {
       return {
@@ -420,11 +438,13 @@ export async function applyGamifiedChallengeProgress(input: {
 
     const def = resolveDefForSlug(input.bucket, periodKey, input.challengeSlug, at);
     if (!def) {
-      throw new Error("UNKNOWN_CHALLENGE_DEF");
+      throw new Error('UNKNOWN_CHALLENGE_DEF');
     }
 
     const nextProgress =
-      setProgress != null ? Math.min(def.target, setProgress) : Math.min(def.target, row.progress + increment);
+      setProgress != null
+        ? Math.min(def.target, setProgress)
+        : Math.min(def.target, row.progress + increment);
 
     if (nextProgress < row.target) {
       await tx.userGamifiedChallenge.update({
@@ -459,7 +479,7 @@ export async function listGamifiedChallengesForUser(userId: string, at: Date = n
   const [daily, weekly, specialRows] = await Promise.all([
     prisma.userGamifiedChallenge.findMany({
       where: { userId, bucket: ChallengeBucket.DAILY, periodKey: dateKey },
-      orderBy: { challengeSlug: "asc" },
+      orderBy: { challengeSlug: 'asc' },
     }),
     prisma.userGamifiedChallenge.findMany({
       where: { userId, bucket: ChallengeBucket.WEEKLY, periodKey: mondayKey },
@@ -481,40 +501,46 @@ export async function listGamifiedChallengesForUser(userId: string, at: Date = n
     weekly: weekly[0] ?? null,
     specials: specialRows,
     rewards: {
-      coinsField: "quizCoins",
-      xpSource: "CHALLENGE",
-      badges: "UserAchievement vinculado a logros de reto",
-      premiumTemp: "premiumTempHours informativo; aplicación según política comercial",
-      certificates: "URL placeholder bajo /api/users/:id/certificates/challenge/:rowId",
+      coinsField: 'quizCoins',
+      xpSource: 'CHALLENGE',
+      badges: 'UserAchievement vinculado a logros de reto',
+      premiumTemp: 'premiumTempHours informativo; aplicación según política comercial',
+      certificates: 'URL placeholder bajo /api/users/:id/certificates/challenge/:rowId',
     },
   };
 }
 
 export function buildChallengeNotificationBlueprint(): {
-  reminders: Array<{ id: string; hourLocal: number; minuteLocal: number; title: string; body: string }>;
-  celebrationDefaults: { title: string; body: string; sound: "success" };
+  reminders: Array<{
+    id: string;
+    hourLocal: number;
+    minuteLocal: number;
+    title: string;
+    body: string;
+  }>;
+  celebrationDefaults: { title: string; body: string; sound: 'success' };
 } {
   return {
     reminders: [
       {
-        id: "morning_9",
+        id: 'morning_9',
         hourLocal: 9,
         minuteLocal: 0,
-        title: "¡Tu reto de hoy te espera!",
-        body: "Entrá a EduPlay y completá tus 3 retos diarios para sumar monedas, XP e insignias.",
+        title: '¡Tu reto de hoy te espera!',
+        body: 'Entrá a EduPlay y completá tus 3 retos diarios para sumar monedas, XP e insignias.',
       },
       {
-        id: "evening_20",
+        id: 'evening_20',
         hourLocal: 20,
         minuteLocal: 0,
-        title: "No olvides completar tus retos",
-        body: "Todavía podés avanzar en tus retos diarios, semanales y especiales antes de que termine el día.",
+        title: 'No olvides completar tus retos',
+        body: 'Todavía podés avanzar en tus retos diarios, semanales y especiales antes de que termine el día.',
       },
     ],
     celebrationDefaults: {
-      title: "¡Lo lograste!",
-      body: "Completaste un reto: disfrutá la animación especial y revisá tus recompensas.",
-      sound: "success",
+      title: '¡Lo lograste!',
+      body: 'Completaste un reto: disfrutá la animación especial y revisá tus recompensas.',
+      sound: 'success',
     },
   };
 }

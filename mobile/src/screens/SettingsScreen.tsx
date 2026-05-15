@@ -16,7 +16,10 @@ import {
 } from "../lib/notificationPreferencesStore";
 import type { RootStackParamList } from "../navigation/types";
 import { deleteMyAccount, getUserProfile, patchUserPreferences } from "../services/api";
-import { clearLocalNotificationSchedules, syncLocalNotifications } from "../services/localNotifications";
+import {
+  clearLocalNotificationSchedules,
+  syncLocalNotifications,
+} from "../services/localNotifications";
 import {
   getSoundSettingsSnapshot,
   playClick,
@@ -41,9 +44,11 @@ export function SettingsScreen(_props: Props) {
   const isDark = mode === "dark";
   const [soundOn, setSoundOn] = useState(() => getSoundSettingsSnapshot().enabled);
   const [soundVolume, setSoundVolumeLocal] = useState(() => getSoundSettingsSnapshot().volume);
-  const [notifOn, setNotifOn] = useState(() => getNotificationPreferencesSnapshot().notificationsEnabled);
+  const [notifOn, setNotifOn] = useState(
+    () => getNotificationPreferencesSnapshot().notificationsEnabled,
+  );
   const [notifSoundsOn, setNotifSoundsOn] = useState(
-    () => getNotificationPreferencesSnapshot().notificationSoundsEnabled
+    () => getNotificationPreferencesSnapshot().notificationSoundsEnabled,
   );
 
   useEffect(() => {
@@ -88,7 +93,7 @@ export function SettingsScreen(_props: Props) {
       return () => {
         notificationPrefsHydrateGen.current += 1;
       };
-    }, [isChild, viewerUserId])
+    }, [isChild, viewerUserId]),
   );
 
   const onNotificationToggle = useCallback(
@@ -116,7 +121,7 @@ export function SettingsScreen(_props: Props) {
         // El servidor ya guardó la preferencia; no revertir el switch por fallo local (permisos, etc.).
       }
     },
-    [viewerUserId]
+    [viewerUserId],
   );
 
   const confirmDeleteMyAccount = useCallback(() => {
@@ -151,11 +156,11 @@ export function SettingsScreen(_props: Props) {
                     })();
                   },
                 },
-              ]
+              ],
             );
           },
         },
-      ]
+      ],
     );
   }, [logout]);
 
@@ -182,7 +187,7 @@ export function SettingsScreen(_props: Props) {
         // Igual que arriba: no revertir si solo falla la reprogramación local.
       }
     },
-    [viewerUserId]
+    [viewerUserId],
   );
 
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -207,16 +212,17 @@ export function SettingsScreen(_props: Props) {
             </Text>
             <Text style={styles.transparencyLead}>Cómo te protegemos en EduPlay</Text>
             <Text style={styles.transparencyBody}>
-              Tu tutor o tutora crea tu perfil y debe aprobar tu cuenta antes de que puedas usar la app: así siempre hay un
-              adulto responsable al tanto.
+              Tu tutor o tutora crea tu perfil y debe aprobar tu cuenta antes de que puedas usar la
+              app: así siempre hay un adulto responsable al tanto.
             </Text>
             <Text style={styles.transparencyBody}>
-              Los datos se envían de forma segura entre tu dispositivo y los servidores. En la app hay reglas de comunidad,
-              moderación de contenido y controles familiares (por ejemplo amigos, tiempo de pantalla y publicaciones).
+              Los datos se envían de forma segura entre tu dispositivo y los servidores. En la app
+              hay reglas de comunidad, moderación de contenido y controles familiares (por ejemplo
+              amigos, tiempo de pantalla y publicaciones).
             </Text>
             <Text style={styles.transparencyBody}>
-              Si algo te incomoda o ves algo raro, contale a tu tutor o a un adulto de confianza. Podés leer más en
-              Privacidad y Términos desde la pantalla de acceso.
+              Si algo te incomoda o ves algo raro, contale a tu tutor o a un adulto de confianza.
+              Podés leer más en Privacidad y Términos desde la pantalla de acceso.
             </Text>
           </View>
           <Text style={styles.sectionHint}>Notificaciones</Text>
@@ -224,7 +230,9 @@ export function SettingsScreen(_props: Props) {
             <View style={styles.row}>
               <View style={styles.rowText}>
                 <Text style={styles.label}>🔔 Notificaciones</Text>
-                <Text style={styles.sub}>Recordatorios locales y avisos en el dispositivo (según permisos del sistema).</Text>
+                <Text style={styles.sub}>
+                  Recordatorios locales y avisos en el dispositivo (según permisos del sistema).
+                </Text>
               </View>
               <Switch
                 value={notifOn}
@@ -232,13 +240,17 @@ export function SettingsScreen(_props: Props) {
                 trackColor={{ false: colors.border, true: colors.primarySoft }}
                 thumbColor={notifOn ? colors.primary : "#f4f4f5"}
                 ios_backgroundColor={colors.border}
-                accessibilityLabel={notifOn ? "Desactivar notificaciones" : "Activar notificaciones"}
+                accessibilityLabel={
+                  notifOn ? "Desactivar notificaciones" : "Activar notificaciones"
+                }
               />
             </View>
             <View style={[styles.row, styles.rowDivider]}>
               <View style={styles.rowText}>
                 <Text style={styles.label}>🔉 Sonido de notificaciones</Text>
-                <Text style={styles.sub}>Tono al recibir un aviso del sistema (no afecta a los sonidos de juego arriba).</Text>
+                <Text style={styles.sub}>
+                  Tono al recibir un aviso del sistema (no afecta a los sonidos de juego arriba).
+                </Text>
               </View>
               <Switch
                 value={notifSoundsOn}
@@ -247,7 +259,11 @@ export function SettingsScreen(_props: Props) {
                 trackColor={{ false: colors.border, true: colors.primarySoft }}
                 thumbColor={notifSoundsOn ? colors.primary : "#f4f4f5"}
                 ios_backgroundColor={colors.border}
-                accessibilityLabel={notifSoundsOn ? "Desactivar sonido de notificaciones" : "Activar sonido de notificaciones"}
+                accessibilityLabel={
+                  notifSoundsOn
+                    ? "Desactivar sonido de notificaciones"
+                    : "Activar sonido de notificaciones"
+                }
               />
             </View>
           </View>
@@ -314,7 +330,8 @@ export function SettingsScreen(_props: Props) {
           <View style={[styles.card, styles.cardSpacing, styles.dangerCard]}>
             <Text style={styles.label}>Eliminar cuenta</Text>
             <Text style={styles.sub}>
-              Borrá tu perfil y todo el progreso en EduPlay. Si cambiás de idea, no podremos recuperar los datos.
+              Borrá tu perfil y todo el progreso en EduPlay. Si cambiás de idea, no podremos
+              recuperar los datos.
             </Text>
             <Pressable
               onPress={confirmDeleteMyAccount}
@@ -327,7 +344,9 @@ export function SettingsScreen(_props: Props) {
               accessibilityRole="button"
               accessibilityLabel="Eliminar mi cuenta de EduPlay"
             >
-              <Text style={styles.dangerBtnText}>{deleteAccountBusy ? "Eliminando…" : "Eliminar mi cuenta"}</Text>
+              <Text style={styles.dangerBtnText}>
+                {deleteAccountBusy ? "Eliminando…" : "Eliminar mi cuenta"}
+              </Text>
             </Pressable>
           </View>
         </>
@@ -338,11 +357,19 @@ export function SettingsScreen(_props: Props) {
           <View style={styles.rowText}>
             <Text style={styles.label}>{isDark ? "🌙 Modo oscuro" : "☀️ Modo claro"}</Text>
             <Text style={styles.sub}>
-              {isDark ? "Activa una interfaz oscura para descansar la vista." : "Usa una interfaz clara y luminosa."}
+              {isDark
+                ? "Activa una interfaz oscura para descansar la vista."
+                : "Usa una interfaz clara y luminosa."}
             </Text>
             <View style={styles.modeRow}>
-              <Text style={[styles.modeChip, isDark ? styles.modeChipActive : styles.modeChipIdle]}>🌙 Modo oscuro</Text>
-              <Text style={[styles.modeChip, !isDark ? styles.modeChipActive : styles.modeChipIdle]}>☀️ Modo claro</Text>
+              <Text style={[styles.modeChip, isDark ? styles.modeChipActive : styles.modeChipIdle]}>
+                🌙 Modo oscuro
+              </Text>
+              <Text
+                style={[styles.modeChip, !isDark ? styles.modeChipActive : styles.modeChipIdle]}
+              >
+                ☀️ Modo claro
+              </Text>
             </View>
           </View>
           <Switch

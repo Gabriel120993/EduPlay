@@ -1,8 +1,8 @@
-import type { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from 'express';
 
-import { logError } from "../lib/logger";
-import { parentHasActivePremium } from "../lib/parentPremiumAccess";
-import { prisma } from "../lib/prisma";
+import { logError } from '../lib/logger';
+import { parentHasActivePremium } from '../lib/parentPremiumAccess';
+import { prisma } from '../lib/prisma';
 
 /**
  * Requiere sesión tutor (`requireParent` antes) con premium activo (`isPremium` / `premiumUntil`).
@@ -10,8 +10,8 @@ import { prisma } from "../lib/prisma";
  */
 export async function checkPremium(req: Request, res: Response, next: NextFunction): Promise<void> {
   const auth = req.auth;
-  if (!auth || auth.kind !== "parent") {
-    res.status(403).json({ error: "No autorizado.", code: "PREMIUM_PARENT_ONLY" });
+  if (!auth || auth.kind !== 'parent') {
+    res.status(403).json({ error: 'No autorizado.', code: 'PREMIUM_PARENT_ONLY' });
     return;
   }
 
@@ -22,14 +22,14 @@ export async function checkPremium(req: Request, res: Response, next: NextFuncti
     });
     if (!row || !parentHasActivePremium(row)) {
       res.status(403).json({
-        error: "Esta función requiere una suscripción premium.",
-        code: "PREMIUM_REQUIRED",
+        error: 'Esta función requiere una suscripción premium.',
+        code: 'PREMIUM_REQUIRED',
       });
       return;
     }
     next();
   } catch (err) {
-    logError("checkPremium", err);
-    res.status(500).json({ error: "Error al verificar la suscripción." });
+    logError('checkPremium', err);
+    res.status(500).json({ error: 'Error al verificar la suscripción.' });
   }
 }

@@ -1,17 +1,17 @@
-import type { Request, Response } from "express";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { formatZodError } from "../lib/validation/schemas";
+import type { Request, Response } from 'express';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { formatZodError } from '../lib/validation/schemas';
 
 function requireAuthUserId(req: Request, res: Response): string | null {
   const auth = req.auth;
   if (!auth) {
-    res.status(401).json({ error: "No autenticado." });
+    res.status(401).json({ error: 'No autenticado.' });
     return null;
   }
-  if (auth.kind === "child") return auth.userId;
-  res.status(403).json({ error: "Solo menores tienen bandeja de notificaciones in-app." });
+  if (auth.kind === 'child') return auth.userId;
+  res.status(403).json({ error: 'Solo menores tienen bandeja de notificaciones in-app.' });
   return null;
 }
 
@@ -23,13 +23,13 @@ export async function listNotifications(req: Request, res: Response): Promise<vo
   try {
     const rows = await prisma.appNotification.findMany({
       where: { userId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 100,
     });
     res.json({ notifications: rows });
   } catch (e) {
-    logError("notificationsApi.list", e);
-    res.status(500).json({ error: "Error al listar notificaciones." });
+    logError('notificationsApi.list', e);
+    res.status(500).json({ error: 'Error al listar notificaciones.' });
   }
 }
 
@@ -44,8 +44,8 @@ export async function getUnreadCount(req: Request, res: Response): Promise<void>
     });
     res.json({ unreadCount: count });
   } catch (e) {
-    logError("notificationsApi.unread", e);
-    res.status(500).json({ error: "Error al contar notificaciones." });
+    logError('notificationsApi.unread', e);
+    res.status(500).json({ error: 'Error al contar notificaciones.' });
   }
 }
 
@@ -56,7 +56,7 @@ export async function putNotificationRead(req: Request, res: Response): Promise<
 
   const id = req.params.notificationId?.trim();
   if (!id) {
-    res.status(400).json({ error: "notificationId inválido." });
+    res.status(400).json({ error: 'notificationId inválido.' });
     return;
   }
 
@@ -67,8 +67,8 @@ export async function putNotificationRead(req: Request, res: Response): Promise<
     });
     res.json({ ok: true });
   } catch (e) {
-    logError("notificationsApi.read", e);
-    res.status(500).json({ error: "Error al marcar notificación." });
+    logError('notificationsApi.read', e);
+    res.status(500).json({ error: 'Error al marcar notificación.' });
   }
 }
 
@@ -84,8 +84,8 @@ export async function putNotificationsReadAll(req: Request, res: Response): Prom
     });
     res.json({ ok: true });
   } catch (e) {
-    logError("notificationsApi.readAll", e);
-    res.status(500).json({ error: "Error al marcar todas." });
+    logError('notificationsApi.readAll', e);
+    res.status(500).json({ error: 'Error al marcar todas.' });
   }
 }
 
@@ -96,7 +96,7 @@ export async function deleteNotification(req: Request, res: Response): Promise<v
 
   const id = req.params.notificationId?.trim();
   if (!id) {
-    res.status(400).json({ error: "notificationId inválido." });
+    res.status(400).json({ error: 'notificationId inválido.' });
     return;
   }
 
@@ -104,8 +104,8 @@ export async function deleteNotification(req: Request, res: Response): Promise<v
     await prisma.appNotification.deleteMany({ where: { id, userId } });
     res.status(204).send();
   } catch (e) {
-    logError("notificationsApi.delete", e);
-    res.status(500).json({ error: "Error al eliminar notificación." });
+    logError('notificationsApi.delete', e);
+    res.status(500).json({ error: 'Error al eliminar notificación.' });
   }
 }
 
@@ -121,8 +121,8 @@ export async function getNotificationPreferences(req: Request, res: Response): P
     });
     res.json({ preferences: u });
   } catch (e) {
-    logError("notificationsApi.getPrefs", e);
-    res.status(500).json({ error: "Error al cargar preferencias." });
+    logError('notificationsApi.getPrefs', e);
+    res.status(500).json({ error: 'Error al cargar preferencias.' });
   }
 }
 
@@ -150,7 +150,7 @@ export async function putNotificationPreferences(req: Request, res: Response): P
     });
     res.json({ preferences: u });
   } catch (e) {
-    logError("notificationsApi.putPrefs", e);
-    res.status(500).json({ error: "Error al actualizar preferencias." });
+    logError('notificationsApi.putPrefs', e);
+    res.status(500).json({ error: 'Error al actualizar preferencias.' });
   }
 }

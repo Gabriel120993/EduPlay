@@ -1,10 +1,10 @@
-import type { UploadApiResponse } from "cloudinary";
+import type { UploadApiResponse } from 'cloudinary';
 
 type ModerationEntry = { kind?: string; status?: string };
 
 function asModerationList(raw: unknown): ModerationEntry[] {
   if (!Array.isArray(raw)) return [];
-  return raw.filter((x): x is ModerationEntry => x != null && typeof x === "object");
+  return raw.filter((x): x is ModerationEntry => x != null && typeof x === 'object');
 }
 
 /**
@@ -21,20 +21,20 @@ export function moderationFromUploadResult(result: UploadApiResponse): {
   }
 
   const parts = mod.map((m) => {
-    const kind = typeof m.kind === "string" ? m.kind : "mod";
-    const status = typeof m.status === "string" ? m.status : "?";
+    const kind = typeof m.kind === 'string' ? m.kind : 'mod';
+    const status = typeof m.status === 'string' ? m.status : '?';
     return `${kind}:${status}`;
   });
-  const note = parts.join("; ");
+  const note = parts.join('; ');
 
-  const rejected = mod.some((m) => m.status === "rejected");
+  const rejected = mod.some((m) => m.status === 'rejected');
   if (rejected) {
     return { flagged: true, note };
   }
 
-  const pending = mod.some((m) => m.status === "pending" || m.status === "queued");
+  const pending = mod.some((m) => m.status === 'pending' || m.status === 'queued');
   if (pending) {
-    return { flagged: true, note: note || "moderation_pending" };
+    return { flagged: true, note: note || 'moderation_pending' };
   }
 
   return { flagged: false, note: null };

@@ -1,13 +1,6 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 
 import { BrandEmptyState } from "../components/BrandEmptyState";
@@ -86,7 +79,9 @@ function WeeklyActivityBars({
         return (
           <View key={d.date} style={weeklyChartStyles.chartCol}>
             <View style={[weeklyChartStyles.chartBarTrack, { backgroundColor: trackColor }]}>
-              <View style={[weeklyChartStyles.chartBarFill, { height: h, backgroundColor: barColor }]} />
+              <View
+                style={[weeklyChartStyles.chartBarFill, { height: h, backgroundColor: barColor }]}
+              />
             </View>
             <Text style={[weeklyChartStyles.chartDay, { color: mutedColor }]} numberOfLines={1}>
               {shortWeekday(d.date)}
@@ -133,7 +128,7 @@ export function ParentAnalyticsScreen({ route }: Props) {
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [load])
+    }, [load]),
   );
 
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -184,7 +179,9 @@ export function ParentAnalyticsScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-      <Text style={styles.screenHint}>Últimos 7 días (UTC) · actividad = XP + partidas + misiones</Text>
+      <Text style={styles.screenHint}>
+        Últimos 7 días (UTC) · actividad = XP + partidas + misiones
+      </Text>
       {rows.map((r) => (
         <View key={r.child.id} style={styles.card}>
           <Text style={styles.childName}>{r.child.realName}</Text>
@@ -200,7 +197,9 @@ export function ParentAnalyticsScreen({ route }: Props) {
           <View style={styles.progressGrid}>
             <View style={styles.progressCell}>
               <Text style={styles.progressValue}>Nivel {r.progress.level}</Text>
-              <Text style={styles.progressLabel}>XP en nivel {r.progress.experience}/{100}</Text>
+              <Text style={styles.progressLabel}>
+                XP en nivel {r.progress.experience}/{100}
+              </Text>
             </View>
             <View style={styles.progressCell}>
               <Text style={styles.progressValue}>{r.progress.xpToNextLevel}</Text>
@@ -258,7 +257,12 @@ function createStyles(c: import("../theme/appTheme").AppColors) {
       padding: space.md,
       backgroundColor: c.background,
     },
-    loadingHint: { marginTop: space.sm, fontSize: typography.body, color: c.textMuted, fontWeight: "600" },
+    loadingHint: {
+      marginTop: space.sm,
+      fontSize: typography.body,
+      color: c.textMuted,
+      fontWeight: "600",
+    },
     screenHint: {
       fontSize: typography.secondary,
       color: c.textMuted,
@@ -274,7 +278,12 @@ function createStyles(c: import("../theme/appTheme").AppColors) {
       borderColor: c.borderSubtle,
     },
     childName: { fontSize: typography.bodyLarge, fontWeight: "900", color: c.text },
-    childMeta: { fontSize: typography.secondary, color: c.textMuted, fontWeight: "600", marginBottom: space.md },
+    childMeta: {
+      fontSize: typography.secondary,
+      color: c.textMuted,
+      fontWeight: "600",
+      marginBottom: space.md,
+    },
     sectionTitle: {
       fontSize: typography.secondary,
       fontWeight: "800",
@@ -283,7 +292,12 @@ function createStyles(c: import("../theme/appTheme").AppColors) {
       letterSpacing: 0.5,
     },
     sectionSpaced: { marginTop: space.md },
-    metricBig: { marginTop: space.xs, fontSize: typography.title, fontWeight: "900", color: c.text },
+    metricBig: {
+      marginTop: space.xs,
+      fontSize: typography.title,
+      fontWeight: "900",
+      color: c.text,
+    },
     metricSub: { fontSize: typography.body, fontWeight: "600", color: c.textMuted },
     progressGrid: {
       marginTop: space.sm,
@@ -301,7 +315,12 @@ function createStyles(c: import("../theme/appTheme").AppColors) {
       borderColor: c.borderSubtle,
     },
     progressValue: { fontSize: typography.bodyLarge, fontWeight: "900", color: c.text },
-    progressLabel: { fontSize: typography.secondary - 1, color: c.textMuted, fontWeight: "600", marginTop: 2 },
+    progressLabel: {
+      fontSize: typography.secondary - 1,
+      color: c.textMuted,
+      fontWeight: "600",
+      marginTop: 2,
+    },
     catRow: {
       marginTop: space.sm,
       paddingVertical: space.xs,
@@ -310,7 +329,12 @@ function createStyles(c: import("../theme/appTheme").AppColors) {
     },
     catName: { fontSize: typography.body, fontWeight: "700", color: c.text },
     catMeta: { fontSize: typography.secondary, color: c.textMuted, marginTop: 2 },
-    emptyLine: { marginTop: space.xs, fontSize: typography.body, color: c.textMuted, fontStyle: "italic" },
+    emptyLine: {
+      marginTop: space.xs,
+      fontSize: typography.body,
+      color: c.textMuted,
+      fontStyle: "italic",
+    },
     retryBtn: { marginTop: space.md, padding: space.sm + space.xs },
     retryText: { color: c.link, fontWeight: "800", fontSize: typography.bodyLarge },
   });

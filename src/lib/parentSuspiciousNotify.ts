@@ -1,27 +1,27 @@
-import { ContentReportTarget } from "@prisma/client";
-import { sendExpoPushToToken } from "./expoPushSend";
-import { logError } from "./logger";
-import { prisma } from "./prisma";
+import { ContentReportTarget } from '@prisma/client';
+import { sendExpoPushToToken } from './expoPushSend';
+import { logError } from './logger';
+import { prisma } from './prisma';
 
 function displayLabel(u: { username: string; realName: string }): string {
   return u.realName?.trim() || `@${u.username}`;
 }
 
-const KIND_SUSPICIOUS = "SUSPICIOUS_ACTIVITY";
-const KIND_SUSPICIOUS_MEDIA = "SUSPICIOUS_MEDIA";
-const KIND_CHAT_FILTER = "CHAT_FILTER_ALERT";
+const KIND_SUSPICIOUS = 'SUSPICIOUS_ACTIVITY';
+const KIND_SUSPICIOUS_MEDIA = 'SUSPICIOUS_MEDIA';
+const KIND_CHAT_FILTER = 'CHAT_FILTER_ALERT';
 
 function blockReasonLabel(reason: string | null): string {
-  if (!reason) return "";
+  if (!reason) return '';
   switch (reason) {
-    case "PERSONAL_DATA":
-      return " (datos personales)";
-    case "BAD_WORDS":
-      return " (lenguaje)";
-    case "CONTACT_OR_LINK":
-      return " (enlace o contacto)";
-    case "EMPTY":
-      return "";
+    case 'PERSONAL_DATA':
+      return ' (datos personales)';
+    case 'BAD_WORDS':
+      return ' (lenguaje)';
+    case 'CONTACT_OR_LINK':
+      return ' (enlace o contacto)';
+    case 'EMPTY':
+      return '';
     default:
       return ` (${reason})`;
   }
@@ -38,7 +38,7 @@ export async function recordAndNotifyParentsForNewContentReport(params: {
   reporterUserId: string;
 }): Promise<void> {
   const { targetType, postId, reportedUserId, chatMessageId, reporterUserId } = params;
-  const title = "Actividad revisable";
+  const title = 'Actividad revisable';
   try {
     if (targetType === ContentReportTarget.POST && postId) {
       const post = await prisma.post.findUnique({
@@ -69,7 +69,7 @@ export async function recordAndNotifyParentsForNewContentReport(params: {
         void sendExpoPushToToken(parent.expoPushToken, title, body, {
           kind: KIND_SUSPICIOUS,
           childId: u.id,
-          reportTarget: "POST",
+          reportTarget: 'POST',
           postId: post.id,
         });
       }
@@ -101,7 +101,7 @@ export async function recordAndNotifyParentsForNewContentReport(params: {
         void sendExpoPushToToken(parent.expoPushToken, title, body, {
           kind: KIND_SUSPICIOUS,
           childId: u.id,
-          reportTarget: "USER",
+          reportTarget: 'USER',
         });
       }
       return;
@@ -143,7 +143,7 @@ export async function recordAndNotifyParentsForNewContentReport(params: {
             kind: KIND_SUSPICIOUS,
             childId: s.id,
             peerUserId: r.id,
-            reportTarget: "CHAT_MESSAGE",
+            reportTarget: 'CHAT_MESSAGE',
             chatMessageId: msg.id,
           });
         }
@@ -187,13 +187,13 @@ export async function recordAndNotifyParentsForNewContentReport(params: {
           kind: KIND_SUSPICIOUS,
           childId,
           peerUserId,
-          reportTarget: "CHAT_MESSAGE",
+          reportTarget: 'CHAT_MESSAGE',
           chatMessageId: msg.id,
         });
       }
     }
   } catch (e) {
-    logError("parentSuspiciousNotify.contentReport", e);
+    logError('parentSuspiciousNotify.contentReport', e);
   }
 }
 
@@ -202,7 +202,7 @@ export async function recordAndNotifyParentsForNewContentReport(params: {
  */
 export async function recordAndNotifyParentForModerationFlaggedPost(
   authorUserId: string,
-  postId: string
+  postId: string,
 ): Promise<void> {
   try {
     const u = await prisma.user.findUnique({
@@ -211,7 +211,7 @@ export async function recordAndNotifyParentForModerationFlaggedPost(
     });
     if (!u) return;
 
-    const title = "Contenido marcado automáticamente";
+    const title = 'Contenido marcado automáticamente';
     const body = `Una publicación de ${displayLabel(u)} (@${u.username}) fue marcada por posible contenido inapropiado. Revisá en la app.`;
 
     await prisma.parentFamilyEvent.create({
@@ -237,7 +237,7 @@ export async function recordAndNotifyParentForModerationFlaggedPost(
       });
     }
   } catch (e) {
-    logError("parentSuspiciousNotify.moderationFlagged", e);
+    logError('parentSuspiciousNotify.moderationFlagged', e);
   }
 }
 
@@ -281,11 +281,11 @@ export async function recordAndNotifyParentsForChatFilterSignal(params: {
     const wantS = setS?.notifyParentSuspiciousChat !== false;
     const wantR = setR?.notifyParentSuspiciousChat !== false;
 
-    const title = "Mensaje de chat revisable";
+    const title = 'Mensaje de chat revisable';
     const reasonHint = blockReasonLabel(blockReason);
 
-    const pushSound = "eduplay-push-chime.wav";
-    const androidChannel = "default";
+    const pushSound = 'eduplay-push-chime.wav';
+    const androidChannel = 'default';
     const sendPush = (token: string | null, body: string, childId: string, peerUserId: string) => {
       if (!token) return;
       void sendExpoPushToToken(
@@ -298,7 +298,7 @@ export async function recordAndNotifyParentsForChatFilterSignal(params: {
           peerUserId,
           chatMessageId: messageId,
         },
-        { sound: pushSound, channelId: androidChannel }
+        { sound: pushSound, channelId: androidChannel },
       );
     };
 
@@ -400,6 +400,6 @@ export async function recordAndNotifyParentsForChatFilterSignal(params: {
       sendPush(token, e.body, e.childId, e.peerUserId);
     }
   } catch (e) {
-    logError("parentSuspiciousNotify.chatFilter", e);
+    logError('parentSuspiciousNotify.chatFilter', e);
   }
 }

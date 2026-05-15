@@ -1,6 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { Dimensions, Pressable, ScrollView, Share, Switch, Text, TextInput, View } from "react-native";
+import {
+  Dimensions,
+  Pressable,
+  ScrollView,
+  Share,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
@@ -8,7 +17,11 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AppIcon } from "../components/AppIcon";
 import { BrandLogo } from "../components/BrandLogo";
-import { ContentCard, type ContentCardCategory, type ContentCardDifficulty } from "../components/ContentCard";
+import {
+  ContentCard,
+  type ContentCardCategory,
+  type ContentCardDifficulty,
+} from "../components/ContentCard";
 import { APP_TAGLINE, appTaglineSubtitle } from "../constants/brand";
 import { useTheme } from "../contexts/ThemeContext";
 import type { MainTabParamList, RootStackParamList } from "../navigation/types";
@@ -79,7 +92,11 @@ export function LibraryScreen() {
   const [duration, setDuration] = useState<DurationBucket | "all">("all");
   const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
   const [sortBy, setSortBy] = useState<"popular" | "new">("popular");
-  const [favorites, setFavorites] = useState<FavoritesPayload>({ videos: [], stories: [], facts: [] });
+  const [favorites, setFavorites] = useState<FavoritesPayload>({
+    videos: [],
+    stories: [],
+    facts: [],
+  });
   const [offlineDocs, setOfflineDocs] = useState<string[]>([]);
   const [subtitlesDefault, setSubtitlesDefault] = useState(true);
   const [factIndex, setFactIndex] = useState(0);
@@ -125,7 +142,7 @@ export function LibraryScreen() {
       else set.add(id);
       await persistFavorites({ ...favorites, videos: [...set] });
     },
-    [favorites, persistFavorites]
+    [favorites, persistFavorites],
   );
 
   const toggleFavStory = useCallback(
@@ -135,7 +152,7 @@ export function LibraryScreen() {
       else set.add(id);
       await persistFavorites({ ...favorites, stories: [...set] });
     },
-    [favorites, persistFavorites]
+    [favorites, persistFavorites],
   );
 
   const toggleFavFact = useCallback(
@@ -145,7 +162,7 @@ export function LibraryScreen() {
       else set.add(id);
       await persistFavorites({ ...favorites, facts: [...set] });
     },
-    [favorites, persistFavorites]
+    [favorites, persistFavorites],
   );
 
   const toggleOfflineDoc = useCallback(
@@ -157,7 +174,7 @@ export function LibraryScreen() {
       setOfflineDocs(next);
       await AsyncStorage.setItem(OFFLINE_KEY, JSON.stringify(next));
     },
-    [offlineDocs]
+    [offlineDocs],
   );
 
   const persistSubtitles = useCallback(async (on: boolean) => {
@@ -172,7 +189,15 @@ export function LibraryScreen() {
     if (duration !== "all") rows = rows.filter((r) => r.durationBucket === duration);
     if (difficulty !== "all") rows = rows.filter((r) => r.difficulty === difficulty);
     rows = rows.filter((r) => matchesSearch(`${r.title} ${r.synopsis}`, search));
-    rows.sort((a, b) => (sortBy === "new" ? (a.isNew === b.isNew ? b.popularityScore - a.popularityScore : a.isNew ? -1 : 1) : b.popularityScore - a.popularityScore));
+    rows.sort((a, b) =>
+      sortBy === "new"
+        ? a.isNew === b.isNew
+          ? b.popularityScore - a.popularityScore
+          : a.isNew
+            ? -1
+            : 1
+        : b.popularityScore - a.popularityScore,
+    );
     return rows;
   }, [age, subject, duration, difficulty, search, sortBy]);
 
@@ -182,7 +207,15 @@ export function LibraryScreen() {
     if (subject !== "all") rows = rows.filter((r) => r.subject === subject);
     if (difficulty !== "all") rows = rows.filter((r) => r.difficulty === difficulty);
     rows = rows.filter((r) => matchesSearch(`${r.title} ${r.blurb} ${r.genre}`, search));
-    rows.sort((a, b) => (sortBy === "new" ? (a.isNew === b.isNew ? b.popularityScore - a.popularityScore : a.isNew ? -1 : 1) : b.popularityScore - a.popularityScore));
+    rows.sort((a, b) =>
+      sortBy === "new"
+        ? a.isNew === b.isNew
+          ? b.popularityScore - a.popularityScore
+          : a.isNew
+            ? -1
+            : 1
+        : b.popularityScore - a.popularityScore,
+    );
     return rows;
   }, [age, subject, difficulty, search, sortBy]);
 
@@ -200,7 +233,15 @@ export function LibraryScreen() {
     if (age !== "all") rows = rows.filter((r) => r.ageBand === age);
     if (subject !== "all") rows = rows.filter((r) => r.subject === subject);
     rows = rows.filter((r) => matchesSearch(`${r.fact} ${r.category}`, search));
-    rows.sort((a, b) => (sortBy === "new" ? (a.isNew === b.isNew ? b.popularityScore - a.popularityScore : a.isNew ? -1 : 1) : b.popularityScore - a.popularityScore));
+    rows.sort((a, b) =>
+      sortBy === "new"
+        ? a.isNew === b.isNew
+          ? b.popularityScore - a.popularityScore
+          : a.isNew
+            ? -1
+            : 1
+        : b.popularityScore - a.popularityScore,
+    );
     return rows;
   }, [age, subject, search, sortBy]);
 
@@ -228,7 +269,15 @@ export function LibraryScreen() {
         marginRight: space.sm,
       }}
     >
-      <Text style={{ color: active ? colors.chipTextActive : colors.chipText, fontWeight: "700", fontSize: typography.secondary }}>{label}</Text>
+      <Text
+        style={{
+          color: active ? colors.chipTextActive : colors.chipText,
+          fontWeight: "700",
+          fontSize: typography.secondary,
+        }}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 
@@ -287,13 +336,27 @@ export function LibraryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
-      <ScrollView stickyHeaderIndices={[1]} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + space.xl }}>
+      <ScrollView
+        stickyHeaderIndices={[1]}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + space.xl }}
+      >
         <View style={{ paddingHorizontal: screenEdge.horizontal, paddingTop: space.sm }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
             <BrandLogo width={36} height={36} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.text, fontWeight: "900", fontSize: typography.title }}>Biblioteca</Text>
-              <Text style={{ color: colors.textMuted, fontWeight: "600", fontSize: typography.secondary }}>{APP_TAGLINE}</Text>
+              <Text style={{ color: colors.text, fontWeight: "900", fontSize: typography.title }}>
+                Biblioteca
+              </Text>
+              <Text
+                style={{
+                  color: colors.textMuted,
+                  fontWeight: "600",
+                  fontSize: typography.secondary,
+                }}
+              >
+                {APP_TAGLINE}
+              </Text>
             </View>
             <Pressable onPress={openChat} hitSlop={10}>
               <AppIcon name="chatbubbles-outline" size="md" color={colors.link} />
@@ -302,10 +365,19 @@ export function LibraryScreen() {
               <AppIcon name="settings-outline" size="md" color={colors.link} />
             </Pressable>
           </View>
-          <Text style={{ color: colors.textSecondary, marginTop: space.sm, fontWeight: "600" }}>{appTaglineSubtitle()}</Text>
+          <Text style={{ color: colors.textSecondary, marginTop: space.sm, fontWeight: "600" }}>
+            {appTaglineSubtitle()}
+          </Text>
         </View>
 
-        <View style={{ backgroundColor: colors.background, paddingTop: space.sm, borderBottomWidth: 1, borderBottomColor: colors.borderSubtle }}>
+        <View
+          style={{
+            backgroundColor: colors.background,
+            paddingTop: space.sm,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.borderSubtle,
+          }}
+        >
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -324,44 +396,140 @@ export function LibraryScreen() {
               fontWeight: "600",
             }}
           />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: screenEdge.horizontal, paddingBottom: space.sm }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: screenEdge.horizontal,
+              paddingBottom: space.sm,
+            }}
+          >
             {chip(section === "docs", "Mini documentales", () => setSection("docs"))}
             {chip(section === "stories", "Cuentos", () => setSection("stories"))}
             {chip(section === "experiments", "Experimentos", () => setSection("experiments"))}
             {chip(section === "facts", "Datos curiosos", () => setSection("facts"))}
           </ScrollView>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: screenEdge.horizontal, paddingBottom: space.md }}>
-            <Text style={{ alignSelf: "center", color: colors.textMuted, fontWeight: "800", marginRight: space.sm }}>Edad</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: screenEdge.horizontal,
+              paddingBottom: space.md,
+            }}
+          >
+            <Text
+              style={{
+                alignSelf: "center",
+                color: colors.textMuted,
+                fontWeight: "800",
+                marginRight: space.sm,
+              }}
+            >
+              Edad
+            </Text>
             {chip(age === "all", "Todas", () => setAge("all"))}
             {chip(age === "5-7", "5-7", () => setAge("5-7"))}
             {chip(age === "8-10", "8-10", () => setAge("8-10"))}
             {chip(age === "11-15", "11-15", () => setAge("11-15"))}
-            <Text style={{ alignSelf: "center", color: colors.textMuted, fontWeight: "800", marginHorizontal: space.sm }}>|</Text>
-            <Text style={{ alignSelf: "center", color: colors.textMuted, fontWeight: "800", marginRight: space.sm }}>Materia</Text>
+            <Text
+              style={{
+                alignSelf: "center",
+                color: colors.textMuted,
+                fontWeight: "800",
+                marginHorizontal: space.sm,
+              }}
+            >
+              |
+            </Text>
+            <Text
+              style={{
+                alignSelf: "center",
+                color: colors.textMuted,
+                fontWeight: "800",
+                marginRight: space.sm,
+              }}
+            >
+              Materia
+            </Text>
             {chip(subject === "all", "Todas", () => setSubject("all"))}
             {(Object.keys(SUBJECT_LABELS) as SubjectTag[]).map((s) => (
-              <Fragment key={s}>{chip(subject === s, SUBJECT_LABELS[s], () => setSubject(s))}</Fragment>
+              <Fragment key={s}>
+                {chip(subject === s, SUBJECT_LABELS[s], () => setSubject(s))}
+              </Fragment>
             ))}
           </ScrollView>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: screenEdge.horizontal, paddingBottom: space.md }}>
-            <Text style={{ alignSelf: "center", color: colors.textMuted, fontWeight: "800", marginRight: space.sm }}>Duración</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: screenEdge.horizontal,
+              paddingBottom: space.md,
+            }}
+          >
+            <Text
+              style={{
+                alignSelf: "center",
+                color: colors.textMuted,
+                fontWeight: "800",
+                marginRight: space.sm,
+              }}
+            >
+              Duración
+            </Text>
             {chip(duration === "all", "Todas", () => setDuration("all"))}
             {chip(duration === "corto", "< 5 min", () => setDuration("corto"))}
             {chip(duration === "medio", "5-15 min", () => setDuration("medio"))}
             {chip(duration === "largo", "> 15 min", () => setDuration("largo"))}
-            <Text style={{ alignSelf: "center", color: colors.textMuted, fontWeight: "800", marginHorizontal: space.sm }}>|</Text>
-            <Text style={{ alignSelf: "center", color: colors.textMuted, fontWeight: "800", marginRight: space.sm }}>Dificultad</Text>
+            <Text
+              style={{
+                alignSelf: "center",
+                color: colors.textMuted,
+                fontWeight: "800",
+                marginHorizontal: space.sm,
+              }}
+            >
+              |
+            </Text>
+            <Text
+              style={{
+                alignSelf: "center",
+                color: colors.textMuted,
+                fontWeight: "800",
+                marginRight: space.sm,
+              }}
+            >
+              Dificultad
+            </Text>
             {chip(difficulty === "all", "Todas", () => setDifficulty("all"))}
             {chip(difficulty === "facil", "Fácil", () => setDifficulty("facil"))}
             {chip(difficulty === "medio", "Media", () => setDifficulty("medio"))}
             {chip(difficulty === "avanzado", "Avanzada", () => setDifficulty("avanzado"))}
-            <Text style={{ alignSelf: "center", color: colors.textMuted, fontWeight: "800", marginHorizontal: space.sm }}>|</Text>
+            <Text
+              style={{
+                alignSelf: "center",
+                color: colors.textMuted,
+                fontWeight: "800",
+                marginHorizontal: space.sm,
+              }}
+            >
+              |
+            </Text>
             {chip(sortBy === "popular", "Popularidad", () => setSortBy("popular"))}
             {chip(sortBy === "new", "Novedades", () => setSortBy("new"))}
           </ScrollView>
           {section === "docs" ? (
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: screenEdge.horizontal, paddingBottom: space.sm }}>
-              <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>Subtítulos por defecto</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: screenEdge.horizontal,
+                paddingBottom: space.sm,
+              }}
+            >
+              <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>
+                Subtítulos por defecto
+              </Text>
               <Switch value={subtitlesDefault} onValueChange={(v) => void persistSubtitles(v)} />
             </View>
           ) : null}
@@ -369,8 +537,16 @@ export function LibraryScreen() {
 
         {section === "docs" ? (
           <View style={{ marginTop: space.md }}>
-            <Text style={{ color: colors.textMuted, fontWeight: "800", paddingHorizontal: screenEdge.horizontal, marginBottom: space.sm }}>
-              Mini documentales ({filteredDocs.length} de {MINI_DOCUMENTARIES.length}) · voz clara y animaciones
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontWeight: "800",
+                paddingHorizontal: screenEdge.horizontal,
+                marginBottom: space.sm,
+              }}
+            >
+              Mini documentales ({filteredDocs.length} de {MINI_DOCUMENTARIES.length}) · voz clara y
+              animaciones
             </Text>
             {filteredDocs.map((item) => (
               <View key={item.id}>{renderDoc({ item })}</View>
@@ -380,7 +556,14 @@ export function LibraryScreen() {
 
         {section === "stories" ? (
           <View style={{ marginTop: space.md }}>
-            <Text style={{ color: colors.textMuted, fontWeight: "800", paddingHorizontal: screenEdge.horizontal, marginBottom: space.sm }}>
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontWeight: "800",
+                paddingHorizontal: screenEdge.horizontal,
+                marginBottom: space.sm,
+              }}
+            >
               Cuentos interactivos · decisiones · comprensión cada 3 páginas
             </Text>
             {filteredStories.map((item) => (
@@ -391,7 +574,14 @@ export function LibraryScreen() {
 
         {section === "experiments" ? (
           <View style={{ marginTop: space.md }}>
-            <Text style={{ color: colors.textMuted, fontWeight: "800", paddingHorizontal: screenEdge.horizontal, marginBottom: space.sm }}>
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontWeight: "800",
+                paddingHorizontal: screenEdge.horizontal,
+                marginBottom: space.sm,
+              }}
+            >
               Experimentos en casa · guías y video demo
             </Text>
             {filteredExperiments.map((item) => (
@@ -402,7 +592,15 @@ export function LibraryScreen() {
 
         {section === "facts" && currentFact ? (
           <View style={{ marginTop: space.md, alignItems: "center" }}>
-            <Text style={{ color: colors.textMuted, fontWeight: "800", marginBottom: space.sm, paddingHorizontal: screenEdge.horizontal, alignSelf: "stretch" }}>
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontWeight: "800",
+                marginBottom: space.sm,
+                paddingHorizontal: screenEdge.horizontal,
+                alignSelf: "stretch",
+              }}
+            >
               Datos curiosos · deslizá como tarjetas
             </Text>
             <ScrollView
@@ -418,7 +616,10 @@ export function LibraryScreen() {
               }}
             >
               {factData.map((item) => (
-                <View key={item.id} style={{ width, alignItems: "center", paddingHorizontal: screenEdge.horizontal }}>
+                <View
+                  key={item.id}
+                  style={{ width, alignItems: "center", paddingHorizontal: screenEdge.horizontal }}
+                >
                   <View
                     style={{
                       width: cardW,
@@ -431,17 +632,49 @@ export function LibraryScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ color: colors.primaryStrong, fontWeight: "900", fontSize: typography.secondary, marginBottom: space.sm }}>{item.category}</Text>
-                    <Text style={{ color: colors.text, fontWeight: "900", fontSize: typography.title, lineHeight: 26 }}>{item.fact}</Text>
-                    <Text style={{ color: colors.textMuted, fontWeight: "700", marginTop: space.md }}>{SUBJECT_LABELS[item.subject]} · {item.ageBand}</Text>
+                    <Text
+                      style={{
+                        color: colors.primaryStrong,
+                        fontWeight: "900",
+                        fontSize: typography.secondary,
+                        marginBottom: space.sm,
+                      }}
+                    >
+                      {item.category}
+                    </Text>
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontWeight: "900",
+                        fontSize: typography.title,
+                        lineHeight: 26,
+                      }}
+                    >
+                      {item.fact}
+                    </Text>
+                    <Text
+                      style={{ color: colors.textMuted, fontWeight: "700", marginTop: space.md }}
+                    >
+                      {SUBJECT_LABELS[item.subject]} · {item.ageBand}
+                    </Text>
                   </View>
                   <View style={{ flexDirection: "row", gap: space.lg, marginTop: space.lg }}>
-                    <Pressable onPress={() => void shareFact(item)} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Pressable
+                      onPress={() => void shareFact(item)}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                    >
                       <AppIcon name="share-social-outline" size="md" color={colors.link} />
                       <Text style={{ color: colors.link, fontWeight: "800" }}>Compartir</Text>
                     </Pressable>
-                    <Pressable onPress={() => void toggleFavFact(item.id)} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                      <AppIcon name={favorites.facts.includes(item.id) ? "heart" : "heart-outline"} size="md" color={colors.primary} />
+                    <Pressable
+                      onPress={() => void toggleFavFact(item.id)}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                    >
+                      <AppIcon
+                        name={favorites.facts.includes(item.id) ? "heart" : "heart-outline"}
+                        size="md"
+                        color={colors.primary}
+                      />
                       <Text style={{ color: colors.primary, fontWeight: "800" }}>Guardar</Text>
                     </Pressable>
                   </View>

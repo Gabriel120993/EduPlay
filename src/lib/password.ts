@@ -1,6 +1,6 @@
-import bcrypt from "bcrypt";
+import bcrypt from 'bcrypt';
 
-import { env } from "../config/env";
+import { env } from '../config/env';
 
 /** Hash bcrypt (paquete `bcrypt`) para almacenar contraseñas; coste vía `BCRYPT_ROUNDS`. */
 export async function hashPassword(plain: string): Promise<string> {

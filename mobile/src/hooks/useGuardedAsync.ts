@@ -38,7 +38,7 @@ export function useGuardedAsync(options: UseGuardedAsyncOptions = {}) {
         lastEndRef.current = Date.now();
       }
     },
-    [cooldownMs]
+    [cooldownMs],
   );
 
   return { run, busy };

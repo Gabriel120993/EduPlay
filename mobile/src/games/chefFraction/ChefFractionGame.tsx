@@ -3,7 +3,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { space } from "../../theme/tokens";
-import { bumpUnlocksAfterLevel, getStarsForLevel, setMaxUnlockedLevel, setStarsForLevel } from "../storage/gameProgressStore";
+import {
+  bumpUnlocksAfterLevel,
+  getStarsForLevel,
+  setMaxUnlockedLevel,
+  setStarsForLevel,
+} from "../storage/gameProgressStore";
 import { MiniGameChrome } from "../shared/MiniGameChrome";
 import { starsFromAttempts } from "../shared/starsFromScore";
 import { TutorialOverlay, type TutorialStep } from "../shared/TutorialOverlay";
@@ -21,7 +26,10 @@ const META: MiniGameMeta = {
 const TUTORIAL: TutorialStep[] = [
   { title: "Receta", body: "El cliente pide una fracción exacta de pizza." },
   { title: "Cortes", body: "Elegí el trozo correcto entre las opciones." },
-  { title: "Clientes", body: "Si fallás, el cliente se enoja (pero podés reintentar en el nivel)." },
+  {
+    title: "Clientes",
+    body: "Si fallás, el cliente se enoja (pero podés reintentar en el nivel).",
+  },
   { title: "Progreso", body: "20+ niveles con fracciones cada vez más finas." },
 ];
 
@@ -31,7 +39,11 @@ export const miniGameSpec = { meta: META, totalLevels: TOTAL_LEVELS };
 
 const FRACS = ["1/2", "1/4", "3/4", "2/3", "1/3", "5/8", "3/8", "7/8"];
 
-export default function ChefFractionGame({ levelIndex, onCompleteLevel, onRequestExit }: MiniGameProps) {
+export default function ChefFractionGame({
+  levelIndex,
+  onCompleteLevel,
+  onRequestExit,
+}: MiniGameProps) {
   const { colors } = useTheme();
   const [showTutorial, tutorialDone] = useTutorialSeen(META.id);
   const target = useMemo(() => FRACS[levelIndex % FRACS.length]!, [levelIndex]);
@@ -78,13 +90,36 @@ export default function ChefFractionGame({ levelIndex, onCompleteLevel, onReques
 
   return (
     <View style={{ flex: 1 }}>
-      {showTutorial ? <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} /> : null}
-      <MiniGameChrome meta={META} levelIndex={levelIndex} totalLevels={TOTAL_LEVELS} bestStars={best || undefined} onBack={onRequestExit}>
+      {showTutorial ? (
+        <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} />
+      ) : null}
+      <MiniGameChrome
+        meta={META}
+        levelIndex={levelIndex}
+        totalLevels={TOTAL_LEVELS}
+        bestStars={best || undefined}
+        onBack={onRequestExit}
+      >
         <Text style={{ fontSize: 40, textAlign: "center", marginBottom: space.sm }}>{mood}</Text>
-        <Text style={{ color: colors.text, fontWeight: "900", fontSize: 18, textAlign: "center", marginBottom: space.md }}>
+        <Text
+          style={{
+            color: colors.text,
+            fontWeight: "900",
+            fontSize: 18,
+            textAlign: "center",
+            marginBottom: space.md,
+          }}
+        >
           Pedido: {target} de pizza 🍕
         </Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm, justifyContent: "center" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: space.sm,
+            justifyContent: "center",
+          }}
+        >
           {options.map((f) => (
             <Pressable
               key={f}

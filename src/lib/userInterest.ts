@@ -1,6 +1,6 @@
-import type { AchievementRarity, ContentCategory, Prisma } from "@prisma/client";
+import type { AchievementRarity, ContentCategory, Prisma } from '@prisma/client';
 
-import { prisma } from "./prisma";
+import { prisma } from './prisma';
 
 /** Cuántas categorías devolver como “top” (2 o 3). */
 export type TopInterestsLimit = 2 | 3;
@@ -11,12 +11,12 @@ export type TopInterestsLimit = 2 | 3;
  */
 export async function getTopUserInterests(
   userId: string,
-  options?: { limit?: TopInterestsLimit }
+  options?: { limit?: TopInterestsLimit },
 ): Promise<ContentCategory[]> {
   const take = options?.limit ?? 3;
   const rows = await prisma.userInterest.findMany({
     where: { userId },
-    orderBy: { score: "desc" },
+    orderBy: { score: 'desc' },
     take,
     select: { category: true },
   });
@@ -24,7 +24,9 @@ export async function getTopUserInterests(
 }
 
 /** Scores por categoría para rankear recomendaciones (mayor = más interés). */
-export async function getUserInterestScoreMap(userId: string): Promise<Map<ContentCategory, number>> {
+export async function getUserInterestScoreMap(
+  userId: string,
+): Promise<Map<ContentCategory, number>> {
   const rows = await prisma.userInterest.findMany({
     where: { userId },
     select: { category: true, score: true },
@@ -44,7 +46,7 @@ export async function bumpUserInterestScore(
   tx: Prisma.TransactionClient,
   userId: string,
   category: ContentCategory,
-  delta: number
+  delta: number,
 ): Promise<void> {
   if (delta <= 0) return;
 

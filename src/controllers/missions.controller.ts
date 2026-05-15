@@ -1,5 +1,5 @@
-import type { Request, Response } from "express";
-import { z } from "zod";
+import type { Request, Response } from 'express';
+import { z } from 'zod';
 
 import {
   buildMissionMapNodes,
@@ -10,14 +10,14 @@ import {
   thematicMissionStepCount,
   THEMATIC_MISSIONS,
   type ThematicMissionDef,
-} from "../lib/thematicMissionsCatalog";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
+} from '../lib/thematicMissionsCatalog';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
 
 function childUserId(req: Request, res: Response): string | null {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Esta operación es solo para menores." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Esta operación es solo para menores.' });
     return null;
   }
   return auth.userId;
@@ -26,8 +26,8 @@ function childUserId(req: Request, res: Response): string | null {
 /** Misiones disponibles desde BD para feed/recomendaciones. */
 export async function getAvailableMissions(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Esta operación es solo para menores." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Esta operación es solo para menores.' });
     return;
   }
 
@@ -35,7 +35,7 @@ export async function getAvailableMissions(req: Request, res: Response): Promise
     const [missions, progressRows] = await Promise.all([
       prisma.thematicMission.findMany({
         where: { isActive: true },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         take: 20,
       }),
       prisma.userThematicMissionProgress.findMany({ where: { userId: auth.userId } }),
@@ -54,7 +54,9 @@ export async function getAvailableMissions(req: Request, res: Response): Promise
           stepCount: mission.stepCount,
           progress: progress
             ? {
-                percentage: Math.round((progress.currentStepIndex / Math.max(1, mission.stepCount)) * 100),
+                percentage: Math.round(
+                  (progress.currentStepIndex / Math.max(1, mission.stepCount)) * 100,
+                ),
                 completed: progress.completed,
                 currentStepIndex: progress.currentStepIndex,
                 lastSeenAt: progress.updatedAt.toISOString(),
@@ -64,8 +66,8 @@ export async function getAvailableMissions(req: Request, res: Response): Promise
       }),
     });
   } catch (err) {
-    logError("missions.available", err);
-    res.status(500).json({ error: "Error al cargar misiones disponibles." });
+    logError('missions.available', err);
+    res.status(500).json({ error: 'Error al cargar misiones disponibles.' });
   }
 }
 
@@ -99,21 +101,24 @@ function serializeMissionBase(def: ThematicMissionDef, now: Date) {
 }
 
 const catalogQuerySchema = z.object({
-  festivity: z.enum(["none", "christmas", "halloween", "earth_day", "carnival"]).optional(),
-  month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
-  onlyAvailable: z.enum(["true", "false"]).optional(),
+  festivity: z.enum(['none', 'christmas', 'halloween', 'earth_day', 'carnival']).optional(),
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
+  onlyAvailable: z.enum(['true', 'false']).optional(),
 });
 
 /** Catálogo de misiones temáticas (filtrado opcional). */
 export async function getThematicMissionsCatalog(req: Request, res: Response): Promise<void> {
   const parsed = catalogQuerySchema.safeParse(req.query);
   if (!parsed.success) {
-    res.status(400).json({ error: "Parámetros inválidos." });
+    res.status(400).json({ error: 'Parámetros inválidos.' });
     return;
   }
   const { festivity, month, onlyAvailable } = parsed.data;
   const now = new Date();
-  const restrictAvailability = onlyAvailable !== "false";
+  const restrictAvailability = onlyAvailable !== 'false';
 
   let list = [...THEMATIC_MISSIONS];
   if (festivity) {
@@ -137,8 +142,10 @@ export async function getThematicMissionsCatalog(req: Request, res: Response): P
 export async function getThematicMissionsSeasons(_req: Request, res: Response): Promise<void> {
   const now = new Date();
   const currentMonth = currentSeasonMonthUtc(now);
-  const monthlySpotlight = THEMATIC_MISSIONS.filter((m) => m.seasonMonth === currentMonth).map((m) => m.slug);
-  const festive = THEMATIC_MISSIONS.filter((m) => m.festivity !== "none").map((m) => ({
+  const monthlySpotlight = THEMATIC_MISSIONS.filter((m) => m.seasonMonth === currentMonth).map(
+    (m) => m.slug,
+  );
+  const festive = THEMATIC_MISSIONS.filter((m) => m.festivity !== 'none').map((m) => ({
     slug: m.slug,
     festivity: m.festivity,
     availableFrom: m.availableFrom,
@@ -150,7 +157,7 @@ export async function getThematicMissionsSeasons(_req: Request, res: Response): 
     availableFrom: m.availableFrom,
     availableUntil: m.availableUntil,
   }));
-  const community = THEMATIC_MISSIONS.filter((m) => m.source === "community").map((m) => m.slug);
+  const community = THEMATIC_MISSIONS.filter((m) => m.source === 'community').map((m) => m.slug);
 
   res.json({
     now: now.toISOString(),
@@ -160,13 +167,13 @@ export async function getThematicMissionsSeasons(_req: Request, res: Response): 
     timeLimitedMissions: limited,
     communityMissionSlugs: community,
     newMissionsEachMonthNote:
-      "Las rotaciones mensuales se marcan con `seasonMonth`; la app puede destacar el mes UTC actual.",
+      'Las rotaciones mensuales se marcan con `seasonMonth`; la app puede destacar el mes UTC actual.',
   });
 }
 
 async function loadVoteStats(): Promise<Map<string, number>> {
   const rows = await prisma.thematicMissionVote.groupBy({
-    by: ["missionSlug"],
+    by: ['missionSlug'],
     _count: { _all: true },
   });
   const map = new Map<string, number>();
@@ -195,9 +202,7 @@ export async function getThematicMissionsState(req: Request, res: Response): Pro
       const base = serializeMissionBase(def, now);
       const total = thematicMissionStepCount(def);
       const row = progressBySlug.get(def.slug);
-      const progressPercent = row
-        ? computeProgressRatio(row.currentStepIndex, total)
-        : 0;
+      const progressPercent = row ? computeProgressRatio(row.currentStepIndex, total) : 0;
       const progress =
         row == null
           ? null
@@ -211,8 +216,8 @@ export async function getThematicMissionsState(req: Request, res: Response): Pro
               checkpointSaved: true,
               canRepeat: row.completed,
             };
-      const voteCount = def.source === "community" ? voteStats.get(def.slug) ?? 0 : undefined;
-      const userVoted = def.source === "community" ? voted.has(def.slug) : undefined;
+      const voteCount = def.source === 'community' ? (voteStats.get(def.slug) ?? 0) : undefined;
+      const userVoted = def.source === 'community' ? voted.has(def.slug) : undefined;
       return { ...base, progress, voteCount, userVoted };
     });
 
@@ -222,13 +227,13 @@ export async function getThematicMissionsState(req: Request, res: Response): Pro
       missions,
     });
   } catch (err) {
-    logError("missions.state", err);
-    res.status(500).json({ error: "Error al cargar misiones temáticas." });
+    logError('missions.state', err);
+    res.status(500).json({ error: 'Error al cargar misiones temáticas.' });
   }
 }
 
 const patchProgressSchema = z.object({
-  action: z.literal("advance"),
+  action: z.literal('advance'),
   /** Puntuación opcional al cerrar la misión (mejor marca). */
   score: z.number().int().min(0).max(10_000).optional(),
 });
@@ -239,26 +244,26 @@ export async function patchThematicMissionProgress(req: Request, res: Response):
   if (!userId) return;
 
   const slug = req.params.slug;
-  if (!slug || typeof slug !== "string") {
-    res.status(400).json({ error: "slug inválido." });
+  if (!slug || typeof slug !== 'string') {
+    res.status(400).json({ error: 'slug inválido.' });
     return;
   }
 
   const parsed = patchProgressSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Cuerpo inválido." });
+    res.status(400).json({ error: 'Cuerpo inválido.' });
     return;
   }
 
   const def = getThematicMissionBySlug(slug);
   if (!def) {
-    res.status(404).json({ error: "Misión no encontrada." });
+    res.status(404).json({ error: 'Misión no encontrada.' });
     return;
   }
 
   const now = new Date();
   if (!isThematicMissionAvailableNow(def, now)) {
-    res.status(403).json({ error: "Esta misión no está disponible en este momento." });
+    res.status(403).json({ error: 'Esta misión no está disponible en este momento.' });
     return;
   }
 
@@ -281,12 +286,12 @@ export async function patchThematicMissionProgress(req: Request, res: Response):
     }
 
     if (row.completed) {
-      res.status(409).json({ error: "Misión ya completada. Usá repetir para volver a intentar." });
+      res.status(409).json({ error: 'Misión ya completada. Usá repetir para volver a intentar.' });
       return;
     }
 
     if (row.currentStepIndex >= total) {
-      res.status(409).json({ error: "Estado de progreso inconsistente." });
+      res.status(409).json({ error: 'Estado de progreso inconsistente.' });
       return;
     }
 
@@ -321,8 +326,8 @@ export async function patchThematicMissionProgress(req: Request, res: Response):
       },
     });
   } catch (err) {
-    logError("missions.progress", err);
-    res.status(500).json({ error: "Error al actualizar progreso." });
+    logError('missions.progress', err);
+    res.status(500).json({ error: 'Error al actualizar progreso.' });
   }
 }
 
@@ -332,20 +337,20 @@ export async function postThematicMissionRestart(req: Request, res: Response): P
   if (!userId) return;
 
   const slug = req.params.slug;
-  if (!slug || typeof slug !== "string") {
-    res.status(400).json({ error: "slug inválido." });
+  if (!slug || typeof slug !== 'string') {
+    res.status(400).json({ error: 'slug inválido.' });
     return;
   }
 
   const def = getThematicMissionBySlug(slug);
   if (!def) {
-    res.status(404).json({ error: "Misión no encontrada." });
+    res.status(404).json({ error: 'Misión no encontrada.' });
     return;
   }
 
   const now = new Date();
   if (!isThematicMissionAvailableNow(def, now)) {
-    res.status(403).json({ error: "Esta misión no está disponible en este momento." });
+    res.status(403).json({ error: 'Esta misión no está disponible en este momento.' });
     return;
   }
 
@@ -356,7 +361,7 @@ export async function postThematicMissionRestart(req: Request, res: Response): P
       where: { userId_missionSlug: { userId, missionSlug: slug } },
     });
     if (!row || !row.completed) {
-      res.status(409).json({ error: "Solo podés repetir una misión ya completada." });
+      res.status(409).json({ error: 'Solo podés repetir una misión ya completada.' });
       return;
     }
 
@@ -382,8 +387,8 @@ export async function postThematicMissionRestart(req: Request, res: Response): P
       },
     });
   } catch (err) {
-    logError("missions.restart", err);
-    res.status(500).json({ error: "Error al reiniciar la misión." });
+    logError('missions.restart', err);
+    res.status(500).json({ error: 'Error al reiniciar la misión.' });
   }
 }
 
@@ -393,14 +398,14 @@ export async function postThematicMissionVote(req: Request, res: Response): Prom
   if (!userId) return;
 
   const slug = req.params.slug;
-  if (!slug || typeof slug !== "string") {
-    res.status(400).json({ error: "slug inválido." });
+  if (!slug || typeof slug !== 'string') {
+    res.status(400).json({ error: 'slug inválido.' });
     return;
   }
 
   const def = getThematicMissionBySlug(slug);
-  if (!def || def.source !== "community") {
-    res.status(400).json({ error: "Solo se puede votar misiones de la comunidad." });
+  if (!def || def.source !== 'community') {
+    res.status(400).json({ error: 'Solo se puede votar misiones de la comunidad.' });
     return;
   }
 
@@ -412,15 +417,15 @@ export async function postThematicMissionVote(req: Request, res: Response): Prom
     res.status(201).json({ missionSlug: slug, voteCount: count });
   } catch (err: unknown) {
     if (
-      typeof err === "object" &&
+      typeof err === 'object' &&
       err !== null &&
-      "code" in err &&
-      (err as { code?: string }).code === "P2002"
+      'code' in err &&
+      (err as { code?: string }).code === 'P2002'
     ) {
-      res.status(409).json({ error: "Ya votaste esta misión." });
+      res.status(409).json({ error: 'Ya votaste esta misión.' });
       return;
     }
-    logError("missions.vote", err);
-    res.status(500).json({ error: "Error al registrar el voto." });
+    logError('missions.vote', err);
+    res.status(500).json({ error: 'Error al registrar el voto.' });
   }
 }

@@ -3,7 +3,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { space } from "../../theme/tokens";
-import { bumpUnlocksAfterLevel, getStarsForLevel, setMaxUnlockedLevel, setStarsForLevel } from "../storage/gameProgressStore";
+import {
+  bumpUnlocksAfterLevel,
+  getStarsForLevel,
+  setMaxUnlockedLevel,
+  setStarsForLevel,
+} from "../storage/gameProgressStore";
 import { MiniGameChrome } from "../shared/MiniGameChrome";
 import { starsFromAttempts } from "../shared/starsFromScore";
 import { TutorialOverlay, type TutorialStep } from "../shared/TutorialOverlay";
@@ -29,7 +34,18 @@ const TOTAL_LEVELS = 22;
 
 export const miniGameSpec = { meta: META, totalLevels: TOTAL_LEVELS };
 
-const BANK = ["SOL", "LUZ", "MAR", "GATO", "CASA", "NUBE", "PLAZA", "ESCUELA", "BIBLIOTECA", "ASTRONAUTA"];
+const BANK = [
+  "SOL",
+  "LUZ",
+  "MAR",
+  "GATO",
+  "CASA",
+  "NUBE",
+  "PLAZA",
+  "ESCUELA",
+  "BIBLIOTECA",
+  "ASTRONAUTA",
+];
 
 function shuffleWord(s: string): string[] {
   const a = s.split("");
@@ -42,11 +58,19 @@ function shuffleWord(s: string): string[] {
   return a;
 }
 
-export default function WordBuilderGame({ levelIndex, onCompleteLevel, onRequestExit }: MiniGameProps) {
+export default function WordBuilderGame({
+  levelIndex,
+  onCompleteLevel,
+  onRequestExit,
+}: MiniGameProps) {
   const { colors } = useTheme();
   const [showTutorial, tutorialDone] = useTutorialSeen(META.id);
   const len = 3 + Math.min(5, levelIndex % 6);
-  const word = useMemo(() => BANK.find((w) => w.length === len) ?? BANK[Math.min(BANK.length - 1, 2 + (levelIndex % 7))]!, [len, levelIndex]);
+  const word = useMemo(
+    () =>
+      BANK.find((w) => w.length === len) ?? BANK[Math.min(BANK.length - 1, 2 + (levelIndex % 7))]!,
+    [len, levelIndex],
+  );
   const [pool, setPool] = useState<string[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
   const [mistakes, setMistakes] = useState(0);
@@ -91,17 +115,33 @@ export default function WordBuilderGame({ levelIndex, onCompleteLevel, onRequest
         })();
       }
     },
-    [deadline, levelIndex, mistakes, nextLetter, onCompleteLevel, picked, word.length, zen]
+    [deadline, levelIndex, mistakes, nextLetter, onCompleteLevel, picked, word.length, zen],
   );
 
   return (
     <View style={{ flex: 1 }}>
-      {showTutorial ? <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} /> : null}
-      <MiniGameChrome meta={META} levelIndex={levelIndex} totalLevels={TOTAL_LEVELS} bestStars={best || undefined} onBack={onRequestExit}>
+      {showTutorial ? (
+        <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} />
+      ) : null}
+      <MiniGameChrome
+        meta={META}
+        levelIndex={levelIndex}
+        totalLevels={TOTAL_LEVELS}
+        bestStars={best || undefined}
+        onBack={onRequestExit}
+      >
         <Text style={{ color: colors.textMuted, fontWeight: "700", marginBottom: space.sm }}>
           {zen ? "Modo zen" : "Modo contrarreloj sugerido · 45 s"}
         </Text>
-        <Text style={{ color: colors.text, fontSize: 20, fontWeight: "900", letterSpacing: 4, marginBottom: space.md }}>
+        <Text
+          style={{
+            color: colors.text,
+            fontSize: 20,
+            fontWeight: "900",
+            letterSpacing: 4,
+            marginBottom: space.md,
+          }}
+        >
           {word
             .split("")
             .map((c, i) => (i < picked.length ? c : "_"))

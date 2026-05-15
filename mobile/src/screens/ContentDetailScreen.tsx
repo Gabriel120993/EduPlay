@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -8,7 +9,11 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../contexts/AuthContext";
 import { showToast } from "../lib/toastBus";
 import { saveLastOpenedContent } from "../lib/continueLearningStorage";
-import { completeEducationalContent, getEducationalContentById, notifyMissionRewardsFromApiResponse } from "../services/api";
+import {
+  completeEducationalContent,
+  getEducationalContentById,
+  notifyMissionRewardsFromApiResponse,
+} from "../services/api";
 import type { EducationalContentItem } from "../types/api";
 import { useTheme } from "../contexts/ThemeContext";
 import { learnMarkdownForTopicSlug } from "../data/learnBodies";
@@ -16,12 +21,17 @@ import { educationalMetaToMarkdown } from "../lib/educationalMetaMarkdown";
 import { screenEdge, space } from "../theme/tokens";
 import type { RootStackParamList } from "../navigation/types";
 import { findFallbackEducationalContentById } from "../services/educationalFallbacks";
-import { findLibraryEducationalContentById, isOfflineLibraryContentId } from "./libraryMediaCatalog";
+import {
+  findLibraryEducationalContentById,
+  isOfflineLibraryContentId,
+} from "./libraryMediaCatalog";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ContentDetail">;
 
 function categoryEmoji(category: string | undefined | null): string {
-  const c = String(category ?? "").trim().toLowerCase();
+  const c = String(category ?? "")
+    .trim()
+    .toLowerCase();
   if (c === "astronomy") return "🌌";
   if (c === "science") return "🧪";
   if (c === "math") return "➗";
@@ -81,7 +91,11 @@ function parseContentBlocks(content: string | null | undefined): ContentBlock[] 
       if (rest.every((l) => bulletLikeLine(l))) {
         blocks.push({
           kind: "bullets",
-          items: rest.map((l) => String(l ?? "").replace(/^([•\-*·]|\d+[.)])\s*/, "").trim()),
+          items: rest.map((l) =>
+            String(l ?? "")
+              .replace(/^([•\-*·]|\d+[.)])\s*/, "")
+              .trim(),
+          ),
         });
       } else {
         blocks.push({ kind: "paragraph", text: rest.join("\n\n") });
@@ -92,7 +106,13 @@ function parseContentBlocks(content: string | null | undefined): ContentBlock[] 
     if (lines.every((l) => bulletLikeLine(l))) {
       blocks.push({
         kind: "bullets",
-        items: lines.map((l) => String(l ?? "").replace(/^([•\-*·]|\d+[.)])\s*/, "").trim()).filter(Boolean),
+        items: lines
+          .map((l) =>
+            String(l ?? "")
+              .replace(/^([•\-*·]|\d+[.)])\s*/, "")
+              .trim(),
+          )
+          .filter(Boolean),
       });
       continue;
     }
@@ -107,7 +127,7 @@ function renderHighlightedParts(
   importantWords: string[],
   wordsPattern: RegExp | null,
   accentColor: string,
-  keyPrefix: string
+  keyPrefix: string,
 ): ReactNode[] {
   const safe = String(text ?? "");
   if (!wordsPattern) return [<Text key={`${keyPrefix}-0`}>{safe}</Text>];
@@ -124,12 +144,22 @@ function renderHighlightedParts(
 }
 
 function importantWordsByCategory(category: string | undefined | null): string[] {
-  const c = String(category ?? "").trim().toLowerCase();
+  const c = String(category ?? "")
+    .trim()
+    .toLowerCase();
   if (c === "astronomy") {
     return ["gravedad", "órbita", "estrellas", "planetas", "luz", "sistema solar", "galaxia"];
   }
   if (c === "science") {
-    return ["energía", "agua", "experimento", "observación", "hipótesis", "evidencia", "campo magnético"];
+    return [
+      "energía",
+      "agua",
+      "experimento",
+      "observación",
+      "hipótesis",
+      "evidencia",
+      "campo magnético",
+    ];
   }
   if (c === "math") {
     return ["número", "fracción", "forma", "medida", "cantidad"];
@@ -154,6 +184,7 @@ function contentBlocksOrLegacy(content: string | null | undefined): ContentBlock
 }
 
 export function ContentDetailScreen({ route }: Props) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { viewerUserId } = useAuth();
   const [item, setItem] = useState<EducationalContentItem | null>(null);
@@ -244,8 +275,11 @@ export function ContentDetailScreen({ route }: Props) {
         }}
       >
         <AppIcon name="alert-circle-outline" color={colors.error} size="lg" />
-        <Text style={{ color: colors.error, textAlign: "center", fontWeight: "600" }}>
-          {error ?? "Contenido no encontrado."}
+        <Text
+          style={{ color: colors.error, textAlign: "center", fontWeight: "600" }}
+          allowFontScaling
+        >
+          {error ?? t("content.notFound")}
         </Text>
       </View>
     );
@@ -315,111 +349,131 @@ export function ContentDetailScreen({ route }: Props) {
               fontWeight: "600",
             }}
           >
-            Este recurso no tiene texto de lectura todavía. Si acabás de instalar EduPlay en desarrollo, corré la semilla de la base de datos desde el proyecto API.
+            Este recurso no tiene texto de lectura todavía. Si acabás de instalar EduPlay en
+            desarrollo, corré la semilla de la base de datos desde el proyecto API.
           </Text>
         ) : null}
 
         {blocks.map((block, idx) => {
-        if (block.kind === "heading") {
-          return (
-            <Text
-              key={`h-${idx}`}
-              accessibilityRole="header"
-              style={{
-                marginTop: idx === 0 ? 0 : space.md,
-                fontSize: 19,
-                fontWeight: "900",
-                color: colors.primary,
-                letterSpacing: 0.2,
-              }}
-            >
-              {block.text}
-            </Text>
-          );
-        }
-
-        if (block.kind === "paragraph") {
-          return (
-            <Text
-              key={`p-${idx}`}
-              selectable
-              style={{ color: colors.text, fontSize: 17, lineHeight: 26, fontWeight: "600" }}
-            >
-              {renderHighlightedParts(block.text, importantWords, wordsPattern, colors.primary, `p-${idx}`)}
-            </Text>
-          );
-        }
-
-        return (
-          <View key={`ul-${idx}`} style={{ gap: space.xs }}>
-            {block.items.map((line, j) => (
+          if (block.kind === "heading") {
+            return (
               <Text
-                key={`li-${idx}-${j}`}
-                selectable
-                style={{ color: colors.text, fontSize: 16, lineHeight: 24, fontWeight: "600" }}
+                key={`h-${idx}`}
+                accessibilityRole="header"
+                style={{
+                  marginTop: idx === 0 ? 0 : space.md,
+                  fontSize: 19,
+                  fontWeight: "900",
+                  color: colors.primary,
+                  letterSpacing: 0.2,
+                }}
               >
-                <Text style={{ color: colors.primary, fontWeight: "900" }}>{"\u2022  "}</Text>
-                {renderHighlightedParts(line, importantWords, wordsPattern, colors.primary, `li-${idx}-${j}`)}
+                {block.text}
               </Text>
-            ))}
-          </View>
-        );
-      })}
-      {isOfflineLibraryContentId(item.id) ? (
-        <Text style={{ color: colors.textMuted, fontWeight: "700", marginTop: space.sm }}>
-          Vista previa de la biblioteca: el progreso y las recompensas XP se guardan en contenidos publicados en el servidor.
-        </Text>
-      ) : (
-      <Pressable
-        onPress={async () => {
-          if (learned || saving || completeLockRef.current) return;
-          if (!viewerUserId) {
-            showToast("No hay usuario activo para guardar progreso.", "error");
-            return;
+            );
           }
-          completeLockRef.current = true;
-          try {
-            setSaving(true);
-            const result = await completeEducationalContent(item.id, {
-              userId: viewerUserId,
-              createPost: true,
-            });
-            setLearned(true);
-            notifyMissionRewardsFromApiResponse(result.missionRewards);
-            const msg = [`¡Bien hecho! +${result.xpGained} XP`];
-            if (result.dailyChallengeBonus) {
-              msg.push(
-                `Reto diario: +${result.dailyChallengeBonus.bonusXp} XP${
-                  result.dailyChallengeBonus.badgeUnlocked ? " · insignia «Campeón del día»" : ""
-                }`
-              );
-            }
-            showToast(msg.join(" · "), "success");
-          } catch {
-            showToast("No se pudo guardar el aprendizaje.", "error");
-          } finally {
-            completeLockRef.current = false;
-            setSaving(false);
+
+          if (block.kind === "paragraph") {
+            return (
+              <Text
+                key={`p-${idx}`}
+                selectable
+                style={{ color: colors.text, fontSize: 17, lineHeight: 26, fontWeight: "600" }}
+              >
+                {renderHighlightedParts(
+                  block.text,
+                  importantWords,
+                  wordsPattern,
+                  colors.primary,
+                  `p-${idx}`,
+                )}
+              </Text>
+            );
           }
-        }}
-        style={({ pressed }) => ({
-          marginTop: space.md,
-          borderRadius: 12,
-          paddingVertical: space.sm + space.xs,
-          paddingHorizontal: space.md,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: learned ? colors.success : colors.primary,
-          opacity: pressed ? 0.9 : 1,
+
+          return (
+            <View key={`ul-${idx}`} style={{ gap: space.xs }}>
+              {block.items.map((line, j) => (
+                <Text
+                  key={`li-${idx}-${j}`}
+                  selectable
+                  style={{ color: colors.text, fontSize: 16, lineHeight: 24, fontWeight: "600" }}
+                >
+                  <Text style={{ color: colors.primary, fontWeight: "900" }}>{"\u2022  "}</Text>
+                  {renderHighlightedParts(
+                    line,
+                    importantWords,
+                    wordsPattern,
+                    colors.primary,
+                    `li-${idx}-${j}`,
+                  )}
+                </Text>
+              ))}
+            </View>
+          );
         })}
-        accessibilityRole="button"
-        accessibilityLabel="Marcar como aprendido"
-      >
-        <Text style={{ color: "#fff", fontWeight: "800", fontSize: 15 }}>
-          {saving ? "Guardando..." : learned ? "Aprendido ✅" : "Entendí / Aprendido ✅"}
-        </Text>
-      </Pressable>
-      )}
+        {isOfflineLibraryContentId(item.id) ? (
+          <Text style={{ color: colors.textMuted, fontWeight: "700", marginTop: space.sm }}>
+            Vista previa de la biblioteca: el progreso y las recompensas XP se guardan en contenidos
+            publicados en el servidor.
+          </Text>
+        ) : (
+          <Pressable
+            onPress={async () => {
+              if (learned || saving || completeLockRef.current) return;
+              if (!viewerUserId) {
+                showToast("No hay usuario activo para guardar progreso.", "error");
+                return;
+              }
+              completeLockRef.current = true;
+              try {
+                setSaving(true);
+                const result = await completeEducationalContent(item.id, {
+                  userId: viewerUserId,
+                  createPost: true,
+                });
+                setLearned(true);
+                notifyMissionRewardsFromApiResponse(result.missionRewards);
+                const msg = [`¡Bien hecho! +${result.xpGained} XP`];
+                if (result.dailyChallengeBonus) {
+                  msg.push(
+                    `Reto diario: +${result.dailyChallengeBonus.bonusXp} XP${
+                      result.dailyChallengeBonus.badgeUnlocked
+                        ? " · insignia «Campeón del día»"
+                        : ""
+                    }`,
+                  );
+                }
+                showToast(msg.join(" · "), "success");
+              } catch {
+                showToast("No se pudo guardar el aprendizaje.", "error");
+              } finally {
+                completeLockRef.current = false;
+                setSaving(false);
+              }
+            }}
+            style={({ pressed }) => ({
+              marginTop: space.md,
+              borderRadius: 12,
+              paddingVertical: space.sm + space.xs,
+              paddingHorizontal: space.md,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: learned ? colors.success : colors.primary,
+              opacity: pressed ? 0.9 : 1,
+            })}
+            accessibilityRole="button"
+            accessibilityLabel={t("content.complete")}
+          >
+            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 15 }} allowFontScaling>
+              {saving
+                ? t("content.saving")
+                : learned
+                  ? `${t("content.learned")} ✅`
+                  : `${t("content.complete")} ✅`}
+            </Text>
+          </Pressable>
+        )}
       </ScrollView>
       <View
         accessibilityRole="progressbar"
@@ -432,7 +486,14 @@ export function ContentDetailScreen({ route }: Props) {
           backgroundColor: colors.background,
         }}
       >
-        <View style={{ height: 4, borderRadius: 2, overflow: "hidden", backgroundColor: colors.borderSubtle }}>
+        <View
+          style={{
+            height: 4,
+            borderRadius: 2,
+            overflow: "hidden",
+            backgroundColor: colors.borderSubtle,
+          }}
+        >
           <View
             style={{
               width: `${Math.round(scrollProgress * 1000) / 10}%`,

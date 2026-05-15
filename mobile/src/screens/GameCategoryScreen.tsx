@@ -11,18 +11,16 @@ import { screenEdge, space } from "../theme/tokens";
 type Props = NativeStackScreenProps<RootStackParamList, "GameCategory">;
 type QuizDifficulty = "EASY" | "MEDIUM" | "HARD";
 
-const CATEGORY_META: Record<
-  string,
-  { label: string; icon: string; color: string; soft: string }
-> = {
-  astronomy: { label: "Astronomía", icon: "🌌", color: "#6366F1", soft: "#EEF2FF" },
-  math: { label: "Matemáticas", icon: "➗", color: "#06B6D4", soft: "#ECFEFF" },
-  science: { label: "Ciencia", icon: "🧪", color: "#10B981", soft: "#ECFDF5" },
-  history: { label: "Historia", icon: "📜", color: "#D97706", soft: "#FFFBEB" },
-  geography: { label: "Geografía", icon: "🌍", color: "#0EA5E9", soft: "#F0F9FF" },
-  creativity: { label: "Creatividad", icon: "🎨", color: "#EC4899", soft: "#FDF2F8" },
-  mixed: { label: "Modo desafío", icon: "🎯", color: "#7C3AED", soft: "#F5F3FF" },
-};
+const CATEGORY_META: Record<string, { label: string; icon: string; color: string; soft: string }> =
+  {
+    astronomy: { label: "Astronomía", icon: "🌌", color: "#6366F1", soft: "#EEF2FF" },
+    math: { label: "Matemáticas", icon: "➗", color: "#06B6D4", soft: "#ECFEFF" },
+    science: { label: "Ciencia", icon: "🧪", color: "#10B981", soft: "#ECFDF5" },
+    history: { label: "Historia", icon: "📜", color: "#D97706", soft: "#FFFBEB" },
+    geography: { label: "Geografía", icon: "🌍", color: "#0EA5E9", soft: "#F0F9FF" },
+    creativity: { label: "Creatividad", icon: "🎨", color: "#EC4899", soft: "#FDF2F8" },
+    mixed: { label: "Modo desafío", icon: "🎯", color: "#7C3AED", soft: "#F5F3FF" },
+  };
 
 export function GameCategoryScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
@@ -32,8 +30,14 @@ export function GameCategoryScreen({ route, navigation }: Props) {
   const [difficulty, setDifficulty] = useState<QuizDifficulty>(initialDifficulty);
 
   const categoryMeta = useMemo(
-    () => CATEGORY_META[category] ?? { label: category, icon: "🎮", color: colors.primary, soft: colors.primarySoft },
-    [category, colors.primary, colors.primarySoft]
+    () =>
+      CATEGORY_META[category] ?? {
+        label: category,
+        icon: "🎮",
+        color: colors.primary,
+        soft: colors.primarySoft,
+      },
+    [category, colors.primary, colors.primarySoft],
   );
 
   return (
@@ -46,7 +50,9 @@ export function GameCategoryScreen({ route, navigation }: Props) {
         paddingHorizontal: screenEdge.horizontal,
       }}
     >
-      <Text style={{ color: colors.textMuted, fontWeight: "700", marginBottom: space.xs }}>Categoría</Text>
+      <Text style={{ color: colors.textMuted, fontWeight: "700", marginBottom: space.xs }}>
+        Categoría
+      </Text>
       <View
         style={{
           backgroundColor: categoryMeta.soft,
@@ -63,7 +69,9 @@ export function GameCategoryScreen({ route, navigation }: Props) {
         </Text>
       </View>
 
-      <Text style={{ color: colors.textMuted, fontWeight: "700", marginBottom: space.sm }}>Dificultad</Text>
+      <Text style={{ color: colors.textMuted, fontWeight: "700", marginBottom: space.sm }}>
+        Dificultad
+      </Text>
       <View style={{ flexDirection: "row", gap: space.sm, marginBottom: space.xl }}>
         {(["EASY", "MEDIUM", "HARD"] as const).map((opt) => {
           const active = opt === difficulty;
@@ -86,7 +94,9 @@ export function GameCategoryScreen({ route, navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel={`Seleccionar dificultad ${opt}`}
             >
-              <Text style={{ color: active ? categoryMeta.color : colors.text, fontWeight: "800" }}>{opt}</Text>
+              <Text style={{ color: active ? categoryMeta.color : colors.text, fontWeight: "800" }}>
+                {opt}
+              </Text>
             </Pressable>
           );
         })}
@@ -132,7 +142,9 @@ export function GameCategoryScreen({ route, navigation }: Props) {
         accessibilityRole="button"
         accessibilityLabel="Jugar con imágenes"
       >
-        <Text style={{ color: categoryMeta.color, fontWeight: "900", fontSize: 16 }}>🖼️ Jugar con imágenes</Text>
+        <Text style={{ color: categoryMeta.color, fontWeight: "900", fontSize: 16 }}>
+          🖼️ Jugar con imágenes
+        </Text>
       </Pressable>
     </View>
   );

@@ -1,14 +1,14 @@
-import type { Request, Response } from "express";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { pickImageUrl } from "../lib/imageProxyUrl";
-import { formatZodError, uuidSchema } from "../lib/validation/schemas";
+import type { Request, Response } from 'express';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { pickImageUrl } from '../lib/imageProxyUrl';
+import { formatZodError, uuidSchema } from '../lib/validation/schemas';
 
 function requireChild(req: Request, res: Response): string | null {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return null;
   }
   return auth.userId;
@@ -16,20 +16,20 @@ function requireChild(req: Request, res: Response): string | null {
 
 const listQuerySchema = z.object({
   topicId: uuidSchema.optional(),
-  difficulty: z.enum(["EASY", "MEDIUM", "HARD"]).optional(),
+  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
   category: z.string().trim().min(1).max(64).optional(),
 });
 
 function mapQuizCategory(raw?: string): string | undefined {
   if (!raw) return undefined;
   const map: Record<string, string> = {
-    astronomy: "astronomy",
-    math: "math",
-    science: "science",
-    history: "history",
-    geography: "geography",
-    creativity: "creativity",
-    mixed: "mixed",
+    astronomy: 'astronomy',
+    math: 'math',
+    science: 'science',
+    history: 'history',
+    geography: 'geography',
+    creativity: 'creativity',
+    mixed: 'mixed',
   };
   return map[raw.trim().toLowerCase()] ?? raw.trim().toLowerCase();
 }
@@ -47,9 +47,11 @@ export async function listQuizzes(req: Request, res: Response): Promise<void> {
         published: true,
         ...(parsed.data.topicId ? { topicId: parsed.data.topicId } : {}),
         ...(parsed.data.difficulty ? { difficulty: parsed.data.difficulty as never } : {}),
-        ...(parsed.data.category ? { legacyCategory: mapQuizCategory(parsed.data.category) as never } : {}),
+        ...(parsed.data.category
+          ? { legacyCategory: mapQuizCategory(parsed.data.category) as never }
+          : {}),
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 80,
       select: {
         id: true,
@@ -63,8 +65,8 @@ export async function listQuizzes(req: Request, res: Response): Promise<void> {
     });
     res.json({ quizzes: rows });
   } catch (e) {
-    logError("quizzesApi.list", e);
-    res.status(500).json({ error: "Error al listar quizzes." });
+    logError('quizzesApi.list', e);
+    res.status(500).json({ error: 'Error al listar quizzes.' });
   }
 }
 
@@ -72,7 +74,7 @@ export async function listQuizzes(req: Request, res: Response): Promise<void> {
 export async function getQuizDetail(req: Request, res: Response): Promise<void> {
   const quizId = req.params.quizId?.trim();
   if (!quizId) {
-    res.status(400).json({ error: "quizId inválido." });
+    res.status(400).json({ error: 'quizId inválido.' });
     return;
   }
   try {
@@ -90,13 +92,13 @@ export async function getQuizDetail(req: Request, res: Response): Promise<void> 
       },
     });
     if (!quiz || !quiz.published) {
-      res.status(404).json({ error: "Quiz no encontrado." });
+      res.status(404).json({ error: 'Quiz no encontrado.' });
       return;
     }
     res.json({ quiz });
   } catch (e) {
-    logError("quizzesApi.detail", e);
-    res.status(500).json({ error: "Error al obtener quiz." });
+    logError('quizzesApi.detail', e);
+    res.status(500).json({ error: 'Error al obtener quiz.' });
   }
 }
 
@@ -104,7 +106,7 @@ export async function getQuizDetail(req: Request, res: Response): Promise<void> 
 export async function getQuizQuestions(req: Request, res: Response): Promise<void> {
   const quizId = req.params.quizId?.trim();
   if (!quizId) {
-    res.status(400).json({ error: "quizId inválido." });
+    res.status(400).json({ error: 'quizId inválido.' });
     return;
   }
   try {
@@ -112,13 +114,13 @@ export async function getQuizQuestions(req: Request, res: Response): Promise<voi
       where: { id: quizId },
       include: {
         questions: {
-          orderBy: { createdAt: "asc" },
+          orderBy: { createdAt: 'asc' },
           include: { imageAsset: { select: { id: true, urlMedium: true } } },
         },
       },
     });
     if (!quiz || !quiz.published) {
-      res.status(404).json({ error: "Quiz no encontrado." });
+      res.status(404).json({ error: 'Quiz no encontrado.' });
       return;
     }
     res.json({
@@ -129,8 +131,8 @@ export async function getQuizQuestions(req: Request, res: Response): Promise<voi
       }),
     });
   } catch (e) {
-    logError("quizzesApi.questions", e);
-    res.status(500).json({ error: "Error al cargar preguntas." });
+    logError('quizzesApi.questions', e);
+    res.status(500).json({ error: 'Error al cargar preguntas.' });
   }
 }
 
@@ -141,7 +143,7 @@ export async function postStartQuizAttempt(req: Request, res: Response): Promise
 
   const quizId = req.params.quizId?.trim();
   if (!quizId) {
-    res.status(400).json({ error: "quizId inválido." });
+    res.status(400).json({ error: 'quizId inválido.' });
     return;
   }
 
@@ -151,7 +153,7 @@ export async function postStartQuizAttempt(req: Request, res: Response): Promise
       include: { questions: true },
     });
     if (!quiz || !quiz.published) {
-      res.status(404).json({ error: "Quiz no encontrado." });
+      res.status(404).json({ error: 'Quiz no encontrado.' });
       return;
     }
     const maxScore = Math.max(1, quiz.questions.length);
@@ -170,8 +172,8 @@ export async function postStartQuizAttempt(req: Request, res: Response): Promise
       startedAt: session.startedAt.toISOString(),
     });
   } catch (e) {
-    logError("quizzesApi.startAttempt", e);
-    res.status(500).json({ error: "Error al iniciar intento." });
+    logError('quizzesApi.startAttempt', e);
+    res.status(500).json({ error: 'Error al iniciar intento.' });
   }
 }
 
@@ -187,7 +189,7 @@ export async function postQuizAttemptAnswer(req: Request, res: Response): Promis
 
   const attemptId = req.params.attemptId?.trim();
   if (!attemptId) {
-    res.status(400).json({ error: "attemptId inválido." });
+    res.status(400).json({ error: 'attemptId inválido.' });
     return;
   }
 
@@ -202,11 +204,13 @@ export async function postQuizAttemptAnswer(req: Request, res: Response): Promis
       where: { id: attemptId, userId, finished: false },
     });
     if (!session) {
-      res.status(404).json({ error: "Intento no encontrado o ya finalizado." });
+      res.status(404).json({ error: 'Intento no encontrado o ya finalizado.' });
       return;
     }
 
-    const prev = Array.isArray(session.answers) ? (session.answers as { questionId: string; selectedIndex: number }[]) : [];
+    const prev = Array.isArray(session.answers)
+      ? (session.answers as { questionId: string; selectedIndex: number }[])
+      : [];
     const next = [...prev.filter((a) => a.questionId !== parsed.data.questionId), parsed.data];
 
     await prisma.quizSession.update({
@@ -216,8 +220,8 @@ export async function postQuizAttemptAnswer(req: Request, res: Response): Promis
 
     res.json({ ok: true, answersRecorded: next.length });
   } catch (e) {
-    logError("quizzesApi.answer", e);
-    res.status(500).json({ error: "Error al registrar respuesta." });
+    logError('quizzesApi.answer', e);
+    res.status(500).json({ error: 'Error al registrar respuesta.' });
   }
 }
 
@@ -228,7 +232,7 @@ export async function postFinishQuizAttempt(req: Request, res: Response): Promis
 
   const attemptId = req.params.attemptId?.trim();
   if (!attemptId) {
-    res.status(400).json({ error: "attemptId inválido." });
+    res.status(400).json({ error: 'attemptId inválido.' });
     return;
   }
 
@@ -238,11 +242,11 @@ export async function postFinishQuizAttempt(req: Request, res: Response): Promis
       include: { quiz: { include: { questions: true } } },
     });
     if (!session) {
-      res.status(404).json({ error: "Intento no encontrado." });
+      res.status(404).json({ error: 'Intento no encontrado.' });
       return;
     }
     if (session.finished) {
-      res.status(409).json({ error: "El intento ya fue finalizado." });
+      res.status(409).json({ error: 'El intento ya fue finalizado.' });
       return;
     }
 
@@ -287,8 +291,8 @@ export async function postFinishQuizAttempt(req: Request, res: Response): Promis
       scorePercent: score,
     });
   } catch (e) {
-    logError("quizzesApi.finish", e);
-    res.status(500).json({ error: "Error al finalizar intento." });
+    logError('quizzesApi.finish', e);
+    res.status(500).json({ error: 'Error al finalizar intento.' });
   }
 }
 
@@ -299,7 +303,7 @@ export async function getQuizAttemptResults(req: Request, res: Response): Promis
 
   const attemptId = req.params.attemptId?.trim();
   if (!attemptId) {
-    res.status(400).json({ error: "attemptId inválido." });
+    res.status(400).json({ error: 'attemptId inválido.' });
     return;
   }
 
@@ -309,12 +313,12 @@ export async function getQuizAttemptResults(req: Request, res: Response): Promis
       include: { quiz: { select: { id: true, title: true } } },
     });
     if (!session) {
-      res.status(404).json({ error: "Intento no encontrado." });
+      res.status(404).json({ error: 'Intento no encontrado.' });
       return;
     }
     const attempt = await prisma.quizAttempt.findFirst({
       where: { userId, quizId: session.quizId },
-      orderBy: { finishedAt: "desc" },
+      orderBy: { finishedAt: 'desc' },
     });
     res.json({
       session: {
@@ -328,8 +332,8 @@ export async function getQuizAttemptResults(req: Request, res: Response): Promis
       lastAttempt: attempt,
     });
   } catch (e) {
-    logError("quizzesApi.results", e);
-    res.status(500).json({ error: "Error al obtener resultados." });
+    logError('quizzesApi.results', e);
+    res.status(500).json({ error: 'Error al obtener resultados.' });
   }
 }
 
@@ -341,14 +345,14 @@ export async function getMyQuizAttempts(req: Request, res: Response): Promise<vo
   try {
     const rows = await prisma.quizAttempt.findMany({
       where: { userId },
-      orderBy: { finishedAt: "desc" },
+      orderBy: { finishedAt: 'desc' },
       take: 30,
       include: { quiz: { select: { id: true, title: true, difficulty: true } } },
     });
     res.json({ attempts: rows });
   } catch (e) {
-    logError("quizzesApi.myAttempts", e);
-    res.status(500).json({ error: "Error al listar intentos." });
+    logError('quizzesApi.myAttempts', e);
+    res.status(500).json({ error: 'Error al listar intentos.' });
   }
 }
 
@@ -364,13 +368,13 @@ export async function getRecommendedQuizzes(req: Request, res: Response): Promis
     });
     const rows = await prisma.quiz.findMany({
       where: { published: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 12,
       select: { id: true, title: true, difficulty: true, questionCount: true },
     });
     res.json({ level: user?.level ?? 1, quizzes: rows });
   } catch (e) {
-    logError("quizzesApi.recommended", e);
-    res.status(500).json({ error: "Error al recomendar quizzes." });
+    logError('quizzesApi.recommended', e);
+    res.status(500).json({ error: 'Error al recomendar quizzes.' });
   }
 }

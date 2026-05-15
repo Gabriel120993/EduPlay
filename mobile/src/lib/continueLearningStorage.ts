@@ -25,7 +25,7 @@ export type LastResumeTarget = "game" | "content";
 /** Qué retomar si hay juego y contenido: el `updatedAt` más reciente. */
 export function pickMostRecentResumeTarget(
   game: LastGamePlayed | null,
-  content: LastContentOpened | null
+  content: LastContentOpened | null,
 ): LastResumeTarget | null {
   if (!game && !content) return null;
   if (!game) return "content";
@@ -59,7 +59,7 @@ export function formatVisualResumeLabel(category: string, difficulty: string): s
 }
 
 export async function saveLastPlayedGame(
-  payload: Omit<LastGamePlayed, "updatedAt">
+  payload: Omit<LastGamePlayed, "updatedAt">,
 ): Promise<void> {
   try {
     const full: LastGamePlayed = { ...payload, updatedAt: new Date().toISOString() };
@@ -69,7 +69,10 @@ export async function saveLastPlayedGame(
   }
 }
 
-export async function saveLastOpenedContent(payload: { contentId: string; title: string }): Promise<void> {
+export async function saveLastOpenedContent(payload: {
+  contentId: string;
+  title: string;
+}): Promise<void> {
   try {
     const full: LastContentOpened = { ...payload, updatedAt: new Date().toISOString() };
     await AsyncStorage.setItem(KEY_CONTENT, JSON.stringify(full));
@@ -83,7 +86,10 @@ export async function loadContinueLearning(): Promise<{
   content: LastContentOpened | null;
 }> {
   try {
-    const [g, c] = await Promise.all([AsyncStorage.getItem(KEY_GAME), AsyncStorage.getItem(KEY_CONTENT)]);
+    const [g, c] = await Promise.all([
+      AsyncStorage.getItem(KEY_GAME),
+      AsyncStorage.getItem(KEY_CONTENT),
+    ]);
     const game = g ? (JSON.parse(g) as LastGamePlayed) : null;
     const content = c ? (JSON.parse(c) as LastContentOpened) : null;
     if (game && (!game.kind || !game.category || !game.difficulty)) {

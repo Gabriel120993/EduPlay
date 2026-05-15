@@ -1,10 +1,13 @@
-import { Visibility } from "@prisma/client";
+import { Visibility } from '@prisma/client';
 
 /**
  * Posts visibles en feed (público + amigos) excluyendo medios marcados por moderación,
  * salvo los publicados por el propio viewer.
  */
-export function buildPublicFeedVisibilityWhere(viewerId: string, friendAuthorIds: readonly string[]) {
+export function buildPublicFeedVisibilityWhere(
+  viewerId: string,
+  friendAuthorIds: readonly string[],
+) {
   const authorsForFriendsPosts = Array.from(new Set([viewerId, ...friendAuthorIds]));
   return {
     AND: [
@@ -12,10 +15,7 @@ export function buildPublicFeedVisibilityWhere(viewerId: string, friendAuthorIds
         OR: [
           { visibility: Visibility.PUBLIC },
           {
-            AND: [
-              { visibility: Visibility.FRIENDS },
-              { userId: { in: authorsForFriendsPosts } },
-            ],
+            AND: [{ visibility: Visibility.FRIENDS }, { userId: { in: authorsForFriendsPosts } }],
           },
         ],
       },

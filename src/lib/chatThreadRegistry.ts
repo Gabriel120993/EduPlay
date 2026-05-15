@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import { prisma } from './prisma';
 
 /** Par ordenado lexicográfico (convención del modelo `Chat`). */
 export function orderedUserPair(a: string, b: string): [string, string] {
@@ -26,7 +26,7 @@ export async function findChatById(chatId: string) {
 
 export function peerUserIdFromChat(
   chat: { user1Id: string; user2Id: string },
-  viewerId: string
+  viewerId: string,
 ): string | null {
   if (chat.user1Id === viewerId) return chat.user2Id;
   if (chat.user2Id === viewerId) return chat.user1Id;

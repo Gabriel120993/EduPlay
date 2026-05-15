@@ -1,10 +1,10 @@
-import type { Request, Response } from "express";
+import type { Request, Response } from 'express';
 
-import { CONTENT_CATEGORY_VALUES } from "../lib/contentCategory";
+import { CONTENT_CATEGORY_VALUES } from '../lib/contentCategory';
 
 export function getHealth(_req: Request, res: Response): void {
   res.json({
-    status: "ok",
+    status: 'ok',
     timestamp: new Date().toISOString(),
   });
 }

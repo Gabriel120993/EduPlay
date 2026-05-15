@@ -1,14 +1,14 @@
-import type { Request, Response } from "express";
-import { LiveEventStatus } from "@prisma/client";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { formatZodError } from "../lib/validation/schemas";
+import type { Request, Response } from 'express';
+import { LiveEventStatus } from '@prisma/client';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { formatZodError } from '../lib/validation/schemas';
 
 function requireChild(req: Request, res: Response): string | null {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return null;
   }
   return auth.userId;
@@ -20,13 +20,13 @@ export async function getUpcomingEvents(_req: Request, res: Response): Promise<v
     const now = new Date();
     const rows = await prisma.liveEvent.findMany({
       where: { startsAt: { gte: now }, status: { not: LiveEventStatus.CANCELLED } },
-      orderBy: { startsAt: "asc" },
+      orderBy: { startsAt: 'asc' },
       take: 30,
     });
     res.json({ events: rows });
   } catch (e) {
-    logError("eventsApi.upcoming", e);
-    res.status(500).json({ error: "Error al listar eventos." });
+    logError('eventsApi.upcoming', e);
+    res.status(500).json({ error: 'Error al listar eventos.' });
   }
 }
 
@@ -43,8 +43,8 @@ export async function getLiveEventsNow(_req: Request, res: Response): Promise<vo
     });
     res.json({ events: rows });
   } catch (e) {
-    logError("eventsApi.live", e);
-    res.status(500).json({ error: "Error al listar eventos en vivo." });
+    logError('eventsApi.live', e);
+    res.status(500).json({ error: 'Error al listar eventos en vivo.' });
   }
 }
 
@@ -52,19 +52,19 @@ export async function getLiveEventsNow(_req: Request, res: Response): Promise<vo
 export async function getEventDetail(req: Request, res: Response): Promise<void> {
   const eventId = req.params.eventId?.trim();
   if (!eventId) {
-    res.status(400).json({ error: "eventId inválido." });
+    res.status(400).json({ error: 'eventId inválido.' });
     return;
   }
   try {
     const ev = await prisma.liveEvent.findUnique({ where: { id: eventId } });
     if (!ev) {
-      res.status(404).json({ error: "Evento no encontrado." });
+      res.status(404).json({ error: 'Evento no encontrado.' });
       return;
     }
     res.json({ event: ev });
   } catch (e) {
-    logError("eventsApi.detail", e);
-    res.status(500).json({ error: "Error al obtener evento." });
+    logError('eventsApi.detail', e);
+    res.status(500).json({ error: 'Error al obtener evento.' });
   }
 }
 
@@ -75,7 +75,7 @@ export async function postJoinEvent(req: Request, res: Response): Promise<void> 
 
   const eventId = req.params.eventId?.trim();
   if (!eventId) {
-    res.status(400).json({ error: "eventId inválido." });
+    res.status(400).json({ error: 'eventId inválido.' });
     return;
   }
 
@@ -87,8 +87,8 @@ export async function postJoinEvent(req: Request, res: Response): Promise<void> 
     });
     res.status(201).json({ ok: true });
   } catch (e) {
-    logError("eventsApi.join", e);
-    res.status(500).json({ error: "Error al unirse al evento." });
+    logError('eventsApi.join', e);
+    res.status(500).json({ error: 'Error al unirse al evento.' });
   }
 }
 
@@ -99,7 +99,7 @@ export async function postLeaveEvent(req: Request, res: Response): Promise<void>
 
   const eventId = req.params.eventId?.trim();
   if (!eventId) {
-    res.status(400).json({ error: "eventId inválido." });
+    res.status(400).json({ error: 'eventId inválido.' });
     return;
   }
 
@@ -107,8 +107,8 @@ export async function postLeaveEvent(req: Request, res: Response): Promise<void>
     await prisma.liveEventAttendee.deleteMany({ where: { eventId, userId } });
     res.json({ ok: true });
   } catch (e) {
-    logError("eventsApi.leave", e);
-    res.status(500).json({ error: "Error al salir del evento." });
+    logError('eventsApi.leave', e);
+    res.status(500).json({ error: 'Error al salir del evento.' });
   }
 }
 
@@ -123,7 +123,7 @@ export async function postEventTriviaAnswer(req: Request, res: Response): Promis
 
   const eventId = req.params.eventId?.trim();
   if (!eventId) {
-    res.status(400).json({ error: "eventId inválido." });
+    res.status(400).json({ error: 'eventId inválido.' });
     return;
   }
 
@@ -137,14 +137,14 @@ export async function postEventTriviaAnswer(req: Request, res: Response): Promis
     await prisma.analyticsEvent.create({
       data: {
         userId,
-        eventName: "live_event_trivia_answer",
+        eventName: 'live_event_trivia_answer',
         metadata: { eventId, answerIndex: parsed.data.answerIndex },
       },
     });
     res.status(201).json({ ok: true, recorded: true });
   } catch (e) {
-    logError("eventsApi.answer", e);
-    res.status(500).json({ error: "Error al enviar respuesta." });
+    logError('eventsApi.answer', e);
+    res.status(500).json({ error: 'Error al enviar respuesta.' });
   }
 }
 
@@ -152,13 +152,13 @@ export async function postEventTriviaAnswer(req: Request, res: Response): Promis
 export async function getEventLeaderboard(req: Request, res: Response): Promise<void> {
   const eventId = req.params.eventId?.trim();
   if (!eventId) {
-    res.status(400).json({ error: "eventId inválido." });
+    res.status(400).json({ error: 'eventId inválido.' });
     return;
   }
 
   try {
     const rows = await prisma.analyticsEvent.findMany({
-      where: { eventName: "live_event_trivia_answer" },
+      where: { eventName: 'live_event_trivia_answer' },
       take: 500,
     });
     const filtered = rows.filter((r) => {
@@ -185,7 +185,7 @@ export async function getEventLeaderboard(req: Request, res: Response): Promise<
       })),
     });
   } catch (e) {
-    logError("eventsApi.leaderboard", e);
-    res.status(500).json({ error: "Error al cargar ranking del evento." });
+    logError('eventsApi.leaderboard', e);
+    res.status(500).json({ error: 'Error al cargar ranking del evento.' });
   }
 }

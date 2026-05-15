@@ -32,4 +32,3 @@ export const theme = {
 export function getTheme(mode: ThemeMode): SimpleTheme {
   return mode === "dark" ? darkTheme : lightTheme;
 }
-

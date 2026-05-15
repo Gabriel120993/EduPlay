@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Animated, Pressable, Text, View } from "react-native";
-import type { NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -62,7 +65,7 @@ function approxWordCount(text: string): number {
 function computeTimedQuestionBudget(
   q: QuizQuestionItem,
   routePickSeconds: number,
-  challengeMode: boolean
+  challengeMode: boolean,
 ): number {
   const pickSeconds = routePickSeconds > 0 ? routePickSeconds : DEFAULT_TIMER;
   const reactionFloor = challengeMode ? Math.max(pickSeconds, 15) : pickSeconds;
@@ -80,19 +83,30 @@ function computeTimedQuestionBudget(
   if (passageWords > 0) {
     const readPassage = Math.ceil((passageWords / READ_PASSAGE_WPM) * 60) + 16;
     const stemHeavy =
-      stemWords > 40 ? Math.min(32, Math.ceil((stemWords - 40) / 6) * 2) : stemChars > 220 ? Math.min(30, Math.ceil((stemChars - 220) / 48) * 3) : 0;
-    return Math.min(capWithImage, reactionFloor + readPassage + stemHeavy + optionsSkim + 6 + imageBudget);
+      stemWords > 40
+        ? Math.min(32, Math.ceil((stemWords - 40) / 6) * 2)
+        : stemChars > 220
+          ? Math.min(30, Math.ceil((stemChars - 220) / 48) * 3)
+          : 0;
+    return Math.min(
+      capWithImage,
+      reactionFloor + readPassage + stemHeavy + optionsSkim + 6 + imageBudget,
+    );
   }
 
   const stemHeavy =
-    stemWords > 34 ? Math.min(30, Math.ceil((stemWords - 34) / 5) * 2) : stemChars > 150 ? Math.min(26, Math.ceil((stemChars - 150) / 40) * 3) : 0;
+    stemWords > 34
+      ? Math.min(30, Math.ceil((stemWords - 34) / 5) * 2)
+      : stemChars > 150
+        ? Math.min(26, Math.ceil((stemChars - 150) / 40) * 3)
+        : 0;
   return Math.min(capWithImage, reactionFloor + stemHeavy + optionsSkim + imageBudget);
 }
 
 /** En desafío, reorganiza opciones para que «siempre clickear el mismo lugar» no sirva. */
 function shuffleChallengeOptions(
   options: readonly string[],
-  serverCorrectIndex: number
+  serverCorrectIndex: number,
 ): { opts: string[]; correctIdx: number } {
   const opts = [...options];
   const n = opts.length;
@@ -110,7 +124,11 @@ function shuffleChallengeOptions(
   return { opts: shuffled, correctIdx };
 }
 
-function quizSeenKey(parts: { category: string; difficulty: QuizDifficulty; area?: string }): string {
+function quizSeenKey(parts: {
+  category: string;
+  difficulty: QuizDifficulty;
+  area?: string;
+}): string {
   if (parts.area) return `quiz_seen:area:${parts.area}:${parts.difficulty}`;
   return `quiz_seen:${parts.category.toLowerCase()}:${parts.difficulty}`;
 }
@@ -205,7 +223,9 @@ export function QuizScreen({ route }: Props) {
   const timerSecondsParam = params?.timerSeconds;
   const useTimer = timerSecondsParam !== 0;
   const questionTimerSeconds =
-    typeof timerSecondsParam === "number" && timerSecondsParam > 0 ? timerSecondsParam : DEFAULT_TIMER;
+    typeof timerSecondsParam === "number" && timerSecondsParam > 0
+      ? timerSecondsParam
+      : DEFAULT_TIMER;
 
   const maxLives = params?.challengeLives ?? 0;
   const adaptive = Boolean(params?.adaptive);
@@ -218,7 +238,7 @@ export function QuizScreen({ route }: Props) {
         difficulty,
         ...(knowledgeArea ? { area: knowledgeArea } : {}),
       }),
-    [category, difficulty, knowledgeArea]
+    [category, difficulty, knowledgeArea],
   );
 
   const [questions, setQuestions] = useState<QuizQuestionItem[]>([]);
@@ -300,7 +320,7 @@ export function QuizScreen({ route }: Props) {
         }
         void storeSeenQuestionIds(
           storageKey,
-          rows.map((q) => q.id)
+          rows.map((q) => q.id),
         );
         correctRef.current = 0;
         wrongIdsRef.current = [];
@@ -322,7 +342,7 @@ export function QuizScreen({ route }: Props) {
       params?.topicSlug,
       questionTimerSeconds,
       storageKey,
-    ]
+    ],
   );
 
   useEffect(() => {
@@ -336,15 +356,22 @@ export function QuizScreen({ route }: Props) {
   const current = questions[index];
 
   const timedQuestionBudget = useMemo(() => {
-    if (!useTimer || !current || qType(current) === "ORDER") return Math.max(1, questionTimerSeconds);
+    if (!useTimer || !current || qType(current) === "ORDER")
+      return Math.max(1, questionTimerSeconds);
     return Math.max(1, computeTimedQuestionBudget(current, questionTimerSeconds, challengeMode));
   }, [useTimer, current, questionTimerSeconds, challengeMode]);
 
-  const progress = useMemo(() => (questions.length > 0 ? `${index + 1}/${questions.length}` : "0/0"), [index, questions.length]);
-  const progressPct = useMemo(() => (questions.length > 0 ? (index + 1) / questions.length : 0), [index, questions.length]);
+  const progress = useMemo(
+    () => (questions.length > 0 ? `${index + 1}/${questions.length}` : "0/0"),
+    [index, questions.length],
+  );
+  const progressPct = useMemo(
+    () => (questions.length > 0 ? (index + 1) / questions.length : 0),
+    [index, questions.length],
+  );
   const timerPct = useMemo(
     () => Math.max(0, Math.min(1, secondsLeft / timedQuestionBudget)),
-    [secondsLeft, timedQuestionBudget]
+    [secondsLeft, timedQuestionBudget],
   );
 
   /** Opciones ordenadas como en servidor | barajadas en desafíos (solo choice, no ORDER). Se sincroniza en ref por el timer. */
@@ -380,7 +407,7 @@ export function QuizScreen({ route }: Props) {
                 `¡Reto diario! +${res.dailyChallengeBonus.bonusXp} XP${
                   res.dailyChallengeBonus.badgeUnlocked ? " · insignia «Campeón del día»" : ""
                 }`,
-                "success"
+                "success",
               );
             }
           } catch {
@@ -400,7 +427,7 @@ export function QuizScreen({ route }: Props) {
         });
       })();
     },
-    [viewerUserId, category, knowledgeArea, navigation]
+    [viewerUserId, category, knowledgeArea, navigation],
   );
 
   const advanceOrFinish = useCallback(
@@ -421,7 +448,7 @@ export function QuizScreen({ route }: Props) {
         });
       }, afterMs);
     },
-    [finishSession, questions.length]
+    [finishSession, questions.length],
   );
 
   const onAnswer = (optionIdx: number) => {
@@ -543,7 +570,14 @@ export function QuizScreen({ route }: Props) {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.background,
+        }}
+      >
         <ActivityIndicator color={colors.primary} />
       </View>
     );
@@ -570,7 +604,12 @@ export function QuizScreen({ route }: Props) {
   const qt = qType(current);
   const mcShuffledView = qt !== "ORDER" && challengeMode;
   const mcChoices = qt !== "ORDER" ? (mcShuffledView ? mcOptionLayout.opts : current.options) : [];
-  const mcCorrectDisplayed = qt !== "ORDER" ? (mcShuffledView ? mcOptionLayout.correctIdx : current.correct) : current.correct;
+  const mcCorrectDisplayed =
+    qt !== "ORDER"
+      ? mcShuffledView
+        ? mcOptionLayout.correctIdx
+        : current.correct
+      : current.correct;
   const answered = selectedIndex != null;
   const explanation = (current.explanation ?? "").trim();
   const isCorrectAnswer =
@@ -587,10 +626,21 @@ export function QuizScreen({ route }: Props) {
         paddingHorizontal: screenEdge.horizontal,
       }}
     >
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: space.sm }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: space.sm,
+        }}
+      >
         <Text style={{ color: colors.textMuted, fontWeight: "700", flex: 1 }}>
-          {knowledgeArea ? `Área · ${knowledgeArea}` : category === "mixed" ? "Modo desafío 🎯" : `Quiz · ${category}`} ·{" "}
-          {difficulty}
+          {knowledgeArea
+            ? `Área · ${knowledgeArea}`
+            : category === "mixed"
+              ? "Modo desafío 🎯"
+              : `Quiz · ${category}`}{" "}
+          · {difficulty}
         </Text>
         {coins != null ? (
           <Text style={{ color: colors.primary, fontWeight: "800" }}>🪙 {coins}</Text>
@@ -601,7 +651,9 @@ export function QuizScreen({ route }: Props) {
           Vidas: {"❤️".repeat(Math.max(0, livesLeft)) || "—"}
         </Text>
       ) : null}
-      <Text style={{ color: colors.textMuted, fontWeight: "800", marginBottom: space.xs }}>Pregunta {progress}</Text>
+      <Text style={{ color: colors.textMuted, fontWeight: "800", marginBottom: space.xs }}>
+        Pregunta {progress}
+      </Text>
       <View
         style={{
           height: 8,
@@ -625,7 +677,15 @@ export function QuizScreen({ route }: Props) {
             Tiempo restante · {secondsLeft}s
           </Text>
           {current.readingPassage ? (
-            <Text style={{ color: colors.textMuted, fontWeight: "600", marginTop: -4, marginBottom: space.sm, fontSize: 13 }}>
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontWeight: "600",
+                marginTop: -4,
+                marginBottom: space.sm,
+                fontSize: 13,
+              }}
+            >
               El tiempo se ajustó para incluir la lectura del texto.
             </Text>
           ) : null}
@@ -664,8 +724,12 @@ export function QuizScreen({ route }: Props) {
             borderColor: colors.borderSubtle,
           }}
         >
-          <Text style={{ color: colors.textSecondary, fontWeight: "700", marginBottom: space.xs }}>Lectura</Text>
-          <Text style={{ color: colors.text, fontWeight: "600", lineHeight: 22 }}>{current.readingPassage}</Text>
+          <Text style={{ color: colors.textSecondary, fontWeight: "700", marginBottom: space.xs }}>
+            Lectura
+          </Text>
+          <Text style={{ color: colors.text, fontWeight: "600", lineHeight: 22 }}>
+            {current.readingPassage}
+          </Text>
         </View>
       ) : null}
 
@@ -707,7 +771,9 @@ export function QuizScreen({ route }: Props) {
           transform: [{ scale: feedbackScale }],
         }}
       >
-        <Text style={{ color: colors.text, fontSize: 22, fontWeight: "800", lineHeight: 30 }}>{current.question}</Text>
+        <Text style={{ color: colors.text, fontSize: 22, fontWeight: "800", lineHeight: 30 }}>
+          {current.question}
+        </Text>
         {qt === "ORDER" ? (
           <Text style={{ color: colors.textMuted, marginTop: space.sm, fontWeight: "700" }}>
             Tocá las opciones en el orden correcto (de menor a mayor en esta pregunta).
@@ -776,9 +842,20 @@ export function QuizScreen({ route }: Props) {
                 accessibilityRole="button"
                 accessibilityLabel={`Opción ${optIdx + 1}`}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <Text style={{ color: textColor, fontSize: 16, fontWeight: "700", flex: 1 }}>{opt}</Text>
-                  {answered && isCorrect ? <AppIcon name="checkmark-circle" size="md" color="#fff" /> : null}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                  }}
+                >
+                  <Text style={{ color: textColor, fontSize: 16, fontWeight: "700", flex: 1 }}>
+                    {opt}
+                  </Text>
+                  {answered && isCorrect ? (
+                    <AppIcon name="checkmark-circle" size="md" color="#fff" />
+                  ) : null}
                 </View>
               </Pressable>
             );
@@ -798,7 +875,11 @@ export function QuizScreen({ route }: Props) {
           }}
         >
           <Text style={{ color: isCorrectAnswer ? "#fff" : colors.text, fontWeight: "800" }}>
-            {isCorrectAnswer ? "¡Correcto! ✅" : qt === "ORDER" ? "Orden incorrecto" : "Revisá la respuesta correcta"}
+            {isCorrectAnswer
+              ? "¡Correcto! ✅"
+              : qt === "ORDER"
+                ? "Orden incorrecto"
+                : "Revisá la respuesta correcta"}
           </Text>
           {isWrongAnswer && qt !== "ORDER" ? (
             <Text style={{ color: colors.text, marginTop: space.xs, fontWeight: "700" }}>

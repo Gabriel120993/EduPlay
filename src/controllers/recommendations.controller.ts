@@ -1,25 +1,38 @@
-import type { Request, Response } from "express";
-import { AchievementRarity, ContentCategory, FriendStatus, PostType, Visibility } from "@prisma/client";
-import { CONTENT_CATEGORY_VALUES, educationalCategoryToContentCategory } from "../lib/contentCategory";
-import { feedLabelForPostType } from "../lib/feedVariety";
-import { pickExplorationCategories, pickDiverseByCategory, quotaSplit } from "../lib/recommendationDiversity";
-import { toApiBadge } from "../lib/achievementApi";
-import { interestBoostForTopCategories } from "../lib/recommendationBoost";
+import type { Request, Response } from 'express';
+import {
+  AchievementRarity,
+  ContentCategory,
+  FriendStatus,
+  PostType,
+  Visibility,
+} from '@prisma/client';
+import {
+  CONTENT_CATEGORY_VALUES,
+  educationalCategoryToContentCategory,
+} from '../lib/contentCategory';
+import { feedLabelForPostType } from '../lib/feedVariety';
+import {
+  pickExplorationCategories,
+  pickDiverseByCategory,
+  quotaSplit,
+} from '../lib/recommendationDiversity';
+import { toApiBadge } from '../lib/achievementApi';
+import { interestBoostForTopCategories } from '../lib/recommendationBoost';
 import {
   getReactionCountsByPostIds,
   getUserReactionsByPostIds,
   reactionCountsDtoToByType,
   ZERO_REACTION_COUNTS_DTO,
-} from "../lib/reactionCounts";
+} from '../lib/reactionCounts';
 import {
   fetchRecommendedEducationalContent,
   fetchRecommendedQuizAndVisual,
   getRecommendationCategoriesContext,
   parseRecommendationLimitFromQuery,
-} from "../lib/recommendationByInterests";
-import { buildPublicFeedVisibilityWhere } from "../lib/postFeedVisibility";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
+} from '../lib/recommendationByInterests';
+import { buildPublicFeedVisibilityWhere } from '../lib/postFeedVisibility';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
 
 const FEED_RECENCY_HALF_LIFE_HOURS = 36;
 const FEED_RECENCY_WEIGHT = 10;
@@ -36,7 +49,7 @@ function computeFeedRanking(
   reactionsTotal: number,
   interestBoost: number,
   createdAt: Date,
-  now: Date
+  now: Date,
 ): { score: number; recencyScore: number } {
   const msPerHour = 3_600_000;
   const hoursAgo = Math.max(0, (now.getTime() - createdAt.getTime()) / msPerHour);
@@ -90,7 +103,7 @@ type PostRow = {
 };
 
 function resolvePostCategory(p: PostRow): string | null {
-  if (p.category != null && String(p.category).trim() !== "") {
+  if (p.category != null && String(p.category).trim() !== '') {
     return String(p.category).trim();
   }
   if (p.type === PostType.ACHIEVEMENT) {
@@ -103,14 +116,14 @@ function resolvePostCategory(p: PostRow): string | null {
 }
 
 function formatCreatedAtLocal(date: Date): string {
-  return new Intl.DateTimeFormat("es-AR", {
-    timeZone: "UTC",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
     hour12: false,
   }).format(date);
 }
@@ -121,16 +134,16 @@ type ScoredPost = {
   payload: Record<string, unknown>;
 };
 
-async function buildRecommendedGames(topCategories: ContentCategory[]): Promise<
-  { id: string; name: string; category: ContentCategory; difficulty: string }[]
-> {
+async function buildRecommendedGames(
+  topCategories: ContentCategory[],
+): Promise<{ id: string; name: string; category: ContentCategory; difficulty: string }[]> {
   const { interestSlots, exploreSlots } = quotaSplit(MAX_GAMES);
   const exploreCats = pickExplorationCategories(topCategories, CONTENT_CATEGORY_VALUES.length);
 
   if (topCategories.length === 0) {
     const pool = await prisma.game.findMany({
       where: { category: { in: exploreCats.length ? exploreCats : CONTENT_CATEGORY_VALUES } },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
       take: 48,
       select: { id: true, name: true, category: true, difficulty: true },
     });
@@ -139,20 +152,20 @@ async function buildRecommendedGames(topCategories: ContentCategory[]): Promise<
       wrapped,
       MAX_GAMES,
       (x) => x.g.category,
-      (x) => 1000 - x.i
+      (x) => 1000 - x.i,
     ).map((x) => x.g);
   }
 
   const [interestPool, explorePool] = await Promise.all([
     prisma.game.findMany({
       where: { category: { in: topCategories } },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
       take: 48,
       select: { id: true, name: true, category: true, difficulty: true },
     }),
     prisma.game.findMany({
       where: { category: { in: exploreCats } },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
       take: 48,
       select: { id: true, name: true, category: true, difficulty: true },
     }),
@@ -165,13 +178,13 @@ async function buildRecommendedGames(topCategories: ContentCategory[]): Promise<
     interestWrapped,
     interestSlots,
     (x) => x.g.category,
-    (x) => 1000 - x.i
+    (x) => 1000 - x.i,
   ).map((x) => x.g);
   const explorePick = pickDiverseByCategory(
     exploreWrapped,
     exploreSlots,
     (x) => x.g.category,
-    (x) => 1000 - x.i
+    (x) => 1000 - x.i,
   ).map((x) => x.g);
 
   const seen = new Set<string>();
@@ -186,7 +199,7 @@ async function buildRecommendedGames(topCategories: ContentCategory[]): Promise<
   if (merged.length < MAX_GAMES) {
     const rest = await prisma.game.findMany({
       where: { id: { notIn: [...seen] } },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
       take: MAX_GAMES - merged.length + 8,
       select: { id: true, name: true, category: true, difficulty: true },
     });
@@ -196,7 +209,7 @@ async function buildRecommendedGames(topCategories: ContentCategory[]): Promise<
       restW,
       MAX_GAMES - merged.length,
       (x) => x.g.category,
-      (x) => 1000 - x.i
+      (x) => 1000 - x.i,
     ).map((x) => x.g);
     for (const g of filler) {
       if (merged.length >= MAX_GAMES) break;
@@ -225,7 +238,7 @@ async function buildRecommendedMissions(topCategories: ContentCategory[]): Promi
       where: {
         OR: [{ category: { in: exploreCats } }, { category: null }],
       },
-      orderBy: { title: "asc" },
+      orderBy: { title: 'asc' },
       take: 48,
       select: {
         id: true,
@@ -240,8 +253,8 @@ async function buildRecommendedMissions(topCategories: ContentCategory[]): Promi
     return pickDiverseByCategory(
       wrapped,
       MAX_MISSIONS,
-      (x) => x.m.category ?? "__general__",
-      (x) => 1000 - x.i
+      (x) => x.m.category ?? '__general__',
+      (x) => 1000 - x.i,
     ).map((x) => ({ ...x.m, type: String(x.m.type) }));
   }
 
@@ -250,7 +263,7 @@ async function buildRecommendedMissions(topCategories: ContentCategory[]): Promi
       where: {
         OR: [{ category: { in: topCategories } }, { category: null }],
       },
-      orderBy: { title: "asc" },
+      orderBy: { title: 'asc' },
       take: 48,
       select: {
         id: true,
@@ -263,7 +276,7 @@ async function buildRecommendedMissions(topCategories: ContentCategory[]): Promi
     }),
     prisma.mission.findMany({
       where: { category: { in: exploreCats } },
-      orderBy: { title: "asc" },
+      orderBy: { title: 'asc' },
       take: 48,
       select: {
         id: true,
@@ -282,14 +295,14 @@ async function buildRecommendedMissions(topCategories: ContentCategory[]): Promi
   const interestPick = pickDiverseByCategory(
     interestMW,
     interestSlots,
-    (x) => x.m.category ?? "__general__",
-    (x) => 1000 - x.i
+    (x) => x.m.category ?? '__general__',
+    (x) => 1000 - x.i,
   ).map((x) => x.m);
   const explorePick = pickDiverseByCategory(
     exploreMW,
     exploreSlots,
-    (x) => x.m.category ?? "__general__",
-    (x) => 1000 - x.i
+    (x) => x.m.category ?? '__general__',
+    (x) => 1000 - x.i,
   ).map((x) => x.m);
 
   const seen = new Set<string>();
@@ -311,7 +324,7 @@ async function buildRecommendedMissions(topCategories: ContentCategory[]): Promi
   if (merged.length < MAX_MISSIONS) {
     const rest = await prisma.mission.findMany({
       where: { id: { notIn: [...seen] } },
-      orderBy: { title: "asc" },
+      orderBy: { title: 'asc' },
       take: MAX_MISSIONS - merged.length + 8,
       select: {
         id: true,
@@ -327,8 +340,8 @@ async function buildRecommendedMissions(topCategories: ContentCategory[]): Promi
     const filler = pickDiverseByCategory(
       restW,
       MAX_MISSIONS - merged.length,
-      (x) => x.m.category ?? "__general__",
-      (x) => 1000 - x.i
+      (x) => x.m.category ?? '__general__',
+      (x) => 1000 - x.i,
     ).map((x) => x.m);
     for (const m of filler) {
       if (merged.length >= MAX_MISSIONS) break;
@@ -345,13 +358,13 @@ async function buildRecommendedEducationalContent(topCategories: ContentCategory
     title: string;
     description: string;
     category: string;
-    difficulty: import("@prisma/client").Difficulty;
+    difficulty: import('@prisma/client').Difficulty;
     imageUrl: string | null;
     createdAt: string;
   }[]
 > {
   const pool = await prisma.educationalContent.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: 48,
     select: {
       id: true,
@@ -374,7 +387,7 @@ async function buildRecommendedEducationalContent(topCategories: ContentCategory
     const cc = educationalCategoryToContentCategory(row.category);
     const boost = cc ? interestBoostForTopCategories(cc, topCategories) : 0;
     const sk = boost * 20_000 + (pool.length - index);
-    return { row, sortKey: sk, catKey: cc ?? "__other__" };
+    return { row, sortKey: sk, catKey: cc ?? '__other__' };
   });
 
   if (topCategories.length === 0) {
@@ -382,7 +395,7 @@ async function buildRecommendedEducationalContent(topCategories: ContentCategory
       wrapped,
       MAX_EDUCATIONAL,
       (x) => x.catKey,
-      (x) => x.sortKey
+      (x) => x.sortKey,
     );
     return picked.map((x) => ({
       id: x.row.id,
@@ -410,13 +423,13 @@ async function buildRecommendedEducationalContent(topCategories: ContentCategory
     interestW,
     interestSlots,
     (x) => x.catKey,
-    (x) => x.sortKey
+    (x) => x.sortKey,
   );
   const explorePick = pickDiverseByCategory(
     exploreW,
     exploreSlots,
     (x) => x.catKey,
-    (x) => x.sortKey
+    (x) => x.sortKey,
   );
 
   const seen = new Set<string>();
@@ -434,7 +447,7 @@ async function buildRecommendedEducationalContent(topCategories: ContentCategory
       rest,
       MAX_EDUCATIONAL - merged.length,
       (x) => x.catKey,
-      (x) => x.sortKey
+      (x) => x.sortKey,
     );
     for (const x of filler) {
       if (merged.length >= MAX_EDUCATIONAL) break;
@@ -459,38 +472,39 @@ async function buildRecommendedEducationalContent(topCategories: ContentCategory
 export async function getUserRecommendations(req: Request, res: Response): Promise<void> {
   const userId = req.params.id?.trim();
   if (!userId) {
-    res.status(400).json({ error: "id de usuario es obligatorio." });
+    res.status(400).json({ error: 'id de usuario es obligatorio.' });
     return;
   }
 
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
     if (!user) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
 
     const interestRows = await prisma.userInterest.findMany({
       where: { userId },
-      orderBy: { score: "desc" },
+      orderBy: { score: 'desc' },
       take: TOP_INTERESTS,
       select: { category: true, score: true },
     });
     const topCategories: ContentCategory[] = interestRows.map((r) => r.category);
     const topCategoriesSet = new Set<string>(topCategories);
 
-    const [recommendedGames, recommendedMissions, recommendedEducationalContent] = await Promise.all([
-      buildRecommendedGames(topCategories),
-      buildRecommendedMissions(topCategories),
-      buildRecommendedEducationalContent(topCategories),
-    ]);
+    const [recommendedGames, recommendedMissions, recommendedEducationalContent] =
+      await Promise.all([
+        buildRecommendedGames(topCategories),
+        buildRecommendedMissions(topCategories),
+        buildRecommendedEducationalContent(topCategories),
+      ]);
 
     const friendIds = await getAcceptedFriendUserIds(userId);
     const feedWhere = buildPublicFeedVisibilityWhere(userId, friendIds);
 
     const postRows = (await prisma.post.findMany({
       where: feedWhere,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: POST_CANDIDATE_POOL,
       select: {
         id: true,
@@ -587,14 +601,14 @@ export async function getUserRecommendations(req: Request, res: Response): Promi
     let interestPicked = pickDiverseByCategory(
       interestScored,
       interestSlots,
-      (s) => s.postCategory ?? "__none__",
-      (s) => s.sortScore
+      (s) => s.postCategory ?? '__none__',
+      (s) => s.sortScore,
     );
     let explorePicked = pickDiverseByCategory(
       exploreScored,
       exploreSlots,
-      (s) => s.postCategory ?? "__none__",
-      (s) => s.sortScore
+      (s) => s.postCategory ?? '__none__',
+      (s) => s.sortScore,
     );
 
     if (interestPicked.length < interestSlots && exploreScored.length > explorePicked.length) {
@@ -606,8 +620,8 @@ export async function getUserRecommendations(req: Request, res: Response): Promi
       const more = pickDiverseByCategory(
         extraFromExplore,
         need,
-        (s) => s.postCategory ?? "__none__",
-        (s) => s.sortScore
+        (s) => s.postCategory ?? '__none__',
+        (s) => s.sortScore,
       );
       interestPicked = [...interestPicked, ...more];
     }
@@ -621,8 +635,8 @@ export async function getUserRecommendations(req: Request, res: Response): Promi
       const more = pickDiverseByCategory(
         extraFromInterest,
         need,
-        (s) => s.postCategory ?? "__none__",
-        (s) => s.sortScore
+        (s) => s.postCategory ?? '__none__',
+        (s) => s.sortScore,
       );
       explorePicked = [...explorePicked, ...more];
     }
@@ -644,8 +658,8 @@ export async function getUserRecommendations(req: Request, res: Response): Promi
       const filler = pickDiverseByCategory(
         rest,
         MAX_POSTS - merged.length,
-        (s) => s.postCategory ?? "__none__",
-        (s) => s.sortScore
+        (s) => s.postCategory ?? '__none__',
+        (s) => s.sortScore,
       );
       for (const s of filler) {
         if (merged.length >= MAX_POSTS) break;
@@ -665,7 +679,9 @@ export async function getUserRecommendations(req: Request, res: Response): Promi
     ]);
     const recommendedPosts = recommendedPostsRaw.map((p) => ({
       ...p,
-      reactionsCountByType: reactionCountsDtoToByType(reactionCountMap.get(p.id) ?? ZERO_REACTION_COUNTS_DTO),
+      reactionsCountByType: reactionCountsDtoToByType(
+        reactionCountMap.get(p.id) ?? ZERO_REACTION_COUNTS_DTO,
+      ),
       userReaction: userReactionMap.get(p.id) ?? null,
     }));
 
@@ -678,8 +694,8 @@ export async function getUserRecommendations(req: Request, res: Response): Promi
       acceptedFriendCount: friendIds.length,
     });
   } catch (err) {
-    logError("recommendations", err);
-    res.status(500).json({ error: "Error al obtener recomendaciones." });
+    logError('recommendations', err);
+    res.status(500).json({ error: 'Error al obtener recomendaciones.' });
   }
 }
 
@@ -690,9 +706,14 @@ export async function getUserRecommendations(req: Request, res: Response): Promi
  */
 export async function getRecommendationsQuery(req: Request, res: Response): Promise<void> {
   const raw = req.query.userId;
-  const userId = typeof raw === "string" ? raw.trim() : Array.isArray(raw) && raw[0] != null ? String(raw[0]).trim() : "";
+  const userId =
+    typeof raw === 'string'
+      ? raw.trim()
+      : Array.isArray(raw) && raw[0] != null
+        ? String(raw[0]).trim()
+        : '';
   if (!userId) {
-    res.status(400).json({ error: "Query param userId es obligatorio." });
+    res.status(400).json({ error: 'Query param userId es obligatorio.' });
     return;
   }
 
@@ -701,7 +722,7 @@ export async function getRecommendationsQuery(req: Request, res: Response): Prom
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
     if (!user) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
 
@@ -714,7 +735,7 @@ export async function getRecommendationsQuery(req: Request, res: Response): Prom
 
     res.json({ content, games });
   } catch (err) {
-    logError("recommendations.getRecommendationsQuery", err);
-    res.status(500).json({ error: "Error al obtener recomendaciones." });
+    logError('recommendations.getRecommendationsQuery', err);
+    res.status(500).json({ error: 'Error al obtener recomendaciones.' });
   }
 }

@@ -1,15 +1,18 @@
-import type { Request, Response } from "express";
-import { ChallengeBucket } from "@prisma/client";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { applyGamifiedChallengeProgress, listGamifiedChallengesForUser } from "../services/challenges.service";
-import { formatZodError } from "../lib/validation/schemas";
+import type { Request, Response } from 'express';
+import { ChallengeBucket } from '@prisma/client';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import {
+  applyGamifiedChallengeProgress,
+  listGamifiedChallengesForUser,
+} from '../services/challenges.service';
+import { formatZodError } from '../lib/validation/schemas';
 
 function requireChild(req: Request, res: Response): string | null {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return null;
   }
   return auth.userId;
@@ -34,8 +37,8 @@ export async function getChallengesDailyRest(req: Request, res: Response): Promi
       })),
     });
   } catch (e) {
-    logError("challengesApi.daily", e);
-    res.status(500).json({ error: "Error al cargar retos diarios." });
+    logError('challengesApi.daily', e);
+    res.status(500).json({ error: 'Error al cargar retos diarios.' });
   }
 }
 
@@ -51,8 +54,8 @@ export async function getChallengesWeeklyRest(req: Request, res: Response): Prom
       weekly: pack.weekly,
     });
   } catch (e) {
-    logError("challengesApi.weekly", e);
-    res.status(500).json({ error: "Error al cargar reto semanal." });
+    logError('challengesApi.weekly', e);
+    res.status(500).json({ error: 'Error al cargar reto semanal.' });
   }
 }
 
@@ -65,8 +68,8 @@ export async function getChallengesSpecialRest(req: Request, res: Response): Pro
     const pack = await listGamifiedChallengesForUser(userId);
     res.json({ specials: pack.specials });
   } catch (e) {
-    logError("challengesApi.special", e);
-    res.status(500).json({ error: "Error al cargar retos especiales." });
+    logError('challengesApi.special', e);
+    res.status(500).json({ error: 'Error al cargar retos especiales.' });
   }
 }
 
@@ -78,13 +81,13 @@ export async function getChallengesMyProgress(req: Request, res: Response): Prom
   try {
     const rows = await prisma.userGamifiedChallenge.findMany({
       where: { userId },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { updatedAt: 'desc' },
       take: 200,
     });
     res.json({ challenges: rows });
   } catch (e) {
-    logError("challengesApi.myProgress", e);
-    res.status(500).json({ error: "Error al cargar progreso." });
+    logError('challengesApi.myProgress', e);
+    res.status(500).json({ error: 'Error al cargar progreso.' });
   }
 }
 
@@ -99,7 +102,7 @@ export async function postChallengeClaim(req: Request, res: Response): Promise<v
 
   const challengeId = req.params.challengeId?.trim();
   if (!challengeId) {
-    res.status(400).json({ error: "challengeId inválido." });
+    res.status(400).json({ error: 'challengeId inválido.' });
     return;
   }
 
@@ -114,7 +117,7 @@ export async function postChallengeClaim(req: Request, res: Response): Promise<v
       where: { id: challengeId, userId },
     });
     if (!row) {
-      res.status(404).json({ error: "Reto no encontrado." });
+      res.status(404).json({ error: 'Reto no encontrado.' });
       return;
     }
     if (row.completed) {
@@ -136,11 +139,11 @@ export async function postChallengeClaim(req: Request, res: Response): Promise<v
     res.json({ ok: true, result });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (msg.includes("UNKNOWN") || msg.includes("NOT_FOUND")) {
-      res.status(400).json({ error: "No se pudo reclamar el reto." });
+    if (msg.includes('UNKNOWN') || msg.includes('NOT_FOUND')) {
+      res.status(400).json({ error: 'No se pudo reclamar el reto.' });
       return;
     }
-    logError("challengesApi.claim", e);
-    res.status(500).json({ error: "Error al reclamar recompensa." });
+    logError('challengesApi.claim', e);
+    res.status(500).json({ error: 'Error al reclamar recompensa.' });
   }
 }

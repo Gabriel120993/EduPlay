@@ -34,7 +34,10 @@ async function readLastActiveAt(): Promise<number | null> {
  * Llamar al enfocar el Feed: si hubo inactividad prolongada, devuelve un mensaje y actualiza la marca de actividad.
  * Primera visita (sin marca previa): no muestra recordatorio.
  */
-export async function evaluateFeedInactivityReminder(): Promise<{ show: boolean; message: string }> {
+export async function evaluateFeedInactivityReminder(): Promise<{
+  show: boolean;
+  message: string;
+}> {
   const now = Date.now();
   const last = await readLastActiveAt();
   const show = last !== null && now - last >= INACTIVITY_REMINDER_THRESHOLD_MS;

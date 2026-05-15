@@ -1,1 +1,1 @@
-export const APP_TAGLINE = "EduPlay - Mi primera red social";
+export const APP_TAGLINE = 'EduPlay - Mi primera red social';

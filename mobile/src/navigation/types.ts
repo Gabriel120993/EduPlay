@@ -31,17 +31,19 @@ export type RootStackParamList = {
     difficulty?: "EASY" | "MEDIUM" | "HARD";
   };
   QuizAreas: undefined;
-  Quiz: {
-    category?: string;
-    knowledgeArea?: QuizKnowledgeArea;
-    topicSlug?: string;
-    quizLevel?: 1 | 2 | 3 | 4 | 5;
-    difficulty?: "EASY" | "MEDIUM" | "HARD";
-    /** Segundos por pregunta; `0` = sin temporizador. */
-    timerSeconds?: number;
-    challengeLives?: number;
-    adaptive?: boolean;
-  } | undefined;
+  Quiz:
+    | {
+        category?: string;
+        knowledgeArea?: QuizKnowledgeArea;
+        topicSlug?: string;
+        quizLevel?: 1 | 2 | 3 | 4 | 5;
+        difficulty?: "EASY" | "MEDIUM" | "HARD";
+        /** Segundos por pregunta; `0` = sin temporizador. */
+        timerSeconds?: number;
+        challengeLives?: number;
+        adaptive?: boolean;
+      }
+    | undefined;
   VisualGame: { category?: string; difficulty?: "EASY" | "MEDIUM" | "HARD"; gameId?: string };
   QuizResult: {
     score: number;

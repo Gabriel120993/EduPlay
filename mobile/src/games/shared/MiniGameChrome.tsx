@@ -18,7 +18,15 @@ type Props = {
   onBack: () => void;
 };
 
-export function MiniGameChrome({ meta, levelIndex, totalLevels, bestStars, children, footer, onBack }: Props) {
+export function MiniGameChrome({
+  meta,
+  levelIndex,
+  totalLevels,
+  bestStars,
+  children,
+  footer,
+  onBack,
+}: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -34,7 +42,12 @@ export function MiniGameChrome({ meta, levelIndex, totalLevels, bestStars, child
           borderBottomColor: colors.borderSubtle,
         }}
       >
-        <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button" accessibilityLabel="Volver">
+        <Pressable
+          onPress={onBack}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Volver"
+        >
           <Text style={{ color: colors.link, fontWeight: "900", fontSize: 16 }}>‹ Volver</Text>
         </Pressable>
         <View style={{ flex: 1, marginLeft: space.sm }}>

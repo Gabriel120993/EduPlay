@@ -1,48 +1,17 @@
-import type { Request, Response } from "express";
-import { PostType, Prisma, Visibility, XpGainSource } from "@prisma/client";
+import type { Request, Response } from 'express';
+import { PostType, Prisma, Visibility, XpGainSource } from '@prisma/client';
 import {
   applyEarnXpMissionProgress,
   applyPlayGamesMissionProgress,
   maybeGrantDailyChallengeBonus,
-} from "../lib/missionProgress";
-import { bumpUserInterestScore, interestDeltaForGameScore } from "../lib/userInterest";
-import { recordXpGain } from "../lib/xpLedger";
-import { addExperience, xpFromGameScore } from "../lib/xpLevel";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
+} from '../lib/missionProgress';
+import { bumpUserInterestScore, interestDeltaForGameScore } from '../lib/userInterest';
+import { recordXpGain } from '../lib/xpLedger';
+import { addExperience, xpFromGameScore } from '../lib/xpLevel';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
 
-function validateCreateGameResult(body: unknown):
-  | { ok: true; data: { userId: string; gameId: string; score: number } }
-  | { ok: false; error: string } {
-  if (body === null || typeof body !== "object") {
-    return { ok: false, error: "El cuerpo debe ser un objeto JSON." };
-  }
-  const b = body as Record<string, unknown>;
-  if (b.userId === undefined || b.userId === null || String(b.userId).trim() === "") {
-    return { ok: false, error: "userId es obligatorio." };
-  }
-  if (b.gameId === undefined || b.gameId === null || String(b.gameId).trim() === "") {
-    return { ok: false, error: "gameId es obligatorio." };
-  }
-  if (b.score === undefined || b.score === null) {
-    return { ok: false, error: "score es obligatorio." };
-  }
-  const score = typeof b.score === "number" ? b.score : Number(b.score);
-  if (!Number.isFinite(score) || !Number.isInteger(score)) {
-    return { ok: false, error: "score debe ser un número entero." };
-  }
-  if (score < 0) {
-    return { ok: false, error: "score no puede ser negativo." };
-  }
-  return {
-    ok: true,
-    data: {
-      userId: String(b.userId).trim(),
-      gameId: String(b.gameId).trim(),
-      score,
-    },
-  };
-}
+import { validateCreateGameResult } from '../services/gameResults.service';
 
 export async function createGameResult(req: Request, res: Response): Promise<void> {
   const validation = validateCreateGameResult(req.body);
@@ -58,11 +27,11 @@ export async function createGameResult(req: Request, res: Response): Promise<voi
       prisma.game.findUnique({ where: { id: gameId }, select: { id: true, category: true } }),
     ]);
     if (!user) {
-      res.status(400).json({ error: "userId no corresponde a un usuario existente." });
+      res.status(400).json({ error: 'userId no corresponde a un usuario existente.' });
       return;
     }
     if (!game) {
-      res.status(400).json({ error: "gameId no corresponde a un juego existente." });
+      res.status(400).json({ error: 'gameId no corresponde a un juego existente.' });
       return;
     }
 
@@ -125,19 +94,19 @@ export async function createGameResult(req: Request, res: Response): Promise<voi
     res.status(201).json(result);
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === "P2002") {
+      if (err.code === 'P2002') {
         res.status(409).json({
           error:
-            "Violación de unicidad: ya existe un post para este resultado de juego (Post.gameResultId único) o conflicto de clave duplicada.",
+            'Violación de unicidad: ya existe un post para este resultado de juego (Post.gameResultId único) o conflicto de clave duplicada.',
         });
         return;
       }
-      if (err.code === "P2003") {
-        res.status(400).json({ error: "Referencia inválida." });
+      if (err.code === 'P2003') {
+        res.status(400).json({ error: 'Referencia inválida.' });
         return;
       }
     }
-    logError("gameResult", err);
-    res.status(500).json({ error: "Error al registrar el resultado del juego." });
+    logError('gameResult', err);
+    res.status(500).json({ error: 'Error al registrar el resultado del juego.' });
   }
 }

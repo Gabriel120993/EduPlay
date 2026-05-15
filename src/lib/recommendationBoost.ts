@@ -6,7 +6,7 @@ const BOOST_BY_RANK = [22, 17, 13, 10, 7, 5, 4, 3] as const;
  */
 export function interestBoostForTopCategories(
   itemCategory: string | null | undefined,
-  topCategoriesOrdered: readonly string[]
+  topCategoriesOrdered: readonly string[],
 ): number {
   if (!itemCategory?.trim()) return 0;
   const c = itemCategory.trim();

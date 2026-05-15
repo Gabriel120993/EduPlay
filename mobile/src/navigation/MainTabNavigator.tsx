@@ -43,7 +43,9 @@ function TabHeaderRight({
     navigation.getParent()?.navigate("ChatInbox");
   };
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", marginRight: space.sm, gap: space.xs }}>
+    <View
+      style={{ flexDirection: "row", alignItems: "center", marginRight: space.sm, gap: space.xs }}
+    >
       {showChat ? (
         <Pressable
           onPress={openChat}
@@ -67,7 +69,13 @@ function TabHeaderRight({
       </Pressable>
       <Pressable
         onPress={onLogout}
-        style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 4 }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          paddingVertical: 8,
+          paddingHorizontal: 4,
+        }}
         accessibilityRole="button"
         accessibilityLabel="Cerrar sesión"
       >
@@ -108,7 +116,11 @@ export function MainTabNavigator({
         headerTintColor: colors.headerTint,
         headerTitleStyle: { color: colors.headerTint },
         headerRight: () => (
-          <TabHeaderRight navigation={navigation as TabNavigation} route={route} onLogout={onLogout} />
+          <TabHeaderRight
+            navigation={navigation as TabNavigation}
+            route={route}
+            onLogout={onLogout}
+          />
         ),
         animation: "shift",
         transitionSpec: {

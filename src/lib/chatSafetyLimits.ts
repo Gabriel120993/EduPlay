@@ -36,13 +36,10 @@ function pruneTimestamps(ts: number[], now: number, windowMs: number): number[] 
 
 /** Texto comparable para spam (minúsculas, espacios colapsados). */
 export function normalizeChatTextForSpam(text: string): string {
-  return text
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
+  return text.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-export type ChatSafetyFailureCode = "CHAT_COOLDOWN" | "CHAT_RATE_LIMIT" | "CHAT_SPAM";
+export type ChatSafetyFailureCode = 'CHAT_COOLDOWN' | 'CHAT_RATE_LIMIT' | 'CHAT_SPAM';
 
 export type ChatSafetyResult =
   | { ok: true }
@@ -58,8 +55,8 @@ export function assertChatSendSafety(userId: string, rawText: string): ChatSafet
   if (s.lastSendAt > 0 && now - s.lastSendAt < MIN_INTERVAL_MS) {
     return {
       ok: false,
-      code: "CHAT_COOLDOWN",
-      error: "Esperá un instante antes de enviar otro mensaje.",
+      code: 'CHAT_COOLDOWN',
+      error: 'Esperá un instante antes de enviar otro mensaje.',
     };
   }
 
@@ -67,8 +64,8 @@ export function assertChatSendSafety(userId: string, rawText: string): ChatSafet
   if (s.sendAt.length >= CHAT_MAX_MESSAGES_PER_MINUTE) {
     return {
       ok: false,
-      code: "CHAT_RATE_LIMIT",
-      error: "Enviaste demasiados mensajes. Probá de nuevo en un minuto.",
+      code: 'CHAT_RATE_LIMIT',
+      error: 'Enviaste demasiados mensajes. Probá de nuevo en un minuto.',
     };
   }
 
@@ -79,8 +76,8 @@ export function assertChatSendSafety(userId: string, rawText: string): ChatSafet
     if (sameCount >= SPAM_MAX_IDENTICAL_IN_WINDOW) {
       return {
         ok: false,
-        code: "CHAT_SPAM",
-        error: "Detectamos muchos mensajes iguales. Cambiá el texto o esperá un poco.",
+        code: 'CHAT_SPAM',
+        error: 'Detectamos muchos mensajes iguales. Cambiá el texto o esperá un poco.',
       };
     }
   }

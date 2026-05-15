@@ -1,4 +1,4 @@
-import { logError } from "./logger";
+import { logError } from './logger';
 
 /**
  * Envío mínimo a la API HTTP de Expo Push (sin dependencia extra).
@@ -16,7 +16,7 @@ export async function sendExpoPushToToken(
   title: string,
   body: string,
   data?: Record<string, unknown>,
-  options?: ExpoPushSendOptions
+  options?: ExpoPushSendOptions,
 ): Promise<void> {
   const token = expoPushToken.trim();
   if (!token) return;
@@ -25,8 +25,8 @@ export async function sendExpoPushToToken(
     to: token,
     title,
     body,
-    sound: options?.sound ?? "default",
-    priority: "high",
+    sound: options?.sound ?? 'default',
+    priority: 'high',
     data: data ?? {},
   };
   if (options?.channelId) {
@@ -34,20 +34,20 @@ export async function sendExpoPushToToken(
   }
 
   try {
-    const res = await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
       headers: {
-        Accept: "application/json",
-        "Accept-Encoding": "gzip, deflate",
-        "Content-Type": "application/json",
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      await res.text().catch(() => "");
-      logError("expo-push", new Error(`Expo API responded ${res.status}`));
+      await res.text().catch(() => '');
+      logError('expo-push', new Error(`Expo API responded ${res.status}`));
     }
   } catch (e) {
-    logError("expo-push", e);
+    logError('expo-push', e);
   }
 }

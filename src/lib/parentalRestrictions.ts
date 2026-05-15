@@ -1,10 +1,10 @@
-import { prisma } from "./prisma";
+import { prisma } from './prisma';
 
 /**
  * Sin fila en `ParentSettings` → sin restricción extra (valores por defecto permisivos del producto).
  */
 export async function assertAllowPosting(
-  childUserId: string
+  childUserId: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   const settings = await prisma.parentSettings.findUnique({
     where: { childId: childUserId },
@@ -15,12 +15,12 @@ export async function assertAllowPosting(
   }
   return {
     ok: false,
-    message: "Publicar no está permitido por configuración parental.",
+    message: 'Publicar no está permitido por configuración parental.',
   };
 }
 
 export async function assertAllowFriends(
-  childUserId: string
+  childUserId: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   const settings = await prisma.parentSettings.findUnique({
     where: { childId: childUserId },
@@ -31,12 +31,12 @@ export async function assertAllowFriends(
   }
   return {
     ok: false,
-    message: "Agregar amigos no está permitido por configuración parental.",
+    message: 'Agregar amigos no está permitido por configuración parental.',
   };
 }
 
 export async function assertAllowChat(
-  childUserId: string
+  childUserId: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   const settings = await prisma.parentSettings.findUnique({
     where: { childId: childUserId },
@@ -47,6 +47,6 @@ export async function assertAllowChat(
   }
   return {
     ok: false,
-    message: "El chat no está permitido por configuración parental.",
+    message: 'El chat no está permitido por configuración parental.',
   };
 }

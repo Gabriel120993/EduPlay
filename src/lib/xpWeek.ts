@@ -7,9 +7,7 @@ export function utcWeekRange(at: Date = new Date()): {
 } {
   const day = at.getUTCDay();
   const daysSinceMonday = (day + 6) % 7;
-  const weekStartUtc = new Date(
-    Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate())
-  );
+  const weekStartUtc = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()));
   weekStartUtc.setUTCDate(weekStartUtc.getUTCDate() - daysSinceMonday);
   weekStartUtc.setUTCHours(0, 0, 0, 0);
   const weekEndExclusiveUtc = new Date(weekStartUtc);

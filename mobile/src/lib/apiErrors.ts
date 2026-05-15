@@ -38,12 +38,14 @@ export function formatApiError(error: unknown, fallback: string): string {
         return [
           "Usuario no encontrado (404).",
           "En el navegador abrí: http://localhost:3000/api/users",
-          "Copiá el \"id\" (UUID) de un usuario y pegalo en mobile/.env:",
+          'Copiá el "id" (UUID) de un usuario y pegalo en mobile/.env:',
           "EXPO_PUBLIC_USER_ID=<ese-uuid>",
           "Guardá el archivo y reiniciá Expo: npx expo start -c",
         ].join(" ");
       }
-      return serverMsg || "Recurso no encontrado (404). Revisá EXPO_PUBLIC_API_URL y el id de usuario.";
+      return (
+        serverMsg || "Recurso no encontrado (404). Revisá EXPO_PUBLIC_API_URL y el id de usuario."
+      );
     }
 
     if (serverMsg) return serverMsg;

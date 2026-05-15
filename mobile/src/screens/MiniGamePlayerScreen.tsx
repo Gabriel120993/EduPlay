@@ -50,20 +50,37 @@ export function MiniGamePlayerScreen() {
         setLevelIndex(entry.totalLevels - 1);
       }
     },
-    [entry]
+    [entry],
   );
 
   if (!entry) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: space.lg, backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text, textAlign: "center", fontWeight: "700" }}>No encontramos ese minijuego.</Text>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: space.lg,
+          backgroundColor: colors.background,
+        }}
+      >
+        <Text style={{ color: colors.text, textAlign: "center", fontWeight: "700" }}>
+          No encontramos ese minijuego.
+        </Text>
       </View>
     );
   }
 
   if (levelIndex === null) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.background,
+        }}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );

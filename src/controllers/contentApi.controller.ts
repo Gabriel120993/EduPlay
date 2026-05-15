@@ -1,14 +1,14 @@
-import type { Request, Response } from "express";
-import { Difficulty } from "@prisma/client";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { formatZodError, uuidSchema } from "../lib/validation/schemas";
+import type { Request, Response } from 'express';
+import { Difficulty } from '@prisma/client';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { formatZodError } from '../lib/validation/schemas';
 
 function requireChild(req: Request, res: Response): string | null {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return null;
   }
   return auth.userId;
@@ -18,12 +18,12 @@ function requireChild(req: Request, res: Response): string | null {
 export async function listEducationalCategories(_req: Request, res: Response): Promise<void> {
   try {
     const rows = await prisma.educationalCategory.findMany({
-      orderBy: { sortOrder: "asc" },
+      orderBy: { sortOrder: 'asc' },
     });
     res.json({ categories: rows });
   } catch (e) {
-    logError("contentApi.categories", e);
-    res.status(500).json({ error: "Error al listar categorías." });
+    logError('contentApi.categories', e);
+    res.status(500).json({ error: 'Error al listar categorías.' });
   }
 }
 
@@ -31,18 +31,18 @@ export async function listEducationalCategories(_req: Request, res: Response): P
 export async function listSubjectsByCategory(req: Request, res: Response): Promise<void> {
   const categoryId = req.params.categoryId?.trim();
   if (!categoryId) {
-    res.status(400).json({ error: "categoryId inválido." });
+    res.status(400).json({ error: 'categoryId inválido.' });
     return;
   }
   try {
     const rows = await prisma.educationalSubject.findMany({
       where: { categoryId },
-      orderBy: { sortOrder: "asc" },
+      orderBy: { sortOrder: 'asc' },
     });
     res.json({ subjects: rows });
   } catch (e) {
-    logError("contentApi.subjects", e);
-    res.status(500).json({ error: "Error al listar materias." });
+    logError('contentApi.subjects', e);
+    res.status(500).json({ error: 'Error al listar materias.' });
   }
 }
 
@@ -50,18 +50,18 @@ export async function listSubjectsByCategory(req: Request, res: Response): Promi
 export async function listTopicsBySubject(req: Request, res: Response): Promise<void> {
   const subjectId = req.params.subjectId?.trim();
   if (!subjectId) {
-    res.status(400).json({ error: "subjectId inválido." });
+    res.status(400).json({ error: 'subjectId inválido.' });
     return;
   }
   try {
     const rows = await prisma.educationalTopic.findMany({
       where: { subjectId },
-      orderBy: { sortOrder: "asc" },
+      orderBy: { sortOrder: 'asc' },
     });
     res.json({ topics: rows });
   } catch (e) {
-    logError("contentApi.topics", e);
-    res.status(500).json({ error: "Error al listar temas." });
+    logError('contentApi.topics', e);
+    res.status(500).json({ error: 'Error al listar temas.' });
   }
 }
 
@@ -69,18 +69,18 @@ export async function listTopicsBySubject(req: Request, res: Response): Promise<
 export async function listContentsByTopic(req: Request, res: Response): Promise<void> {
   const topicId = req.params.topicId?.trim();
   if (!topicId) {
-    res.status(400).json({ error: "topicId inválido." });
+    res.status(400).json({ error: 'topicId inválido.' });
     return;
   }
   try {
     const rows = await prisma.educationalContent.findMany({
       where: { topicId, published: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
     res.json({ contents: rows });
   } catch (e) {
-    logError("contentApi.topicContents", e);
-    res.status(500).json({ error: "Error al listar contenidos." });
+    logError('contentApi.topicContents', e);
+    res.status(500).json({ error: 'Error al listar contenidos.' });
   }
 }
 
@@ -103,13 +103,13 @@ export async function listContentsFiltered(req: Request, res: Response): Promise
         published: true,
         ...(parsed.data.difficulty ? { difficulty: parsed.data.difficulty } : {}),
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 100,
     });
     res.json({ contents: rows });
   } catch (e) {
-    logError("contentApi.listContents", e);
-    res.status(500).json({ error: "Error al listar contenidos." });
+    logError('contentApi.listContents', e);
+    res.status(500).json({ error: 'Error al listar contenidos.' });
   }
 }
 
@@ -117,19 +117,19 @@ export async function listContentsFiltered(req: Request, res: Response): Promise
 export async function getContentDetail(req: Request, res: Response): Promise<void> {
   const contentId = req.params.contentId?.trim();
   if (!contentId) {
-    res.status(400).json({ error: "contentId inválido." });
+    res.status(400).json({ error: 'contentId inválido.' });
     return;
   }
   try {
     const item = await prisma.educationalContent.findUnique({ where: { id: contentId } });
     if (!item) {
-      res.status(404).json({ error: "Contenido no encontrado." });
+      res.status(404).json({ error: 'Contenido no encontrado.' });
       return;
     }
     res.json({ content: item });
   } catch (e) {
-    logError("contentApi.getContent", e);
-    res.status(500).json({ error: "Error al obtener contenido." });
+    logError('contentApi.getContent', e);
+    res.status(500).json({ error: 'Error al obtener contenido.' });
   }
 }
 
@@ -144,7 +144,7 @@ export async function postContentView(req: Request, res: Response): Promise<void
 
   const contentId = req.params.contentId?.trim();
   if (!contentId) {
-    res.status(400).json({ error: "contentId inválido." });
+    res.status(400).json({ error: 'contentId inválido.' });
     return;
   }
 
@@ -158,14 +158,14 @@ export async function postContentView(req: Request, res: Response): Promise<void
     await prisma.analyticsEvent.create({
       data: {
         userId,
-        eventName: "content_view",
+        eventName: 'content_view',
         metadata: { contentId, ...parsed.data },
       },
     });
     res.status(201).json({ ok: true });
   } catch (e) {
-    logError("contentApi.view", e);
-    res.status(500).json({ error: "Error al registrar vista." });
+    logError('contentApi.view', e);
+    res.status(500).json({ error: 'Error al registrar vista.' });
   }
 }
 
@@ -176,14 +176,14 @@ export async function getRecommendedSimilar(req: Request, res: Response): Promis
 
   const contentId = req.params.contentId?.trim();
   if (!contentId) {
-    res.status(400).json({ error: "contentId inválido." });
+    res.status(400).json({ error: 'contentId inválido.' });
     return;
   }
 
   try {
     const base = await prisma.educationalContent.findUnique({ where: { id: contentId } });
     if (!base) {
-      res.status(404).json({ error: "Contenido no encontrado." });
+      res.status(404).json({ error: 'Contenido no encontrado.' });
       return;
     }
     const similar = await prisma.educationalContent.findMany({
@@ -194,12 +194,12 @@ export async function getRecommendedSimilar(req: Request, res: Response): Promis
         difficulty: base.difficulty,
       },
       take: 10,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
     res.json({ contents: similar });
   } catch (e) {
-    logError("contentApi.recommended", e);
-    res.status(500).json({ error: "Error al obtener recomendaciones." });
+    logError('contentApi.recommended', e);
+    res.status(500).json({ error: 'Error al obtener recomendaciones.' });
   }
 }
 
@@ -222,16 +222,16 @@ export async function searchContent(req: Request, res: Response): Promise<void> 
       where: {
         published: true,
         OR: [
-          { title: { contains: q, mode: "insensitive" } },
-          { description: { contains: q, mode: "insensitive" } },
+          { title: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
         ],
       },
       take: parsed.data.limit,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
     res.json({ contents: rows });
   } catch (e) {
-    logError("contentApi.search", e);
-    res.status(500).json({ error: "Error en la búsqueda." });
+    logError('contentApi.search', e);
+    res.status(500).json({ error: 'Error en la búsqueda.' });
   }
 }

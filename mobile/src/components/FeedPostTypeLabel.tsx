@@ -15,7 +15,7 @@ type Props = {
 function colorsForPostType(
   postType: string | undefined,
   colors: AppColors,
-  isDark: boolean
+  isDark: boolean,
 ): { border: string; bg: string; text: string } {
   switch (postType) {
     case "GAME_RESULT":
@@ -60,7 +60,10 @@ export function FeedPostTypeLabel({ label, compact, postType }: Props) {
       accessibilityRole="text"
       accessibilityLabel={label}
     >
-      <Text style={[compact ? styles.textCompact : styles.text, { color: v.text }]} numberOfLines={1}>
+      <Text
+        style={[compact ? styles.textCompact : styles.text, { color: v.text }]}
+        numberOfLines={1}
+      >
         {label}
       </Text>
     </View>

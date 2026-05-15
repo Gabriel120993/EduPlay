@@ -83,7 +83,7 @@ async function obtainExpoPushTokenAndSaveLocal(): Promise<{
     await savePushPermissionOnly(finalStatus);
     if (__DEV__) {
       console.warn(
-        "[EduPlay] Push: falta `extra.eas.projectId`. Definí EXPO_PUBLIC_EAS_PROJECT_ID en mobile/.env (UUID del proyecto en https://expo.dev )."
+        "[EduPlay] Push: falta `extra.eas.projectId`. Definí EXPO_PUBLIC_EAS_PROJECT_ID en mobile/.env (UUID del proyecto en https://expo.dev ).",
       );
     }
     return { token: null, permission: finalStatus };
@@ -96,7 +96,10 @@ async function obtainExpoPushTokenAndSaveLocal(): Promise<{
   } catch (e) {
     if (__DEV__) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.warn("[EduPlay] Error al obtener token de notificaciones (sin valor del token):", msg);
+      console.warn(
+        "[EduPlay] Error al obtener token de notificaciones (sin valor del token):",
+        msg,
+      );
     }
     await savePushPermissionOnly(finalStatus);
     return { token: null, permission: finalStatus };
@@ -108,7 +111,9 @@ async function obtainExpoPushTokenAndSaveLocal(): Promise<{
  * 2) Obtiene el Expo push token (dispositivo físico + projectId en app config).
  * 3) Guarda el token de dispositivo en SecureStore y permiso/fecha en AsyncStorage.
  */
-export async function registerForPushNotificationsAsync(userId: string | null): Promise<PushRegistrationResult> {
+export async function registerForPushNotificationsAsync(
+  userId: string | null,
+): Promise<PushRegistrationResult> {
   const { token, permission } = await obtainExpoPushTokenAndSaveLocal();
   if (!token) {
     return { success: false, token: null, permission };
@@ -128,7 +133,9 @@ export async function registerForPushNotificationsAsync(userId: string | null): 
 }
 
 /** Registra el mismo token Expo en la cuenta del tutor (avisos p. ej. nuevo amigo). */
-export async function registerForParentPushNotificationsAsync(parentId: string): Promise<PushRegistrationResult> {
+export async function registerForParentPushNotificationsAsync(
+  parentId: string,
+): Promise<PushRegistrationResult> {
   const { token, permission } = await obtainExpoPushTokenAndSaveLocal();
   if (!token) {
     return { success: false, token: null, permission };
@@ -140,7 +147,10 @@ export async function registerForParentPushNotificationsAsync(parentId: string):
     } catch (err) {
       if (__DEV__) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.warn("[EduPlay] No se pudo registrar notificaciones del tutor en el servidor.", msg);
+        console.warn(
+          "[EduPlay] No se pudo registrar notificaciones del tutor en el servidor.",
+          msg,
+        );
       }
     }
   }

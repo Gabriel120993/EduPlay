@@ -1,21 +1,21 @@
-import type { UploadApiResponse } from "cloudinary";
-import { Readable } from "node:stream";
+import type { UploadApiResponse } from 'cloudinary';
+import { Readable } from 'node:stream';
 
-import { env } from "../config/env";
-import { cloudinary, configureCloudinary } from "./cloudinaryClient";
-import { moderationFromUploadResult } from "./moderationFromCloudinary";
+import { env } from '../config/env';
+import { cloudinary, configureCloudinary } from './cloudinaryClient';
+import { moderationFromUploadResult } from './moderationFromCloudinary';
 
 export type CloudinaryUploadResult = {
   url: string;
-  resourceType: "image" | "video";
+  resourceType: 'image' | 'video';
   publicId: string;
   moderationFlagged: boolean;
   moderationNote: string | null;
   raw: UploadApiResponse;
 };
 
-function resourceTypeFromMime(mimeType: string): "image" | "video" {
-  return mimeType.startsWith("video/") ? "video" : "image";
+function resourceTypeFromMime(mimeType: string): 'image' | 'video' {
+  return mimeType.startsWith('video/') ? 'video' : 'image';
 }
 
 /**
@@ -33,7 +33,7 @@ export async function uploadBufferToCloudinary(params: {
 
   const uploadOptions: Record<string, unknown> = {
     folder,
-    resource_type: resourceType === "video" ? "video" : "image",
+    resource_type: resourceType === 'video' ? 'video' : 'image',
   };
 
   if (env.cloudinaryModeration.length > 0) {
@@ -47,7 +47,7 @@ export async function uploadBufferToCloudinary(params: {
         return;
       }
       if (!callResult) {
-        reject(new Error("Cloudinary no devolvió resultado."));
+        reject(new Error('Cloudinary no devolvió resultado.'));
         return;
       }
       resolve(callResult);
@@ -57,11 +57,11 @@ export async function uploadBufferToCloudinary(params: {
 
   const url = result.secure_url?.trim();
   if (!url) {
-    throw new Error("Cloudinary no devolvió secure_url.");
+    throw new Error('Cloudinary no devolvió secure_url.');
   }
 
   const mod = moderationFromUploadResult(result);
-  const rt = result.resource_type === "video" ? "video" : "image";
+  const rt = result.resource_type === 'video' ? 'video' : 'image';
 
   return {
     url,

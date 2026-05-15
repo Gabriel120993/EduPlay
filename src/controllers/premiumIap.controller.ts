@@ -1,12 +1,12 @@
-import type { Request, Response } from "express";
-import { Prisma } from "@prisma/client";
+import type { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 
-import { verifyAppleSubscription } from "../lib/iap/verifyAppleReceipt";
-import { verifyGooglePlaySubscription } from "../lib/iap/verifyGoogleSubscription";
-import { parentHasActivePremium } from "../lib/parentPremiumAccess";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { parseVerifyPremiumIapBody } from "../lib/validation/iapVerify.schema";
+import { verifyAppleSubscription } from '../lib/iap/verifyAppleReceipt';
+import { verifyGooglePlaySubscription } from '../lib/iap/verifyGoogleSubscription';
+import { parentHasActivePremium } from '../lib/parentPremiumAccess';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { parseVerifyPremiumIapBody } from '../lib/validation/iapVerify.schema';
 
 function mergePremiumUntil(existing: Date | null, fromStore: Date): Date {
   if (!existing) return fromStore;
@@ -19,7 +19,7 @@ async function respondParentPremium(res: Response, parentId: string): Promise<vo
     select: { id: true, email: true, isPremium: true, premiumUntil: true },
   });
   if (!row) {
-    res.status(404).json({ error: "Cuenta no encontrada." });
+    res.status(404).json({ error: 'Cuenta no encontrada.' });
     return;
   }
   res.json({
@@ -38,8 +38,8 @@ async function respondParentPremium(res: Response, parentId: string): Promise<vo
  */
 export async function verifyPremiumIapPurchase(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
-  if (!auth || auth.kind !== "parent") {
-    res.status(401).json({ error: "No autenticado." });
+  if (!auth || auth.kind !== 'parent') {
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
 
@@ -58,9 +58,9 @@ export async function verifyPremiumIapPurchase(req: Request, res: Response): Pro
   const platform = parsed.platform;
 
   try {
-    if (platform === "ios") {
+    if (platform === 'ios') {
       if (!sharedSecret) {
-        res.status(503).json({ error: "Validación iOS no configurada en el servidor." });
+        res.status(503).json({ error: 'Validación iOS no configurada en el servidor.' });
         return;
       }
       const receipt = parsed.transactionReceipt!.trim();
@@ -73,19 +73,16 @@ export async function verifyPremiumIapPurchase(req: Request, res: Response): Pro
       premiumUntil = r.premiumUntil;
       externalId = r.transactionId;
     } else {
-      const pkg =
-        parsed.packageName?.trim() ||
-        process.env.GOOGLE_PLAY_PACKAGE_NAME?.trim() ||
-        "";
+      const pkg = parsed.packageName?.trim() || process.env.GOOGLE_PLAY_PACKAGE_NAME?.trim() || '';
       if (!pkg) {
         res.status(400).json({
-          error: "packageName es obligatorio en Android (o configurá GOOGLE_PLAY_PACKAGE_NAME).",
+          error: 'packageName es obligatorio en Android (o configurá GOOGLE_PLAY_PACKAGE_NAME).',
         });
         return;
       }
       const envPkg = process.env.GOOGLE_PLAY_PACKAGE_NAME?.trim();
       if (envPkg && pkg !== envPkg) {
-        res.status(400).json({ error: "packageName no autorizado." });
+        res.status(400).json({ error: 'packageName no autorizado.' });
         return;
       }
       const r = await verifyGooglePlaySubscription({
@@ -97,8 +94,8 @@ export async function verifyPremiumIapPurchase(req: Request, res: Response): Pro
       externalId = r.externalId;
     }
   } catch (err) {
-    logError("premiumIap.verify", err);
-    const msg = err instanceof Error ? err.message : "Validación fallida.";
+    logError('premiumIap.verify', err);
+    const msg = err instanceof Error ? err.message : 'Validación fallida.';
     res.status(400).json({ error: msg });
     return;
   }
@@ -130,12 +127,12 @@ export async function verifyPremiumIapPurchase(req: Request, res: Response): Pro
       });
     });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       await respondParentPremium(res, parentId);
       return;
     }
-    logError("premiumIap.db", err);
-    res.status(500).json({ error: "Error al guardar la suscripción." });
+    logError('premiumIap.db', err);
+    res.status(500).json({ error: 'Error al guardar la suscripción.' });
     return;
   }
 

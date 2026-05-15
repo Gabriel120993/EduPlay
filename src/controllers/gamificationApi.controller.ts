@@ -1,14 +1,14 @@
-import type { Request, Response } from "express";
-import { FriendStatus } from "@prisma/client";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { formatZodError } from "../lib/validation/schemas";
+import type { Request, Response } from 'express';
+import { FriendStatus } from '@prisma/client';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { formatZodError } from '../lib/validation/schemas';
 
 function requireChild(req: Request, res: Response): string | null {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Solo disponible para menores autenticados." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Solo disponible para menores autenticados.' });
     return null;
   }
   return auth.userId;
@@ -32,14 +32,14 @@ export async function getGamificationProfile(req: Request, res: Response): Promi
       },
     });
     if (!user) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
     const snapshot = await prisma.userGamificationSnapshot.findUnique({ where: { userId } });
     res.json({ profile: user, snapshot });
   } catch (e) {
-    logError("gamificationApi.profile", e);
-    res.status(500).json({ error: "Error al cargar perfil de gamificación." });
+    logError('gamificationApi.profile', e);
+    res.status(500).json({ error: 'Error al cargar perfil de gamificación.' });
   }
 }
 
@@ -47,13 +47,13 @@ export async function getGamificationProfile(req: Request, res: Response): Promi
 export async function listAllAchievements(_req: Request, res: Response): Promise<void> {
   try {
     const rows = await prisma.achievement.findMany({
-      orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
+      orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
       take: 500,
     });
     res.json({ achievements: rows });
   } catch (e) {
-    logError("gamificationApi.listAllAchievements", e);
-    res.status(500).json({ error: "Error al listar logros." });
+    logError('gamificationApi.listAllAchievements', e);
+    res.status(500).json({ error: 'Error al listar logros.' });
   }
 }
 
@@ -66,7 +66,7 @@ export async function listMyAchievements(req: Request, res: Response): Promise<v
     const rows = await prisma.userAchievement.findMany({
       where: { userId },
       include: { achievement: true },
-      orderBy: { obtainedAt: "desc" },
+      orderBy: { obtainedAt: 'desc' },
       take: 200,
     });
     res.json({
@@ -76,8 +76,8 @@ export async function listMyAchievements(req: Request, res: Response): Promise<v
       })),
     });
   } catch (e) {
-    logError("gamificationApi.listMyAchievements", e);
-    res.status(500).json({ error: "Error al cargar logros." });
+    logError('gamificationApi.listMyAchievements', e);
+    res.status(500).json({ error: 'Error al cargar logros.' });
   }
 }
 
@@ -85,7 +85,7 @@ export async function listMyAchievements(req: Request, res: Response): Promise<v
 export async function listCollections(_req: Request, res: Response): Promise<void> {
   try {
     const grouped = await prisma.achievement.groupBy({
-      by: ["collectionKey"],
+      by: ['collectionKey'],
       where: { collectionKey: { not: null } },
       _count: { id: true },
     });
@@ -95,8 +95,8 @@ export async function listCollections(_req: Request, res: Response): Promise<voi
         .map((g) => ({ key: g.collectionKey, count: g._count.id })),
     });
   } catch (e) {
-    logError("gamificationApi.listCollections", e);
-    res.status(500).json({ error: "Error al listar colecciones." });
+    logError('gamificationApi.listCollections', e);
+    res.status(500).json({ error: 'Error al listar colecciones.' });
   }
 }
 
@@ -116,11 +116,11 @@ export async function getMyInventory(req: Request, res: Response): Promise<void>
       level: user?.level ?? 1,
       interests,
       items: [],
-      note: "Inventario de ítems cosméticos: pendiente de catálogo dedicado.",
+      note: 'Inventario de ítems cosméticos: pendiente de catálogo dedicado.',
     });
   } catch (e) {
-    logError("gamificationApi.getMyInventory", e);
-    res.status(500).json({ error: "Error al cargar inventario." });
+    logError('gamificationApi.getMyInventory', e);
+    res.status(500).json({ error: 'Error al cargar inventario.' });
   }
 }
 
@@ -141,19 +141,19 @@ export async function postEquipItem(req: Request, res: Response): Promise<void> 
 
   const itemId = req.params.itemId?.trim();
   if (!itemId) {
-    res.status(400).json({ error: "itemId inválido." });
+    res.status(400).json({ error: 'itemId inválido.' });
     return;
   }
 
   res.status(501).json({
-    error: "Equipamiento de ítems aún no está disponible en esta versión de la API.",
-    code: "NOT_IMPLEMENTED",
+    error: 'Equipamiento de ítems aún no está disponible en esta versión de la API.',
+    code: 'NOT_IMPLEMENTED',
     itemId,
   });
 }
 
 const leaderboardQuerySchema = z.object({
-  scope: z.enum(["global", "friends", "country"]).optional().default("global"),
+  scope: z.enum(['global', 'friends', 'country']).optional().default('global'),
   country: z.string().trim().max(3).optional(),
 });
 
@@ -170,7 +170,7 @@ export async function getGamificationLeaderboard(req: Request, res: Response): P
 
   try {
     const take = 25;
-    if (parsed.data.scope === "friends") {
+    if (parsed.data.scope === 'friends') {
       const friends = await prisma.friend.findMany({
         where: {
           OR: [
@@ -186,54 +186,75 @@ export async function getGamificationLeaderboard(req: Request, res: Response): P
       }
       const users = await prisma.user.findMany({
         where: { id: { in: [...ids] } },
-        orderBy: [{ level: "desc" }, { experience: "desc" }],
+        orderBy: [{ level: 'desc' }, { experience: 'desc' }],
         take,
-        select: { id: true, username: true, realName: true, level: true, experience: true, avatarUrl: true },
+        select: {
+          id: true,
+          username: true,
+          realName: true,
+          level: true,
+          experience: true,
+          avatarUrl: true,
+        },
       });
-      res.json({ scope: "friends", leaderboard: users.map((u, i) => ({ rank: i + 1, ...u })) });
+      res.json({ scope: 'friends', leaderboard: users.map((u, i) => ({ rank: i + 1, ...u })) });
       return;
     }
 
-    if (parsed.data.scope === "country") {
+    if (parsed.data.scope === 'country') {
       res.status(501).json({
-        error: "Ranking por país requiere campo país en el perfil.",
-        code: "NOT_IMPLEMENTED",
+        error: 'Ranking por país requiere campo país en el perfil.',
+        code: 'NOT_IMPLEMENTED',
       });
       return;
     }
 
     const users = await prisma.user.findMany({
-      orderBy: [{ level: "desc" }, { experience: "desc" }],
+      orderBy: [{ level: 'desc' }, { experience: 'desc' }],
       take,
-      select: { id: true, username: true, realName: true, level: true, experience: true, avatarUrl: true },
+      select: {
+        id: true,
+        username: true,
+        realName: true,
+        level: true,
+        experience: true,
+        avatarUrl: true,
+      },
     });
     res.json({
-      scope: "global",
+      scope: 'global',
       leaderboard: users.map((u, i) => ({ rank: i + 1, ...u })),
     });
   } catch (e) {
-    logError("gamificationApi.leaderboard", e);
-    res.status(500).json({ error: "Error al cargar ranking." });
+    logError('gamificationApi.leaderboard', e);
+    res.status(500).json({ error: 'Error al cargar ranking.' });
   }
 }
 
 /** GET /api/gamification/leaderboard/:category */
-export async function getGamificationLeaderboardByCategory(req: Request, res: Response): Promise<void> {
+export async function getGamificationLeaderboardByCategory(
+  req: Request,
+  res: Response,
+): Promise<void> {
   const userId = requireChild(req, res);
   if (!userId) return;
 
   const category = req.params.category?.trim();
   if (!category) {
-    res.status(400).json({ error: "Categoría inválida." });
+    res.status(400).json({ error: 'Categoría inválida.' });
     return;
   }
 
   try {
     const interests = await prisma.userInterest.findMany({
       where: { category: category as never },
-      orderBy: { score: "desc" },
+      orderBy: { score: 'desc' },
       take: 25,
-      include: { user: { select: { id: true, username: true, realName: true, avatarUrl: true, level: true } } },
+      include: {
+        user: {
+          select: { id: true, username: true, realName: true, avatarUrl: true, level: true },
+        },
+      },
     });
     res.json({
       category,
@@ -244,7 +265,7 @@ export async function getGamificationLeaderboardByCategory(req: Request, res: Re
       })),
     });
   } catch (e) {
-    logError("gamificationApi.leaderboardCategory", e);
-    res.status(500).json({ error: "Error al cargar ranking por categoría." });
+    logError('gamificationApi.leaderboardCategory', e);
+    res.status(500).json({ error: 'Error al cargar ranking por categoría.' });
   }
 }

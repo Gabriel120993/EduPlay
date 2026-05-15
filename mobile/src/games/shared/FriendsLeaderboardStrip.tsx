@@ -17,7 +17,11 @@ export function FriendsLeaderboardStrip() {
       try {
         const data = await getFriendsWeekXpRanking();
         if (!cancelled) {
-          setRows(data.users.slice(0, 5).map((u) => ({ rank: u.rank, username: u.username, xpThisWeek: u.xpThisWeek })));
+          setRows(
+            data.users
+              .slice(0, 5)
+              .map((u) => ({ rank: u.rank, username: u.username, xpThisWeek: u.xpThisWeek })),
+          );
         }
       } catch {
         if (!cancelled) setRows([]);
@@ -32,7 +36,14 @@ export function FriendsLeaderboardStrip() {
 
   if (loading) {
     return (
-      <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: space.xs }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: space.sm,
+          paddingVertical: space.xs,
+        }}
+      >
         <ActivityIndicator size="small" color={colors.primary} />
         <Text style={{ color: colors.textMuted, fontWeight: "600" }}>Ranking amigos…</Text>
       </View>
@@ -49,9 +60,14 @@ export function FriendsLeaderboardStrip() {
 
   return (
     <View style={{ gap: 4 }}>
-      <Text style={{ color: colors.textMuted, fontWeight: "800", fontSize: 12 }}>Ranking semanal · amigos</Text>
+      <Text style={{ color: colors.textMuted, fontWeight: "800", fontSize: 12 }}>
+        Ranking semanal · amigos
+      </Text>
       {rows.map((r) => (
-        <Text key={`${r.rank}-${r.username}`} style={{ color: colors.textSecondary, fontWeight: "600", fontSize: 12 }}>
+        <Text
+          key={`${r.rank}-${r.username}`}
+          style={{ color: colors.textSecondary, fontWeight: "600", fontSize: 12 }}
+        >
           {r.rank}. @{r.username} · {r.xpThisWeek} XP
         </Text>
       ))}

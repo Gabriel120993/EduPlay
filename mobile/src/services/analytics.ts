@@ -23,9 +23,7 @@ export function setAnalyticsToken(token: string | null): void {
  * No bloquea la UI; errores silenciados.
  */
 export function trackEvent(name: string, metadata: Record<string, unknown> = {}): void {
-  void analyticsApi
-    .post("/api/analytics", { eventName: name, metadata })
-    .catch(() => {
-      /* analítica best-effort */
-    });
+  void analyticsApi.post("/api/analytics", { eventName: name, metadata }).catch(() => {
+    /* analítica best-effort */
+  });
 }

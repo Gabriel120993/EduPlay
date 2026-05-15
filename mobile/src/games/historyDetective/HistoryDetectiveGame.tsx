@@ -3,7 +3,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { space } from "../../theme/tokens";
-import { bumpUnlocksAfterLevel, getStarsForLevel, setMaxUnlockedLevel, setStarsForLevel } from "../storage/gameProgressStore";
+import {
+  bumpUnlocksAfterLevel,
+  getStarsForLevel,
+  setMaxUnlockedLevel,
+  setStarsForLevel,
+} from "../storage/gameProgressStore";
 import { MiniGameChrome } from "../shared/MiniGameChrome";
 import { starsFromAttempts } from "../shared/starsFromScore";
 import { TutorialOverlay, type TutorialStep } from "../shared/TutorialOverlay";
@@ -50,7 +55,11 @@ const CASES = [
   },
 ];
 
-export default function HistoryDetectiveGame({ levelIndex, onCompleteLevel, onRequestExit }: MiniGameProps) {
+export default function HistoryDetectiveGame({
+  levelIndex,
+  onCompleteLevel,
+  onRequestExit,
+}: MiniGameProps) {
   const { colors } = useTheme();
   const [showTutorial, tutorialDone] = useTutorialSeen(META.id);
   const c = CASES[levelIndex % CASES.length]!;
@@ -81,11 +90,27 @@ export default function HistoryDetectiveGame({ levelIndex, onCompleteLevel, onRe
 
   return (
     <View style={{ flex: 1 }}>
-      {showTutorial ? <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} /> : null}
-      <MiniGameChrome meta={META} levelIndex={levelIndex} totalLevels={TOTAL_LEVELS} bestStars={best || undefined} onBack={onRequestExit}>
-        <Text style={{ color: colors.text, fontWeight: "900", fontSize: 18, marginBottom: space.xs }}>Escena: {c.era}</Text>
-        <Text style={{ color: colors.textSecondary, marginBottom: space.sm, fontWeight: "600" }}>Pista: {c.hint}</Text>
-        <Text style={{ color: colors.textMuted, marginBottom: space.md, fontWeight: "700" }}>¿Qué NO pertenece?</Text>
+      {showTutorial ? (
+        <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} />
+      ) : null}
+      <MiniGameChrome
+        meta={META}
+        levelIndex={levelIndex}
+        totalLevels={TOTAL_LEVELS}
+        bestStars={best || undefined}
+        onBack={onRequestExit}
+      >
+        <Text
+          style={{ color: colors.text, fontWeight: "900", fontSize: 18, marginBottom: space.xs }}
+        >
+          Escena: {c.era}
+        </Text>
+        <Text style={{ color: colors.textSecondary, marginBottom: space.sm, fontWeight: "600" }}>
+          Pista: {c.hint}
+        </Text>
+        <Text style={{ color: colors.textMuted, marginBottom: space.md, fontWeight: "700" }}>
+          ¿Qué NO pertenece?
+        </Text>
         {c.options.map((o) => (
           <Pressable
             key={o}

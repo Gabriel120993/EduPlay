@@ -1,5 +1,5 @@
-import type { NextFunction, Request, Response } from "express";
-import { logError } from "../lib/logger";
+import type { NextFunction, Request, Response } from 'express';
+import { logError } from '../lib/logger';
 
 type CacheEntry = {
   body: unknown;
@@ -16,9 +16,9 @@ function cacheKey(req: Request, userKey: string): string {
 
 function userKeyFromRequest(req: Request): string {
   const a = req.auth;
-  if (a?.kind === "child") return `u:${a.userId}`;
-  if (a?.kind === "parent") return `p:${a.parentId}`;
-  return "anon";
+  if (a?.kind === 'child') return `u:${a.userId}`;
+  if (a?.kind === 'parent') return `p:${a.parentId}`;
+  return 'anon';
 }
 
 /**
@@ -29,7 +29,7 @@ export function cacheResponse(durationSeconds: number) {
   const ttlMs = Math.max(1, Math.floor(durationSeconds * 1000));
 
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (req.method !== "GET") {
+    if (req.method !== 'GET') {
       next();
       return;
     }
@@ -38,8 +38,8 @@ export function cacheResponse(durationSeconds: number) {
     const now = Date.now();
     const hit = store.get(key);
     if (hit && hit.expiresAt > now) {
-      res.setHeader("X-Cache", "HIT");
-      res.setHeader("Content-Type", hit.contentType);
+      res.setHeader('X-Cache', 'HIT');
+      res.setHeader('Content-Type', hit.contentType);
       res.status(hit.status).json(hit.body);
       return;
     }
@@ -53,8 +53,8 @@ export function cacheResponse(durationSeconds: number) {
       const storedAt = Date.now();
       try {
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          const ct = res.getHeader("content-type");
-          const contentType = typeof ct === "string" ? ct : "application/json; charset=utf-8";
+          const ct = res.getHeader('content-type');
+          const contentType = typeof ct === 'string' ? ct : 'application/json; charset=utf-8';
           store.set(key, {
             body,
             status: res.statusCode,
@@ -63,13 +63,13 @@ export function cacheResponse(durationSeconds: number) {
           });
         }
       } catch (e) {
-        logError("cache.store", e);
+        logError('cache.store', e);
       }
-      res.setHeader("X-Cache", "MISS");
+      res.setHeader('X-Cache', 'MISS');
       return originalJson(body);
     };
 
-    res.setHeader("X-Cache", "MISS");
+    res.setHeader('X-Cache', 'MISS');
     next();
   };
 }
@@ -79,7 +79,7 @@ export function cacheResponse(durationSeconds: number) {
  * Útil tras mutaciones (POST/PUT/DELETE) sobre recursos que invalidan listados cacheados.
  */
 export function invalidateCache(pattern: string | RegExp): void {
-  const re = typeof pattern === "string" ? new RegExp(`^${escapeRegex(pattern)}`) : pattern;
+  const re = typeof pattern === 'string' ? new RegExp(`^${escapeRegex(pattern)}`) : pattern;
   for (const key of store.keys()) {
     if (re.test(key)) {
       store.delete(key);
@@ -88,7 +88,7 @@ export function invalidateCache(pattern: string | RegExp): void {
 }
 
 function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** Limpia todo el cache (tests o mantenimiento). */

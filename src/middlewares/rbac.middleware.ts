@@ -1,16 +1,16 @@
-import type { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from 'express';
 
 /** Roles JWT soportados (tutor / menor). */
-export const AUTH_ROLES = ["parent", "child"] as const;
+export const AUTH_ROLES = ['parent', 'child'] as const;
 export type AuthRole = (typeof AUTH_ROLES)[number];
 
 function forbiddenMessage(allowed: AuthRole[]): string {
   if (allowed.length === 1) {
-    return allowed[0] === "parent"
-      ? "Esta operación es solo para tutores."
-      : "Esta operación es solo para menores.";
+    return allowed[0] === 'parent'
+      ? 'Esta operación es solo para tutores.'
+      : 'Esta operación es solo para menores.';
   }
-  return "No tenés permiso para esta operación.";
+  return 'No tenés permiso para esta operación.';
 }
 
 /**
@@ -20,7 +20,7 @@ function forbiddenMessage(allowed: AuthRole[]): string {
  */
 export function requireAuthenticated(req: Request, res: Response, next: NextFunction): void {
   if (!req.auth || !req.role) {
-    res.status(401).json({ error: "No autenticado." });
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
   next();
@@ -34,7 +34,7 @@ export function requireRoles(...allowed: AuthRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const resolvedRole: AuthRole | null = req.role ?? (req.auth ? req.auth.kind : null);
     if (!req.auth || !resolvedRole) {
-      res.status(401).json({ error: "No autenticado." });
+      res.status(401).json({ error: 'No autenticado.' });
       return;
     }
     if (!allowed.includes(resolvedRole)) {
@@ -45,5 +45,5 @@ export function requireRoles(...allowed: AuthRole[]) {
   };
 }
 
-export const requireParent = requireRoles("parent");
-export const requireChild = requireRoles("child");
+export const requireParent = requireRoles('parent');
+export const requireChild = requireRoles('child');

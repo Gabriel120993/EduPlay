@@ -25,8 +25,16 @@ export function AuthNavigator() {
       }}
     >
       <Stack.Screen name="AuthHome" component={AuthScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="ParentRegister" component={ParentRegisterScreen} options={{ title: "Registro Tutor" }} />
-      <Stack.Screen name="MinorLogin" component={MinorLoginScreen} options={{ title: "Ingreso Menor" }} />
+      <Stack.Screen
+        name="ParentRegister"
+        component={ParentRegisterScreen}
+        options={{ title: "Registro Tutor" }}
+      />
+      <Stack.Screen
+        name="MinorLogin"
+        component={MinorLoginScreen}
+        options={{ title: "Ingreso Menor" }}
+      />
       <Stack.Screen
         name="LegalDocument"
         component={LegalDocumentScreen}

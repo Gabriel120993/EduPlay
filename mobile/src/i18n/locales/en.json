@@ -1,0 +1,39 @@
+{
+  "login": {
+    "title": "Sign in",
+    "registerTitle": "Create account",
+    "tutor": "Parent",
+    "child": "Child",
+    "email": "Email",
+    "username": "Username",
+    "password": "Password",
+    "submitLogin": "Sign in",
+    "submitRegister": "Register",
+    "switchToRegister": "No account? Sign up",
+    "switchToLogin": "Already have an account? Sign in",
+    "rememberMe": "Remember login details",
+    "acceptTerms": "I accept terms and privacy"
+  },
+  "home": {
+    "title": "My Home",
+    "ageSubtitle": "Content tailored to your age ({{age}} years)",
+    "pendingBanner": "You have {{count}} pending approvals from your parent.",
+    "recommendedTitle": "Recommended for you"
+  },
+  "explore": {
+    "title": "Explore",
+    "loading": "Loading content…",
+    "empty": "No content to show yet."
+  },
+  "profile": {
+    "title": "Achievements",
+    "loading": "Loading achievements…"
+  },
+  "content": {
+    "loading": "Loading…",
+    "saving": "Saving...",
+    "complete": "Got it / Learned",
+    "learned": "Learned",
+    "notFound": "Content not found"
+  }
+}

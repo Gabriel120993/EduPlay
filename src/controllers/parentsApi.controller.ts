@@ -1,13 +1,14 @@
-import type { Request, Response } from "express";
-import { ActivityApprovalStatus, ContentFilterLevel } from "@prisma/client";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { formatZodError, uuidSchema } from "../lib/validation/schemas";
-import { parentResourceId } from "./parent.controller";
+import type { Request, Response } from 'express';
+import { ActivityApprovalStatus, ContentFilterLevel } from '@prisma/client';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { formatZodError, uuidSchema } from '../lib/validation/schemas';
+import { listPendingApprovalsForParent, resolveParentUserId } from '../services/parents.service';
+import { parentResourceId } from './parent.controller';
 
 const respondApprovalSchema = z.object({
-  decision: z.enum(["approved", "rejected"]),
+  decision: z.enum(['approved', 'rejected']),
   note: z.string().trim().max(500).optional(),
 });
 
@@ -17,43 +18,27 @@ const settingsPutSchema = z.object({
   notifyParentSuspiciousChat: z.boolean().optional(),
 });
 
-async function resolveParentUserId(parentId: string): Promise<string | null> {
-  const u = await prisma.user.findFirst({
-    where: { parentId, type: "parent" },
-    select: { id: true },
-    orderBy: { createdAt: "asc" },
-  });
-  return u?.id ?? null;
-}
-
 /** GET /api/parents/:parentId/approvals */
 export async function listPendingApprovals(req: Request, res: Response): Promise<void> {
   const parentId = parentResourceId(req);
   if (!parentId) {
-    res.status(400).json({ error: "parentId es obligatorio." });
+    res.status(400).json({ error: 'parentId es obligatorio.' });
     return;
   }
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
   try {
     const parentUserId = await resolveParentUserId(parentId);
     if (!parentUserId) {
-      res.status(400).json({ error: "Perfil tutor no encontrado." });
+      res.status(400).json({ error: 'Perfil tutor no encontrado.' });
       return;
     }
 
-    const rows = await prisma.activityApproval.findMany({
-      where: { parentId: parentUserId, status: ActivityApprovalStatus.pending },
-      orderBy: { requestedAt: "desc" },
-      take: 100,
-      include: {
-        minor: { select: { id: true, username: true, realName: true, age: true } },
-      },
-    });
+    const rows = await listPendingApprovalsForParent(parentUserId);
 
     res.json({
       approvals: rows.map((r) => ({
@@ -65,8 +50,8 @@ export async function listPendingApprovals(req: Request, res: Response): Promise
       })),
     });
   } catch (e) {
-    logError("parentsApi.listPendingApprovals", e);
-    res.status(500).json({ error: "Error al listar solicitudes." });
+    logError('parentsApi.listPendingApprovals', e);
+    res.status(500).json({ error: 'Error al listar solicitudes.' });
   }
 }
 
@@ -75,12 +60,12 @@ export async function respondToApproval(req: Request, res: Response): Promise<vo
   const parentId = parentResourceId(req);
   const approvalId = req.params.approvalId?.trim();
   if (!parentId || !approvalId) {
-    res.status(400).json({ error: "Parámetros inválidos." });
+    res.status(400).json({ error: 'Parámetros inválidos.' });
     return;
   }
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
@@ -93,7 +78,7 @@ export async function respondToApproval(req: Request, res: Response): Promise<vo
   try {
     const parentUserId = await resolveParentUserId(parentId);
     if (!parentUserId) {
-      res.status(400).json({ error: "Perfil tutor no encontrado." });
+      res.status(400).json({ error: 'Perfil tutor no encontrado.' });
       return;
     }
 
@@ -101,16 +86,18 @@ export async function respondToApproval(req: Request, res: Response): Promise<vo
       where: { id: approvalId, parentId: parentUserId },
     });
     if (!row) {
-      res.status(404).json({ error: "Solicitud no encontrada." });
+      res.status(404).json({ error: 'Solicitud no encontrada.' });
       return;
     }
     if (row.status !== ActivityApprovalStatus.pending) {
-      res.status(409).json({ error: "La solicitud ya fue procesada." });
+      res.status(409).json({ error: 'La solicitud ya fue procesada.' });
       return;
     }
 
     const status =
-      parsed.data.decision === "approved" ? ActivityApprovalStatus.approved : ActivityApprovalStatus.rejected;
+      parsed.data.decision === 'approved'
+        ? ActivityApprovalStatus.approved
+        : ActivityApprovalStatus.rejected;
 
     await prisma.activityApproval.update({
       where: { id: approvalId },
@@ -118,7 +105,9 @@ export async function respondToApproval(req: Request, res: Response): Promise<vo
         status,
         respondedAt: new Date(),
         activityData: {
-          ...(typeof row.activityData === "object" && row.activityData ? (row.activityData as object) : {}),
+          ...(typeof row.activityData === 'object' && row.activityData
+            ? (row.activityData as object)
+            : {}),
           ...(parsed.data.note ? { parentNote: parsed.data.note } : {}),
         },
       },
@@ -126,8 +115,8 @@ export async function respondToApproval(req: Request, res: Response): Promise<vo
 
     res.json({ ok: true, status });
   } catch (e) {
-    logError("parentsApi.respondToApproval", e);
-    res.status(500).json({ error: "Error al responder la solicitud." });
+    logError('parentsApi.respondToApproval', e);
+    res.status(500).json({ error: 'Error al responder la solicitud.' });
   }
 }
 
@@ -135,18 +124,18 @@ export async function respondToApproval(req: Request, res: Response): Promise<vo
 export async function getParentMinorWeeklyReports(req: Request, res: Response): Promise<void> {
   const parentId = parentResourceId(req);
   if (!parentId) {
-    res.status(400).json({ error: "parentId es obligatorio." });
+    res.status(400).json({ error: 'parentId es obligatorio.' });
     return;
   }
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
   try {
     const children = await prisma.user.findMany({
-      where: { parentId, type: "minor" },
+      where: { parentId, type: 'minor' },
       select: { id: true, username: true },
     });
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -154,7 +143,7 @@ export async function getParentMinorWeeklyReports(req: Request, res: Response): 
       children.map(async (c) => {
         const events = await prisma.analyticsEvent.findMany({
           where: { userId: c.id, createdAt: { gte: since } },
-          orderBy: { createdAt: "desc" },
+          orderBy: { createdAt: 'desc' },
           take: 50,
           select: { eventName: true, metadata: true, createdAt: true },
         });
@@ -164,12 +153,12 @@ export async function getParentMinorWeeklyReports(req: Request, res: Response): 
           windowDays: 7,
           events,
         };
-      })
+      }),
     );
     res.json({ reports });
   } catch (e) {
-    logError("parentsApi.getParentMinorWeeklyReports", e);
-    res.status(500).json({ error: "Error al cargar reportes." });
+    logError('parentsApi.getParentMinorWeeklyReports', e);
+    res.status(500).json({ error: 'Error al cargar reportes.' });
   }
 }
 
@@ -177,18 +166,18 @@ export async function getParentMinorWeeklyReports(req: Request, res: Response): 
 export async function getParentSettingsBundle(req: Request, res: Response): Promise<void> {
   const parentId = parentResourceId(req);
   if (!parentId) {
-    res.status(400).json({ error: "parentId es obligatorio." });
+    res.status(400).json({ error: 'parentId es obligatorio.' });
     return;
   }
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
   try {
     const children = await prisma.user.findMany({
-      where: { parentId, type: "minor" },
+      where: { parentId, type: 'minor' },
       select: { id: true, username: true },
     });
     const settingsRows =
@@ -222,8 +211,8 @@ export async function getParentSettingsBundle(req: Request, res: Response): Prom
       }),
     });
   } catch (e) {
-    logError("parentsApi.getParentSettingsBundle", e);
-    res.status(500).json({ error: "Error al cargar configuración." });
+    logError('parentsApi.getParentSettingsBundle', e);
+    res.status(500).json({ error: 'Error al cargar configuración.' });
   }
 }
 
@@ -231,12 +220,12 @@ export async function getParentSettingsBundle(req: Request, res: Response): Prom
 export async function putParentSettingsBundle(req: Request, res: Response): Promise<void> {
   const parentId = parentResourceId(req);
   if (!parentId) {
-    res.status(400).json({ error: "parentId es obligatorio." });
+    res.status(400).json({ error: 'parentId es obligatorio.' });
     return;
   }
   const auth = req.auth;
-  if (auth?.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (auth?.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
@@ -252,20 +241,26 @@ export async function putParentSettingsBundle(req: Request, res: Response): Prom
   try {
     const parentUserId = await resolveParentUserId(parentId);
     if (!parentUserId) {
-      res.status(400).json({ error: "Perfil tutor no encontrado." });
+      res.status(400).json({ error: 'Perfil tutor no encontrado.' });
       return;
     }
 
     const children = await prisma.user.findMany({
-      where: { parentId, type: "minor", ...(parsed.data.minorId ? { id: parsed.data.minorId } : {}) },
+      where: {
+        parentId,
+        type: 'minor',
+        ...(parsed.data.minorId ? { id: parsed.data.minorId } : {}),
+      },
       select: { id: true },
     });
 
     for (const c of children) {
       const existing = await prisma.parentSettings.findUnique({ where: { childId: c.id } });
       const data = {
-        dailyScreenTimeLimit: parsed.data.defaultDailyScreenTimeLimit ?? existing?.dailyScreenTimeLimit ?? 120,
-        notifyParentNewContact: parsed.data.notifyParentNewContact ?? existing?.notifyParentNewContact ?? true,
+        dailyScreenTimeLimit:
+          parsed.data.defaultDailyScreenTimeLimit ?? existing?.dailyScreenTimeLimit ?? 120,
+        notifyParentNewContact:
+          parsed.data.notifyParentNewContact ?? existing?.notifyParentNewContact ?? true,
         notifyParentSuspiciousChat:
           parsed.data.notifyParentSuspiciousChat ?? existing?.notifyParentSuspiciousChat ?? true,
       };
@@ -294,7 +289,7 @@ export async function putParentSettingsBundle(req: Request, res: Response): Prom
 
     res.json({ ok: true, updated: children.length });
   } catch (e) {
-    logError("parentsApi.putParentSettingsBundle", e);
-    res.status(500).json({ error: "Error al actualizar configuración." });
+    logError('parentsApi.putParentSettingsBundle', e);
+    res.status(500).json({ error: 'Error al actualizar configuración.' });
   }
 }

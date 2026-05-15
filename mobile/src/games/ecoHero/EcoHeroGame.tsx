@@ -3,7 +3,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { space } from "../../theme/tokens";
-import { bumpUnlocksAfterLevel, getStarsForLevel, setMaxUnlockedLevel, setStarsForLevel } from "../storage/gameProgressStore";
+import {
+  bumpUnlocksAfterLevel,
+  getStarsForLevel,
+  setMaxUnlockedLevel,
+  setStarsForLevel,
+} from "../storage/gameProgressStore";
 import { MiniGameChrome } from "../shared/MiniGameChrome";
 import { starsFromAttempts } from "../shared/starsFromScore";
 import { TutorialOverlay, type TutorialStep } from "../shared/TutorialOverlay";
@@ -76,15 +81,45 @@ export default function EcoHeroGame({ levelIndex, onCompleteLevel, onRequestExit
 
   return (
     <View style={{ flex: 1 }}>
-      {showTutorial ? <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} /> : null}
-      <MiniGameChrome meta={META} levelIndex={levelIndex} totalLevels={TOTAL_LEVELS} bestStars={best || undefined} onBack={onRequestExit}>
+      {showTutorial ? (
+        <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} />
+      ) : null}
+      <MiniGameChrome
+        meta={META}
+        levelIndex={levelIndex}
+        totalLevels={TOTAL_LEVELS}
+        bestStars={best || undefined}
+        onBack={onRequestExit}
+      >
         <Text style={{ color: colors.textSecondary, fontWeight: "700", marginBottom: space.sm }}>
-          Limpiezas: {cleaned}/{need} · Animal: {animals[Math.min(animals.length - 1, Math.floor(cleaned / 3))]}
+          Limpiezas: {cleaned}/{need} · Animal:{" "}
+          {animals[Math.min(animals.length - 1, Math.floor(cleaned / 3))]}
         </Text>
-        <View style={{ height: 10, backgroundColor: colors.ghostBg, borderRadius: 99, overflow: "hidden", marginBottom: space.md }}>
-          <View style={{ width: `${Math.min(100, (cleaned / need) * 100)}%`, height: "100%", backgroundColor: colors.success }} />
+        <View
+          style={{
+            height: 10,
+            backgroundColor: colors.ghostBg,
+            borderRadius: 99,
+            overflow: "hidden",
+            marginBottom: space.md,
+          }}
+        >
+          <View
+            style={{
+              width: `${Math.min(100, (cleaned / need) * 100)}%`,
+              height: "100%",
+              backgroundColor: colors.success,
+            }}
+          />
         </View>
-        <View style={{ height: 200, borderRadius: 16, backgroundColor: "#0c4a6e", position: "relative" }}>
+        <View
+          style={{
+            height: 200,
+            borderRadius: 16,
+            backgroundColor: "#0c4a6e",
+            position: "relative",
+          }}
+        >
           {spots.map((i) => (
             <Pressable
               key={i}

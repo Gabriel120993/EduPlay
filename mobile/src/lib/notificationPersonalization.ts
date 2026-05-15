@@ -9,7 +9,9 @@ const NOTIFICATION_EMOJI: Partial<Record<string, string>> = {
 /**
  * Elige una categoría de interés con probabilidad proporcional al `score` del API.
  */
-export function pickInterestCategoryId(interests: ProfileInterestItem[] | undefined): string | null {
+export function pickInterestCategoryId(
+  interests: ProfileInterestItem[] | undefined,
+): string | null {
   if (!interests?.length) return null;
   const total = interests.reduce((s, i) => s + Math.max(1, i.score), 0);
   let r = Math.random() * total;
@@ -26,7 +28,7 @@ export function pickInterestCategoryId(interests: ProfileInterestItem[] | undefi
  */
 export function pickAnotherInterestCategoryId(
   interests: ProfileInterestItem[] | undefined,
-  exclude: string | null
+  exclude: string | null,
 ): string | null {
   if (!interests?.length) return null;
   const others = exclude ? interests.filter((i) => i.category !== exclude) : interests;

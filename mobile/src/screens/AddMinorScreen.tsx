@@ -1,5 +1,14 @@
 import { useMemo, useEffect, useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 
@@ -33,14 +42,19 @@ export function AddMinorScreen() {
     };
   }, []);
 
-  const valid = useMemo(() => username.trim().length >= 3 && password.length >= 6, [password, username]);
+  const valid = useMemo(
+    () => username.trim().length >= 3 && password.length >= 6,
+    [password, username],
+  );
 
   const setBusySafe = (v: boolean) => {
     if (aliveRef.current) setBusy(v);
   };
 
   const toggleInterest = (value: string) => {
-    setSelectedInterests((prev) => (prev.includes(value) ? prev.filter((i) => i !== value) : [...prev, value]));
+    setSelectedInterests((prev) =>
+      prev.includes(value) ? prev.filter((i) => i !== value) : [...prev, value],
+    );
   };
 
   const onSubmit = async () => {
@@ -57,7 +71,7 @@ export function AddMinorScreen() {
       showToast(
         `Menor creado · usuario ${data.minor.username} · código ${data.accessCode}`,
         "success",
-        "parentAlert"
+        "parentAlert",
       );
       navigation.goBack();
     } catch (e) {
@@ -70,10 +84,20 @@ export function AddMinorScreen() {
   };
 
   return (
-    <ScrollView style={[styles.root, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.root, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       <Text style={[styles.title, { color: colors.text }]}>Agregar menor</Text>
       <TextInput
-        style={[styles.input, { borderColor: colors.inputBorder, color: colors.inputText, backgroundColor: colors.card }]}
+        style={[
+          styles.input,
+          {
+            borderColor: colors.inputBorder,
+            color: colors.inputText,
+            backgroundColor: colors.card,
+          },
+        ]}
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
@@ -81,7 +105,14 @@ export function AddMinorScreen() {
         placeholderTextColor={colors.placeholder}
       />
       <TextInput
-        style={[styles.input, { borderColor: colors.inputBorder, color: colors.inputText, backgroundColor: colors.card }]}
+        style={[
+          styles.input,
+          {
+            borderColor: colors.inputBorder,
+            color: colors.inputText,
+            backgroundColor: colors.card,
+          },
+        ]}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -89,7 +120,14 @@ export function AddMinorScreen() {
         placeholderTextColor={colors.placeholder}
       />
       <TextInput
-        style={[styles.input, { borderColor: colors.inputBorder, color: colors.inputText, backgroundColor: colors.card }]}
+        style={[
+          styles.input,
+          {
+            borderColor: colors.inputBorder,
+            color: colors.inputText,
+            backgroundColor: colors.card,
+          },
+        ]}
         value={age}
         onChangeText={setAge}
         keyboardType="number-pad"
@@ -118,7 +156,10 @@ export function AddMinorScreen() {
             onPress={() => toggleInterest(i)}
             style={[
               styles.chip,
-              { borderColor: selectedInterests.includes(i) ? colors.primary : colors.border, backgroundColor: colors.card },
+              {
+                borderColor: selectedInterests.includes(i) ? colors.primary : colors.border,
+                backgroundColor: colors.card,
+              },
             ]}
           >
             <Text style={{ color: colors.text }}>{i}</Text>
@@ -153,10 +194,23 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   title: { fontSize: 24, fontWeight: "800" },
   label: { fontSize: 15, fontWeight: "700" },
-  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
   row: { flexDirection: "row", gap: 8 },
   rowWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  avatar: { borderWidth: 2, borderRadius: 12, width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  avatar: {
+    borderWidth: 2,
+    borderRadius: 12,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   avatarText: { fontSize: 20 },
   chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
   switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

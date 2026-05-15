@@ -1,5 +1,5 @@
-import { prisma } from "../lib/prisma";
-import { buildAchievementSystemCatalog } from "../lib/achievementSystemCatalog";
+import { prisma } from '../lib/prisma';
+import { buildAchievementSystemCatalog } from '../lib/achievementSystemCatalog';
 
 let ensured = false;
 
@@ -38,8 +38,8 @@ export async function ensureAchievementSystemCatalog(): Promise<void> {
           slug: row.slug,
           sortOrder: row.sortOrder,
         },
-      })
-    )
+      }),
+    ),
   );
   ensured = true;
 }

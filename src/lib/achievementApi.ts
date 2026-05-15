@@ -1,4 +1,4 @@
-import type { Achievement, AchievementRarity } from "@prisma/client";
+import type { Achievement, AchievementRarity } from '@prisma/client';
 
 export type BadgeApi = {
   icon: string;

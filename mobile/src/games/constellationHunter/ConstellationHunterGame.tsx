@@ -3,7 +3,12 @@ import { Pressable, Switch, Text, View } from "react-native";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { space } from "../../theme/tokens";
-import { bumpUnlocksAfterLevel, getStarsForLevel, setMaxUnlockedLevel, setStarsForLevel } from "../storage/gameProgressStore";
+import {
+  bumpUnlocksAfterLevel,
+  getStarsForLevel,
+  setMaxUnlockedLevel,
+  setStarsForLevel,
+} from "../storage/gameProgressStore";
 import { MiniGameChrome } from "../shared/MiniGameChrome";
 import { starsFromAttempts } from "../shared/starsFromScore";
 import { TutorialOverlay, type TutorialStep } from "../shared/TutorialOverlay";
@@ -37,7 +42,11 @@ const ORION = [
   { x: 30, y: 95, n: 5 },
 ];
 
-export default function ConstellationHunterGame({ levelIndex, onCompleteLevel, onRequestExit }: MiniGameProps) {
+export default function ConstellationHunterGame({
+  levelIndex,
+  onCompleteLevel,
+  onRequestExit,
+}: MiniGameProps) {
   const { colors } = useTheme();
   const [showTutorial, tutorialDone] = useTutorialSeen(META.id);
   const [next, setNext] = useState(1);
@@ -52,7 +61,7 @@ export default function ConstellationHunterGame({ levelIndex, onCompleteLevel, o
         "Las Pléyades son siete hermanas estelares.",
         "La Osa Mayor guía a la Polar.",
       ][levelIndex % 3],
-    [levelIndex]
+    [levelIndex],
   );
 
   useEffect(() => {
@@ -84,9 +93,24 @@ export default function ConstellationHunterGame({ levelIndex, onCompleteLevel, o
 
   return (
     <View style={{ flex: 1 }}>
-      {showTutorial ? <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} /> : null}
-      <MiniGameChrome meta={META} levelIndex={levelIndex} totalLevels={TOTAL_LEVELS} bestStars={best || undefined} onBack={onRequestExit}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: space.sm }}>
+      {showTutorial ? (
+        <TutorialOverlay steps={TUTORIAL} onDone={() => void tutorialDone()} />
+      ) : null}
+      <MiniGameChrome
+        meta={META}
+        levelIndex={levelIndex}
+        totalLevels={TOTAL_LEVELS}
+        bestStars={best || undefined}
+        onBack={onRequestExit}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: space.sm,
+          }}
+        >
           <Text style={{ color: colors.textSecondary, fontWeight: "700", flex: 1 }}>{myth}</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <Text style={{ color: colors.textMuted, fontWeight: "700", fontSize: 12 }}>Noche</Text>
@@ -116,14 +140,17 @@ export default function ConstellationHunterGame({ levelIndex, onCompleteLevel, o
                 marginLeft: -18,
                 marginTop: -18,
                 borderRadius: 18,
-                backgroundColor: s.n < next ? colors.success : night ? "#fef3c7" : colors.primarySoft,
+                backgroundColor:
+                  s.n < next ? colors.success : night ? "#fef3c7" : colors.primarySoft,
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 2,
                 borderColor: colors.primary,
               }}
             >
-              <Text style={{ fontWeight: "900", color: night ? "#0f172a" : colors.text }}>{s.n}</Text>
+              <Text style={{ fontWeight: "900", color: night ? "#0f172a" : colors.text }}>
+                {s.n}
+              </Text>
             </Pressable>
           ))}
         </View>

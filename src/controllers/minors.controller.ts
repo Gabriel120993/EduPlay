@@ -1,21 +1,21 @@
-import { randomBytes } from "node:crypto";
-import type { Request, Response } from "express";
-import { ActivityApprovalStatus, ActivityType, Prisma } from "@prisma/client";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { hashPassword } from "../lib/password";
-import { prisma } from "../lib/prisma";
+import { randomBytes } from 'node:crypto';
+import type { Request, Response } from 'express';
+import { ActivityApprovalStatus, ActivityType, Prisma } from '@prisma/client';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { hashPassword } from '../lib/password';
+import { prisma } from '../lib/prisma';
 import {
   formatZodError,
   minorAvatarOptionalSchema,
   minorAvatarUpdateSchema,
   usernameSchema,
   uuidSchema,
-} from "../lib/validation/schemas";
+} from '../lib/validation/schemas';
 
 const minorCreateBodySchema = z.object({
   username: usernameSchema,
-  age: z.coerce.number().int().min(3, "La edad mínima es 3.").max(17, "La edad máxima es 17."),
+  age: z.coerce.number().int().min(3, 'La edad mínima es 3.').max(17, 'La edad máxima es 17.'),
   avatar: minorAvatarOptionalSchema,
   interests: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
   gradeLevel: z.string().trim().min(1).max(50).optional(),
@@ -30,7 +30,9 @@ const minorUpdateBodySchema = z
     interests: z.array(z.string().trim().min(1).max(100)).max(30).optional(),
     gradeLevel: z.string().trim().min(1).max(50).nullable().optional(),
   })
-  .refine((v) => Object.keys(v).length > 0, { message: "Debés enviar al menos un campo para actualizar." });
+  .refine((v) => Object.keys(v).length > 0, {
+    message: 'Debés enviar al menos un campo para actualizar.',
+  });
 
 const minorApprovalBodySchema = z.object({
   approvalId: uuidSchema.optional(),
@@ -42,7 +44,7 @@ const minorApprovalBodySchema = z.object({
 function parseWithSchema<T>(
   schema: z.ZodSchema<T>,
   input: unknown,
-  res: Response
+  res: Response,
 ): { ok: true; data: T } | { ok: false } {
   const parsed = schema.safeParse(input);
   if (!parsed.success) {
@@ -53,43 +55,46 @@ function parseWithSchema<T>(
 }
 
 function actor(req: Request): string {
-  if (req.auth?.kind === "parent") return `parent:${req.auth.parentId}`;
-  if (req.auth?.kind === "child") return `child:${req.auth.userId}`;
-  return "anonymous";
+  if (req.auth?.kind === 'parent') return `parent:${req.auth.parentId}`;
+  if (req.auth?.kind === 'child') return `child:${req.auth.userId}`;
+  return 'anonymous';
 }
 
 function generateAccessCode(): string {
-  return randomBytes(4).toString("hex").toUpperCase();
+  return randomBytes(4).toString('hex').toUpperCase();
 }
 
 async function resolveParentUserId(parentId: string): Promise<string | null> {
   const parentUser = await prisma.user.findFirst({
-    where: { parentId, type: "parent" },
+    where: { parentId, type: 'parent' },
     select: { id: true },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
   });
   return parentUser?.id ?? null;
 }
 
 async function assertParentAccess(req: Request, res: Response): Promise<string | null> {
   const auth = req.auth;
-  if (!auth || auth.kind !== "parent") {
-    res.status(403).json({ error: "Solo un tutor puede realizar esta operación." });
+  if (!auth || auth.kind !== 'parent') {
+    res.status(403).json({ error: 'Solo un tutor puede realizar esta operación.' });
     return null;
   }
   const parsedParentId = parseWithSchema(uuidSchema, req.params.parentId, res);
   if (!parsedParentId.ok) return null;
   if (auth.parentId !== parsedParentId.data) {
-    res.status(403).json({ error: "Solo podés operar sobre tus propios menores." });
+    res.status(403).json({ error: 'Solo podés operar sobre tus propios menores.' });
     return null;
   }
   return parsedParentId.data;
 }
 
-async function assertParentOwnsMinor(req: Request, res: Response): Promise<{ minorId: string; parentId: string } | null> {
+async function assertParentOwnsMinor(
+  req: Request,
+  res: Response,
+): Promise<{ minorId: string; parentId: string } | null> {
   const auth = req.auth;
-  if (!auth || auth.kind !== "parent") {
-    res.status(403).json({ error: "Solo un tutor puede realizar esta operación." });
+  if (!auth || auth.kind !== 'parent') {
+    res.status(403).json({ error: 'Solo un tutor puede realizar esta operación.' });
     return null;
   }
   const parsedMinorId = parseWithSchema(uuidSchema, req.params.minorId, res);
@@ -99,12 +104,12 @@ async function assertParentOwnsMinor(req: Request, res: Response): Promise<{ min
     where: { id: parsedMinorId.data },
     select: { id: true, parentId: true, type: true },
   });
-  if (!minor || minor.type !== "minor") {
-    res.status(404).json({ error: "Menor no encontrado." });
+  if (!minor || minor.type !== 'minor') {
+    res.status(404).json({ error: 'Menor no encontrado.' });
     return null;
   }
   if (minor.parentId !== auth.parentId) {
-    res.status(403).json({ error: "Solo podés operar menores de tu cuenta." });
+    res.status(403).json({ error: 'Solo podés operar menores de tu cuenta.' });
     return null;
   }
   return { minorId: minor.id, parentId: auth.parentId };
@@ -118,9 +123,12 @@ export async function createMinor(req: Request, res: Response): Promise<void> {
   if (!parsedBody.ok) return;
 
   try {
-    const parent = await prisma.parent.findUnique({ where: { id: parentId }, select: { id: true } });
+    const parent = await prisma.parent.findUnique({
+      where: { id: parentId },
+      select: { id: true },
+    });
     if (!parent) {
-      res.status(404).json({ error: "Padre no encontrado." });
+      res.status(404).json({ error: 'Padre no encontrado.' });
       return;
     }
 
@@ -128,7 +136,7 @@ export async function createMinor(req: Request, res: Response): Promise<void> {
     if (!parentUserId) {
       res.status(400).json({
         error:
-          "No existe un perfil User de tipo parent para este tutor. Crealo antes de asociar perfiles minor.",
+          'No existe un perfil User de tipo parent para este tutor. Crealo antes de asociar perfiles minor.',
       });
       return;
     }
@@ -145,8 +153,8 @@ export async function createMinor(req: Request, res: Response): Promise<void> {
           age: parsedBody.data.age,
           avatarUrl: (parsedBody.data.avatar as string | undefined) ?? null,
           parentId,
-          type: "minor",
-          status: "active",
+          type: 'minor',
+          status: 'active',
           parentAccountApprovedAt: null,
         },
       });
@@ -171,15 +179,15 @@ export async function createMinor(req: Request, res: Response): Promise<void> {
         data: {
           parentId: parentUserId,
           childId: minor.id,
-          status: "pending",
-          approvalRequiredFor: ["friend_request", "post", "purchase", "content_access"],
+          status: 'pending',
+          approvalRequiredFor: ['friend_request', 'post', 'purchase', 'content_access'],
         },
       });
 
       await tx.analyticsEvent.create({
         data: {
           userId: minor.id,
-          eventName: "minor_created",
+          eventName: 'minor_created',
           metadata: {
             parentId,
             actor: actor(req),
@@ -208,12 +216,12 @@ export async function createMinor(req: Request, res: Response): Promise<void> {
       },
     });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      res.status(409).json({ error: "El username ya está en uso." });
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      res.status(409).json({ error: 'El username ya está en uso.' });
       return;
     }
-    logError("minors.createMinor", err, { actor: actor(req) });
-    res.status(500).json({ error: "No se pudo crear el menor." });
+    logError('minors.createMinor', err, { actor: actor(req) });
+    res.status(500).json({ error: 'No se pudo crear el menor.' });
   }
 }
 
@@ -223,8 +231,8 @@ export async function getMinorsByParent(req: Request, res: Response): Promise<vo
 
   try {
     const minors = await prisma.user.findMany({
-      where: { parentId, type: "minor" },
-      orderBy: { createdAt: "desc" },
+      where: { parentId, type: 'minor' },
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         username: true,
@@ -253,7 +261,7 @@ export async function getMinorsByParent(req: Request, res: Response): Promise<vo
         ? []
         : await prisma.analyticsEvent.findMany({
             where: { userId: { in: minors.map((m) => m.id) } },
-            orderBy: { createdAt: "desc" },
+            orderBy: { createdAt: 'desc' },
             select: { userId: true, eventName: true, createdAt: true },
           });
     const activityMap = new Map<string, { eventName: string; createdAt: Date }>();
@@ -268,18 +276,18 @@ export async function getMinorsByParent(req: Request, res: Response): Promise<vo
         const lastActivity = activityMap.get(m.id);
         return {
           ...m,
-          approvalStatus: m.parentAccountApprovedAt ? "approved" : "pending",
-          relationStatus: rel?.status ?? "pending",
+          approvalStatus: m.parentAccountApprovedAt ? 'approved' : 'pending',
+          relationStatus: rel?.status ?? 'pending',
           relationUpdatedAt: rel?.updatedAt ?? null,
           lastActivity: lastActivity
             ? { eventName: lastActivity.eventName, at: lastActivity.createdAt.toISOString() }
             : null,
         };
-      })
+      }),
     );
   } catch (err) {
-    logError("minors.getMinorsByParent", err, { actor: actor(req) });
-    res.status(500).json({ error: "No se pudieron listar los menores." });
+    logError('minors.getMinorsByParent', err, { actor: actor(req) });
+    res.status(500).json({ error: 'No se pudieron listar los menores.' });
   }
 }
 
@@ -304,28 +312,28 @@ export async function getMinorDetail(req: Request, res: Response): Promise<void>
         minorProfile: true,
       },
     });
-    if (!minor || minor.type !== "minor") {
-      res.status(404).json({ error: "Menor no encontrado." });
+    if (!minor || minor.type !== 'minor') {
+      res.status(404).json({ error: 'Menor no encontrado.' });
       return;
     }
 
     const auth = req.auth;
     if (!auth) {
-      res.status(401).json({ error: "No autenticado." });
+      res.status(401).json({ error: 'No autenticado.' });
       return;
     }
     const canRead =
-      (auth.kind === "parent" && auth.parentId === minor.parentId) ||
-      (auth.kind === "child" && auth.userId === minor.id);
+      (auth.kind === 'parent' && auth.parentId === minor.parentId) ||
+      (auth.kind === 'child' && auth.userId === minor.id);
     if (!canRead) {
-      res.status(403).json({ error: "No tenés permisos para ver este menor." });
+      res.status(403).json({ error: 'No tenés permisos para ver este menor.' });
       return;
     }
 
     res.json(minor);
   } catch (err) {
-    logError("minors.getMinorDetail", err, { actor: actor(req) });
-    res.status(500).json({ error: "No se pudo obtener el menor." });
+    logError('minors.getMinorDetail', err, { actor: actor(req) });
+    res.status(500).json({ error: 'No se pudo obtener el menor.' });
   }
 }
 
@@ -349,7 +357,8 @@ export async function updateMinor(req: Request, res: Response): Promise<void> {
       userData.avatarUrl = parsedBody.data.avatar as string | null;
     }
     if (parsedBody.data.interests !== undefined) profileData.interests = parsedBody.data.interests;
-    if (parsedBody.data.gradeLevel !== undefined) profileData.gradeLevel = parsedBody.data.gradeLevel;
+    if (parsedBody.data.gradeLevel !== undefined)
+      profileData.gradeLevel = parsedBody.data.gradeLevel;
 
     const updated = await prisma.$transaction(async (tx) => {
       const user = await tx.user.update({
@@ -363,7 +372,7 @@ export async function updateMinor(req: Request, res: Response): Promise<void> {
       await tx.analyticsEvent.create({
         data: {
           userId: ownership.minorId,
-          eventName: "minor_updated",
+          eventName: 'minor_updated',
           metadata: {
             actor: actor(req),
             parentId: ownership.parentId,
@@ -385,12 +394,12 @@ export async function updateMinor(req: Request, res: Response): Promise<void> {
       updatedAt: updated.user.updatedAt,
     });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      res.status(409).json({ error: "El username ya está en uso." });
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      res.status(409).json({ error: 'El username ya está en uso.' });
       return;
     }
-    logError("minors.updateMinor", err, { actor: actor(req), minorId: ownership.minorId });
-    res.status(500).json({ error: "No se pudo actualizar el menor." });
+    logError('minors.updateMinor', err, { actor: actor(req), minorId: ownership.minorId });
+    res.status(500).json({ error: 'No se pudo actualizar el menor.' });
   }
 }
 
@@ -404,7 +413,7 @@ export async function approveMinorActivity(req: Request, res: Response): Promise
   try {
     const parentUserId = await resolveParentUserId(ownership.parentId);
     if (!parentUserId) {
-      res.status(400).json({ error: "No existe un perfil User de tipo parent para este tutor." });
+      res.status(400).json({ error: 'No existe un perfil User de tipo parent para este tutor.' });
       return;
     }
 
@@ -430,7 +439,7 @@ export async function approveMinorActivity(req: Request, res: Response): Promise
     await prisma.analyticsEvent.create({
       data: {
         userId: ownership.minorId,
-        eventName: "minor_activity_approval_updated",
+        eventName: 'minor_activity_approval_updated',
         metadata: {
           actor: actor(req),
           approvalId: approval.id,
@@ -444,12 +453,12 @@ export async function approveMinorActivity(req: Request, res: Response): Promise
 
     res.json(approval);
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
-      res.status(404).json({ error: "Aprobación no encontrada." });
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+      res.status(404).json({ error: 'Aprobación no encontrada.' });
       return;
     }
-    logError("minors.approveMinorActivity", err, { actor: actor(req), minorId: ownership.minorId });
-    res.status(500).json({ error: "No se pudo procesar la aprobación." });
+    logError('minors.approveMinorActivity', err, { actor: actor(req), minorId: ownership.minorId });
+    res.status(500).json({ error: 'No se pudo procesar la aprobación.' });
   }
 }
 
@@ -478,7 +487,7 @@ export async function deleteMinor(req: Request, res: Response): Promise<void> {
       await tx.user.update({
         where: { id: ownership.minorId },
         data: {
-          status: "inactive",
+          status: 'inactive',
           parentAccountApprovedAt: null,
           expoPushToken: null,
         },
@@ -487,7 +496,7 @@ export async function deleteMinor(req: Request, res: Response): Promise<void> {
       await tx.analyticsEvent.create({
         data: {
           userId: ownership.minorId,
-          eventName: "minor_soft_deleted",
+          eventName: 'minor_soft_deleted',
           metadata: {
             actor: actor(req),
             retentionDays: 30,
@@ -500,7 +509,7 @@ export async function deleteMinor(req: Request, res: Response): Promise<void> {
 
     res.status(204).send();
   } catch (err) {
-    logError("minors.deleteMinor", err, { actor: actor(req), minorId: ownership.minorId });
-    res.status(500).json({ error: "No se pudo desactivar el menor." });
+    logError('minors.deleteMinor', err, { actor: actor(req), minorId: ownership.minorId });
+    res.status(500).json({ error: 'No se pudo desactivar el menor.' });
   }
 }

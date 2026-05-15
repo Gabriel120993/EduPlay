@@ -1,13 +1,13 @@
-import type { Request, Response } from "express";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { formatZodError } from "../lib/validation/schemas";
+import type { Request, Response } from 'express';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { formatZodError } from '../lib/validation/schemas';
 
 function requireChild(req: Request, res: Response): string | null {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return null;
   }
   return auth.userId;
@@ -18,12 +18,12 @@ export async function listMiniGames(_req: Request, res: Response): Promise<void>
   try {
     const rows = await prisma.miniGame.findMany({
       where: { isActive: true },
-      orderBy: { sortOrder: "asc" },
+      orderBy: { sortOrder: 'asc' },
     });
     res.json({ games: rows });
   } catch (e) {
-    logError("gamesApi.list", e);
-    res.status(500).json({ error: "Error al listar juegos." });
+    logError('gamesApi.list', e);
+    res.status(500).json({ error: 'Error al listar juegos.' });
   }
 }
 
@@ -31,19 +31,19 @@ export async function listMiniGames(_req: Request, res: Response): Promise<void>
 export async function getMiniGameDetail(req: Request, res: Response): Promise<void> {
   const gameId = req.params.gameId?.trim();
   if (!gameId) {
-    res.status(400).json({ error: "gameId inválido." });
+    res.status(400).json({ error: 'gameId inválido.' });
     return;
   }
   try {
     const game = await prisma.miniGame.findUnique({ where: { id: gameId } });
     if (!game || !game.isActive) {
-      res.status(404).json({ error: "Juego no encontrado." });
+      res.status(404).json({ error: 'Juego no encontrado.' });
       return;
     }
     res.json({ game });
   } catch (e) {
-    logError("gamesApi.detail", e);
-    res.status(500).json({ error: "Error al obtener juego." });
+    logError('gamesApi.detail', e);
+    res.status(500).json({ error: 'Error al obtener juego.' });
   }
 }
 
@@ -58,7 +58,7 @@ export async function postCreateGameSession(req: Request, res: Response): Promis
 
   const gameId = req.params.gameId?.trim();
   if (!gameId) {
-    res.status(400).json({ error: "gameId inválido." });
+    res.status(400).json({ error: 'gameId inválido.' });
     return;
   }
 
@@ -71,7 +71,7 @@ export async function postCreateGameSession(req: Request, res: Response): Promis
   try {
     const game = await prisma.miniGame.findUnique({ where: { id: gameId } });
     if (!game || !game.isActive) {
-      res.status(404).json({ error: "Juego no encontrado." });
+      res.status(404).json({ error: 'Juego no encontrado.' });
       return;
     }
 
@@ -86,8 +86,8 @@ export async function postCreateGameSession(req: Request, res: Response): Promis
     });
     res.status(201).json({ session });
   } catch (e) {
-    logError("gamesApi.createSession", e);
-    res.status(500).json({ error: "Error al crear sesión." });
+    logError('gamesApi.createSession', e);
+    res.status(500).json({ error: 'Error al crear sesión.' });
   }
 }
 
@@ -104,7 +104,7 @@ export async function putUpdateGameSession(req: Request, res: Response): Promise
 
   const sessionId = req.params.sessionId?.trim();
   if (!sessionId) {
-    res.status(400).json({ error: "sessionId inválido." });
+    res.status(400).json({ error: 'sessionId inválido.' });
     return;
   }
 
@@ -119,11 +119,11 @@ export async function putUpdateGameSession(req: Request, res: Response): Promise
       where: { id: sessionId, userId },
     });
     if (!existing) {
-      res.status(404).json({ error: "Sesión no encontrada." });
+      res.status(404).json({ error: 'Sesión no encontrada.' });
       return;
     }
     if (existing.endedAt) {
-      res.status(409).json({ error: "La sesión ya finalizó." });
+      res.status(409).json({ error: 'La sesión ya finalizó.' });
       return;
     }
 
@@ -137,8 +137,8 @@ export async function putUpdateGameSession(req: Request, res: Response): Promise
     });
     res.json({ session });
   } catch (e) {
-    logError("gamesApi.updateSession", e);
-    res.status(500).json({ error: "Error al actualizar sesión." });
+    logError('gamesApi.updateSession', e);
+    res.status(500).json({ error: 'Error al actualizar sesión.' });
   }
 }
 
@@ -149,7 +149,7 @@ export async function postFinishGameSession(req: Request, res: Response): Promis
 
   const sessionId = req.params.sessionId?.trim();
   if (!sessionId) {
-    res.status(400).json({ error: "sessionId inválido." });
+    res.status(400).json({ error: 'sessionId inválido.' });
     return;
   }
 
@@ -158,11 +158,11 @@ export async function postFinishGameSession(req: Request, res: Response): Promis
       where: { id: sessionId, userId },
     });
     if (!existing) {
-      res.status(404).json({ error: "Sesión no encontrada." });
+      res.status(404).json({ error: 'Sesión no encontrada.' });
       return;
     }
     if (existing.endedAt) {
-      res.status(409).json({ error: "La sesión ya finalizó." });
+      res.status(409).json({ error: 'La sesión ya finalizó.' });
       return;
     }
 
@@ -172,8 +172,8 @@ export async function postFinishGameSession(req: Request, res: Response): Promis
     });
     res.json({ session });
   } catch (e) {
-    logError("gamesApi.finishSession", e);
-    res.status(500).json({ error: "Error al finalizar sesión." });
+    logError('gamesApi.finishSession', e);
+    res.status(500).json({ error: 'Error al finalizar sesión.' });
   }
 }
 
@@ -185,14 +185,14 @@ export async function getMyGameSessions(req: Request, res: Response): Promise<vo
   try {
     const rows = await prisma.miniGameSession.findMany({
       where: { userId },
-      orderBy: { startedAt: "desc" },
+      orderBy: { startedAt: 'desc' },
       take: 40,
       include: { miniGame: { select: { id: true, name: true, slug: true } } },
     });
     res.json({ sessions: rows });
   } catch (e) {
-    logError("gamesApi.mySessions", e);
-    res.status(500).json({ error: "Error al listar sesiones." });
+    logError('gamesApi.mySessions', e);
+    res.status(500).json({ error: 'Error al listar sesiones.' });
   }
 }
 
@@ -200,14 +200,14 @@ export async function getMyGameSessions(req: Request, res: Response): Promise<vo
 export async function getGameLeaderboard(req: Request, res: Response): Promise<void> {
   const gameId = req.params.gameId?.trim();
   if (!gameId) {
-    res.status(400).json({ error: "gameId inválido." });
+    res.status(400).json({ error: 'gameId inválido.' });
     return;
   }
 
   try {
     const rows = await prisma.miniGameSession.findMany({
       where: { miniGameId: gameId, endedAt: { not: null } },
-      orderBy: { score: "desc" },
+      orderBy: { score: 'desc' },
       take: 30,
       include: {
         user: { select: { id: true, username: true, realName: true, avatarUrl: true } },
@@ -222,7 +222,7 @@ export async function getGameLeaderboard(req: Request, res: Response): Promise<v
       })),
     });
   } catch (e) {
-    logError("gamesApi.leaderboard", e);
-    res.status(500).json({ error: "Error al cargar ranking." });
+    logError('gamesApi.leaderboard', e);
+    res.status(500).json({ error: 'Error al cargar ranking.' });
   }
 }

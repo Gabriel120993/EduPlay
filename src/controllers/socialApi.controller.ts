@@ -1,15 +1,15 @@
-import type { Request, Response } from "express";
-import { FriendStatus, StudyGroupRole } from "@prisma/client";
-import { randomBytes } from "node:crypto";
-import { z } from "zod";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { formatZodError, uuidSchema } from "../lib/validation/schemas";
+import type { Request, Response } from 'express';
+import { FriendStatus, StudyGroupRole } from '@prisma/client';
+import { randomBytes } from 'node:crypto';
+import { z } from 'zod';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { formatZodError, uuidSchema } from '../lib/validation/schemas';
 
 function requireChild(req: Request, res: Response): string | null {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return null;
   }
   return auth.userId;
@@ -39,8 +39,8 @@ export async function getSocialFriends(req: Request, res: Response): Promise<voi
     });
     res.json({ friends: users });
   } catch (e) {
-    logError("socialApi.friends", e);
-    res.status(500).json({ error: "Error al listar amigos." });
+    logError('socialApi.friends', e);
+    res.status(500).json({ error: 'Error al listar amigos.' });
   }
 }
 
@@ -60,7 +60,7 @@ export async function postSocialFriendRequest(req: Request, res: Response): Prom
   }
 
   req.body = { userId, friendId: parsed.data.friendUserId };
-  const { sendFriendRequest } = await import("./friend.controller");
+  const { sendFriendRequest } = await import('./friend.controller');
   await sendFriendRequest(req, res);
 }
 
@@ -85,16 +85,16 @@ export async function putAcceptFriendRequestRest(req: Request, res: Response): P
     select: { userId: true, friendId: true },
   });
   if (!row) {
-    res.status(404).json({ error: "Solicitud no encontrada." });
+    res.status(404).json({ error: 'Solicitud no encontrada.' });
     return;
   }
   if (row.userId !== parsed.data.otherUserId) {
-    res.status(400).json({ error: "otherUserId no coincide con la solicitud." });
+    res.status(400).json({ error: 'otherUserId no coincide con la solicitud.' });
     return;
   }
 
   req.body = { userId: row.userId, friendId: row.friendId };
-  const { acceptFriendRequest } = await import("./friend.controller");
+  const { acceptFriendRequest } = await import('./friend.controller');
   await acceptFriendRequest(req, res);
 }
 
@@ -115,16 +115,16 @@ export async function putRejectFriendRequestRest(req: Request, res: Response): P
     select: { userId: true, friendId: true },
   });
   if (!row) {
-    res.status(404).json({ error: "Solicitud no encontrada." });
+    res.status(404).json({ error: 'Solicitud no encontrada.' });
     return;
   }
   if (row.userId !== parsed.data.otherUserId) {
-    res.status(400).json({ error: "otherUserId no coincide con la solicitud." });
+    res.status(400).json({ error: 'otherUserId no coincide con la solicitud.' });
     return;
   }
 
   req.body = { userId: row.userId, friendId: row.friendId };
-  const { rejectFriendRequest } = await import("./friend.controller");
+  const { rejectFriendRequest } = await import('./friend.controller');
   await rejectFriendRequest(req, res);
 }
 
@@ -135,7 +135,7 @@ export async function deleteSocialFriend(req: Request, res: Response): Promise<v
 
   const friendId = req.params.friendId?.trim();
   if (!friendId) {
-    res.status(400).json({ error: "friendId inválido." });
+    res.status(400).json({ error: 'friendId inválido.' });
     return;
   }
 
@@ -150,8 +150,8 @@ export async function deleteSocialFriend(req: Request, res: Response): Promise<v
     });
     res.status(204).send();
   } catch (e) {
-    logError("socialApi.deleteFriend", e);
-    res.status(500).json({ error: "Error al eliminar amigo." });
+    logError('socialApi.deleteFriend', e);
+    res.status(500).json({ error: 'Error al eliminar amigo.' });
   }
 }
 
@@ -166,13 +166,13 @@ export async function getFriendRecommendations(req: Request, res: Response): Pro
       select: { parentId: true, age: true },
     });
     if (!me) {
-      res.status(404).json({ error: "Usuario no encontrado." });
+      res.status(404).json({ error: 'Usuario no encontrado.' });
       return;
     }
     const candidates = await prisma.user.findMany({
       where: {
-        type: "minor",
-        status: "active",
+        type: 'minor',
+        status: 'active',
         parentId: me.parentId,
         id: { not: userId },
       },
@@ -181,8 +181,8 @@ export async function getFriendRecommendations(req: Request, res: Response): Pro
     });
     res.json({ suggestions: candidates });
   } catch (e) {
-    logError("socialApi.recommendations", e);
-    res.status(500).json({ error: "Error al sugerir amigos." });
+    logError('socialApi.recommendations', e);
+    res.status(500).json({ error: 'Error al sugerir amigos.' });
   }
 }
 
@@ -205,8 +205,8 @@ export async function listStudyGroups(req: Request, res: Response): Promise<void
     });
     res.json({ groups: memberships.map((m) => m.group) });
   } catch (e) {
-    logError("socialApi.listStudyGroups", e);
-    res.status(500).json({ error: "Error al listar grupos." });
+    logError('socialApi.listStudyGroups', e);
+    res.status(500).json({ error: 'Error al listar grupos.' });
   }
 }
 
@@ -222,11 +222,11 @@ export async function postCreateStudyGroup(req: Request, res: Response): Promise
   }
 
   try {
-    const inviteCode = randomBytes(4).toString("hex").toUpperCase();
+    const inviteCode = randomBytes(4).toString('hex').toUpperCase();
     const group = await prisma.studyGroup.create({
       data: {
         name: parsed.data.name,
-        description: parsed.data.description ?? "",
+        description: parsed.data.description ?? '',
         ownerUserId: userId,
         inviteCode,
         maxMembers: parsed.data.maxMembers ?? 12,
@@ -238,8 +238,8 @@ export async function postCreateStudyGroup(req: Request, res: Response): Promise
     });
     res.status(201).json({ group });
   } catch (e) {
-    logError("socialApi.createStudyGroup", e);
-    res.status(500).json({ error: "Error al crear grupo." });
+    logError('socialApi.createStudyGroup', e);
+    res.status(500).json({ error: 'Error al crear grupo.' });
   }
 }
 
@@ -250,7 +250,7 @@ export async function getStudyGroupDetail(req: Request, res: Response): Promise<
 
   const groupId = req.params.groupId?.trim();
   if (!groupId) {
-    res.status(400).json({ error: "groupId inválido." });
+    res.status(400).json({ error: 'groupId inválido.' });
     return;
   }
 
@@ -260,19 +260,21 @@ export async function getStudyGroupDetail(req: Request, res: Response): Promise<
       include: {
         group: {
           include: {
-            members: { include: { user: { select: { id: true, username: true, avatarUrl: true } } } },
+            members: {
+              include: { user: { select: { id: true, username: true, avatarUrl: true } } },
+            },
           },
         },
       },
     });
     if (!membership) {
-      res.status(403).json({ error: "No pertenecés a este grupo." });
+      res.status(403).json({ error: 'No pertenecés a este grupo.' });
       return;
     }
     res.json({ group: membership.group });
   } catch (e) {
-    logError("socialApi.studyGroupDetail", e);
-    res.status(500).json({ error: "Error al cargar grupo." });
+    logError('socialApi.studyGroupDetail', e);
+    res.status(500).json({ error: 'Error al cargar grupo.' });
   }
 }
 
@@ -283,7 +285,7 @@ export async function postJoinStudyGroup(req: Request, res: Response): Promise<v
 
   const groupId = req.params.groupId?.trim();
   if (!groupId) {
-    res.status(400).json({ error: "groupId inválido." });
+    res.status(400).json({ error: 'groupId inválido.' });
     return;
   }
 
@@ -293,11 +295,11 @@ export async function postJoinStudyGroup(req: Request, res: Response): Promise<v
       include: { _count: { select: { members: true } } },
     });
     if (!group || !group.isOpen) {
-      res.status(404).json({ error: "Grupo no disponible." });
+      res.status(404).json({ error: 'Grupo no disponible.' });
       return;
     }
     if (group._count.members >= group.maxMembers) {
-      res.status(409).json({ error: "Grupo lleno." });
+      res.status(409).json({ error: 'Grupo lleno.' });
       return;
     }
     await prisma.studyGroupMember.upsert({
@@ -307,8 +309,8 @@ export async function postJoinStudyGroup(req: Request, res: Response): Promise<v
     });
     res.json({ ok: true });
   } catch (e) {
-    logError("socialApi.joinStudyGroup", e);
-    res.status(500).json({ error: "Error al unirse al grupo." });
+    logError('socialApi.joinStudyGroup', e);
+    res.status(500).json({ error: 'Error al unirse al grupo.' });
   }
 }
 
@@ -319,7 +321,7 @@ export async function postLeaveStudyGroup(req: Request, res: Response): Promise<
 
   const groupId = req.params.groupId?.trim();
   if (!groupId) {
-    res.status(400).json({ error: "groupId inválido." });
+    res.status(400).json({ error: 'groupId inválido.' });
     return;
   }
 
@@ -327,8 +329,8 @@ export async function postLeaveStudyGroup(req: Request, res: Response): Promise<
     await prisma.studyGroupMember.deleteMany({ where: { groupId, userId } });
     res.json({ ok: true });
   } catch (e) {
-    logError("socialApi.leaveStudyGroup", e);
-    res.status(500).json({ error: "Error al salir del grupo." });
+    logError('socialApi.leaveStudyGroup', e);
+    res.status(500).json({ error: 'Error al salir del grupo.' });
   }
 }
 
@@ -340,7 +342,7 @@ export async function getSocialConversations(req: Request, res: Response): Promi
   try {
     const chats = await prisma.chat.findMany({
       where: { OR: [{ user1Id: userId }, { user2Id: userId }] },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 50,
     });
     const peerIds = chats.map((c) => (c.user1Id === userId ? c.user2Id : c.user1Id));
@@ -356,8 +358,8 @@ export async function getSocialConversations(req: Request, res: Response): Promi
       })),
     });
   } catch (e) {
-    logError("socialApi.conversations", e);
-    res.status(500).json({ error: "Error al listar conversaciones." });
+    logError('socialApi.conversations', e);
+    res.status(500).json({ error: 'Error al listar conversaciones.' });
   }
 }
 
@@ -368,7 +370,7 @@ export async function getSocialMessagesWithUser(req: Request, res: Response): Pr
 
   const peerUserId = req.params.userId?.trim();
   if (!peerUserId) {
-    res.status(400).json({ error: "userId inválido." });
+    res.status(400).json({ error: 'userId inválido.' });
     return;
   }
 
@@ -380,19 +382,19 @@ export async function getSocialMessagesWithUser(req: Request, res: Response): Pr
           { senderId: peerUserId, recipientId: userId },
         ],
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 80,
     });
     res.json({ messages: messages.reverse() });
   } catch (e) {
-    logError("socialApi.messagesWithUser", e);
-    res.status(500).json({ error: "Error al cargar mensajes." });
+    logError('socialApi.messagesWithUser', e);
+    res.status(500).json({ error: 'Error al cargar mensajes.' });
   }
 }
 
 const predefinedMessageSchema = z.object({
   peerUserId: uuidSchema,
-  template: z.enum(["hello", "study", "thanks"]),
+  template: z.enum(['hello', 'study', 'thanks']),
 });
 
 /** POST /api/social/messages */
@@ -407,9 +409,9 @@ export async function postSocialPredefinedMessage(req: Request, res: Response): 
   }
 
   const bodies: Record<string, string> = {
-    hello: "¡Hola! ¿Cómo estás?",
-    study: "¿Estudiamos juntos un rato?",
-    thanks: "¡Gracias!",
+    hello: '¡Hola! ¿Cómo estás?',
+    study: '¿Estudiamos juntos un rato?',
+    thanks: '¡Gracias!',
   };
 
   req.body = {
@@ -417,6 +419,6 @@ export async function postSocialPredefinedMessage(req: Request, res: Response): 
     text: bodies[parsed.data.template],
   };
 
-  const { postChatMessage } = await import("./chat.controller");
+  const { postChatMessage } = await import('./chat.controller');
   await postChatMessage(req, res);
 }

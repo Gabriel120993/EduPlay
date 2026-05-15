@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useGuardedAsync } from "../hooks/useGuardedAsync";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -28,6 +29,7 @@ type AccountKind = "tutor" | "child";
 type AuthScreenProps = NativeStackScreenProps<AuthStackParamList, "AuthHome">;
 
 export function AuthScreen({ navigation }: AuthScreenProps) {
+  const { t } = useTranslation();
   const styles = useAuthScreenStyles();
   const { colors, mode: themeMode, setMode: setThemeMode } = useTheme();
   const { login, loginAsChild, register } = useAuth();
@@ -68,7 +70,11 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
   }, [accountKind, mode]);
 
   const submitLabel =
-    mode === "login" ? "Entrar" : accountKind === "tutor" ? "Crear cuenta de tutor" : "Entrar";
+    mode === "login"
+      ? t("login.submitLogin")
+      : accountKind === "tutor"
+        ? t("login.submitRegister")
+        : t("login.submitLogin");
 
   const canSubmit = useMemo(() => {
     if (password.length < 6) return false;
@@ -102,11 +108,18 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.root}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.root}
+    >
       <View style={styles.card}>
         <View style={styles.brandHeader}>
           <BrandLogo width={220} height={86} />
-          <View style={styles.taglineBlock} accessibilityRole="text" accessibilityLabel="EduPlay. Mi primera red social">
+          <View
+            style={styles.taglineBlock}
+            accessibilityRole="text"
+            accessibilityLabel="EduPlay. Mi primera red social"
+          >
             <Text style={styles.taglineMark}>EduPlay</Text>
             <Text style={styles.taglineSub}>{appTaglineSubtitle()}</Text>
           </View>
@@ -120,8 +133,8 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
         </Text>
         {accountKind === "child" ? (
           <Text style={styles.childConsentNote}>
-            Tu tutor o tutora debe crear su cuenta, vincular tu perfil y pulsar «Aprobar cuenta» en el panel familiar
-            antes de que puedas entrar.
+            Tu tutor o tutora debe crear su cuenta, vincular tu perfil y pulsar «Aprobar cuenta» en
+            el panel familiar antes de que puedas entrar.
           </Text>
         ) : null}
 
@@ -191,8 +204,10 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
             autoCapitalize="none"
             keyboardType="email-address"
             onChangeText={setEmail}
-            placeholder="Email"
+            placeholder={t("login.email")}
             placeholderTextColor={colors.placeholder}
+            accessibilityLabel={t("login.email")}
+            allowFontScaling
           />
         ) : (
           <TextInput
@@ -201,8 +216,10 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
             autoCapitalize="none"
             autoCorrect={false}
             onChangeText={setUsername}
-            placeholder="Usuario (ej. lucia_explora)"
+            placeholder={t("login.username")}
             placeholderTextColor={colors.placeholder}
+            accessibilityLabel={t("login.username")}
+            allowFontScaling
           />
         )}
         <TextInput
@@ -210,8 +227,10 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          placeholder="Contraseña (mínimo 6)"
+          placeholder={t("login.password")}
           placeholderTextColor={colors.placeholder}
+          accessibilityLabel={t("login.password")}
+          allowFontScaling
         />
 
         {accountKind === "tutor" && mode === "register" ? (
@@ -232,7 +251,9 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
                   },
                 ]}
               >
-                {acceptedTermsAndPrivacy ? <AppIcon name="checkmark" color={colors.primaryStrong} size="sm" /> : null}
+                {acceptedTermsAndPrivacy ? (
+                  <AppIcon name="checkmark" color={colors.primaryStrong} size="sm" />
+                ) : null}
               </View>
             </Pressable>
             <Text style={styles.legalAcceptText}>
@@ -263,8 +284,8 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
           <View style={{ flex: 1, paddingRight: 12 }}>
             <Text style={styles.rememberTitle}>Recordarme en este dispositivo</Text>
             <Text style={styles.rememberDesc}>
-              Mantiene la sesión al volver a abrir la app. La contraseña no se guarda; el servidor reconoce tu cuenta
-              con un token seguro.
+              Mantiene la sesión al volver a abrir la app. La contraseña no se guarda; el servidor
+              reconoce tu cuenta con un token seguro.
             </Text>
           </View>
           <Switch
@@ -272,7 +293,9 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
             onValueChange={setRememberMe}
             disabled={authSubmitBusy}
             trackColor={{ false: colors.border, true: colors.primarySoft }}
-            thumbColor={Platform.OS === "android" ? (rememberMe ? colors.primary : colors.card) : undefined}
+            thumbColor={
+              Platform.OS === "android" ? (rememberMe ? colors.primary : colors.card) : undefined
+            }
             ios_backgroundColor={colors.border}
             accessibilityLabel="Recordarme en este dispositivo"
           />
@@ -286,6 +309,9 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
           ]}
           onPress={onSubmit}
           disabled={!canSubmit || authSubmitBusy}
+          accessibilityRole="button"
+          accessibilityLabel={submitLabel}
+          accessibilityState={{ disabled: !canSubmit || authSubmitBusy, busy: authSubmitBusy }}
         >
           {authSubmitBusy ? (
             <ActivityIndicator color={colors.textOnPrimary} />
@@ -307,7 +333,9 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
               }}
               disabled={authSubmitBusy}
             >
-              <Text style={styles.switchText}>{mode === "login" ? "No tengo cuenta" : "Ya tengo cuenta"}</Text>
+              <Text style={styles.switchText}>
+                {mode === "login" ? "No tengo cuenta" : "Ya tengo cuenta"}
+              </Text>
             </Pressable>
 
             {mode === "login" ? (
@@ -330,7 +358,7 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
                 [
                   { text: "Cancelar", style: "cancel" },
                   { text: "Ir a registro", onPress: () => navigation.navigate("ParentRegister") },
-                ]
+                ],
               );
             }}
             disabled={authSubmitBusy}
@@ -341,15 +369,28 @@ export function AuthScreen({ navigation }: AuthScreenProps) {
 
         <View style={styles.themeHint}>
           <Text style={styles.themeHintLabel}>Apariencia</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-            <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.text }}>Modo oscuro</Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
+            <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.text }}>
+              Modo oscuro
+            </Text>
             <Switch
               value={themeMode === "dark"}
               onValueChange={(v) => void setThemeMode(v ? "dark" : "light")}
               disabled={authSubmitBusy}
               trackColor={{ false: colors.border, true: colors.primarySoft }}
               thumbColor={
-                Platform.OS === "android" ? (themeMode === "dark" ? colors.primary : colors.card) : undefined
+                Platform.OS === "android"
+                  ? themeMode === "dark"
+                    ? colors.primary
+                    : colors.card
+                  : undefined
               }
               ios_backgroundColor={colors.border}
               accessibilityLabel="Activar modo oscuro"

@@ -23,7 +23,7 @@ export function PostOnboardingProvider({
 
   const value = useMemo(
     () => ({ pendingFeedWelcome, consumePendingFeedWelcome }),
-    [pendingFeedWelcome, consumePendingFeedWelcome]
+    [pendingFeedWelcome, consumePendingFeedWelcome],
   );
 
   return <PostOnboardingContext.Provider value={value}>{children}</PostOnboardingContext.Provider>;

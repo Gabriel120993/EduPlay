@@ -37,7 +37,7 @@ Plataforma educativa con enfoque social para menores y tutores, compuesta por:
 ├─ prisma/               # Schema Prisma, migraciones y seed
 ├─ tests/                # Tests rápidos + tests con DB real
 ├─ mobile/               # App Expo / React Native
-├─ legal/                # Contenido legal
+├─ docs/                 # Guías (p. ej. solución de problemas)
 ├─ scripts/              # Scripts utilitarios
 └─ .github/workflows/    # CI de GitHub Actions
 ```
@@ -94,6 +94,9 @@ Variables clave:
 - `JWT_SECRET`: obligatorio, mínimo 32 caracteres
 - `BCRYPT_ROUNDS`: recomendado entre `10` y `14`
 - `TRUST_PROXY`: `true` si estás detrás de reverse proxy
+- `CORS_ALLOWED_ORIGINS`: lista CSV de orígenes permitidos (p. ej. `https://app.tudominio.com,http://localhost:19006`). Valor `*` permite cualquier origen (solo recomendable en desarrollo local). En `NODE_ENV=development` también se permiten orígenes `http(s)://localhost:*` además de la lista.
+
+Más ayuda en [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 Opcionales importantes:
 
@@ -303,10 +306,16 @@ npm run test:prepare
 
 Workflow: `.github/workflows/ci.yml`
 
-Se ejecuta en `push` y `pull_request` con dos jobs:
+Se ejecuta en `push` y `pull_request` con tres jobs principales:
 
-1. `test`: instala dependencias, prepara Prisma y ejecuta `npm test`.
-2. `test-db`: instala dependencias, prepara Prisma y ejecuta `npm run test:db`.
+1. **`backend`**: `npm ci`, Prisma (`generate` + `validate`), typecheck (`tsc`), `npm test`, `npm run qa:audit`.
+2. **`test-db`**: `npm ci`, `npx prisma generate`, `npm run test:db` (PostgreSQL vía **Testcontainers**; requiere Docker en el runner).
+3. **`mobile-typecheck`**: `npm ci` en `mobile/` y `npx tsc --noEmit`.
+
+### Servicios y validación estricta (P0)
+
+- Lógica de **registro/login unificado de tutor** extraída a `src/services/auth.service.ts`; listado educativo parcial en `src/services/contentList.service.ts`; mapeo de categorías de quiz en `src/services/quiz.service.ts`.
+- Esquemas Zod **`.strict()`** en registro tutor, alta de menor, login unificado y cuerpos de amistad (`src/lib/validation/schemas.ts` + `auth.controller.ts`).
 
 ---
 

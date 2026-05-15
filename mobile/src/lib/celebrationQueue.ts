@@ -17,14 +17,25 @@ export function queueCelebrationsAfterQuizComplete(res: {
   if (achievements.length === 1) {
     const a = achievements[0]!;
     const detail = [a.badgeIcon?.trim() || "", a.title].filter(Boolean).join(" ").trim();
-    showToast(detail ? `¡Logro desbloqueado! 🏆\n${detail}` : "¡Logro desbloqueado! 🏆", "success", "achievement");
+    showToast(
+      detail ? `¡Logro desbloqueado! 🏆\n${detail}` : "¡Logro desbloqueado! 🏆",
+      "success",
+      "achievement",
+    );
   } else if (achievements.length > 1) {
     const titles = achievements.map((x) => x.title).join(" · ");
-    showToast(`¡Logros desbloqueados! 🏆 (${achievements.length})\n${titles}`, "success", "achievement");
+    showToast(
+      `¡Logros desbloqueados! 🏆 (${achievements.length})\n${titles}`,
+      "success",
+      "achievement",
+    );
   }
 }
 
-export function queueCelebrationsAfterContentLearn(res: { levelUp?: boolean; newLevel?: number }): void {
+export function queueCelebrationsAfterContentLearn(res: {
+  levelUp?: boolean;
+  newLevel?: number;
+}): void {
   if (res.levelUp && res.newLevel != null) {
     emitCelebration({ kind: "level_up", newLevel: res.newLevel });
   }

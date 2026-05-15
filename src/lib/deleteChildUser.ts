@@ -1,8 +1,8 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from '@prisma/client';
 
 type Tx = Omit<
   PrismaClient,
-  "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends" | "$use"
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends' | '$use'
 >;
 
 /**
@@ -19,10 +19,7 @@ export async function deleteChildUserAccount(db: PrismaClient, userId: string): 
       const postIds = posts.map((p) => p.id);
 
       await tx.reaction.deleteMany({
-        where:
-          postIds.length > 0
-            ? { OR: [{ userId }, { postId: { in: postIds } }] }
-            : { userId },
+        where: postIds.length > 0 ? { OR: [{ userId }, { postId: { in: postIds } }] } : { userId },
       });
 
       await tx.contentReport.deleteMany({
@@ -71,6 +68,6 @@ export async function deleteChildUserAccount(db: PrismaClient, userId: string): 
 
       await tx.user.delete({ where: { id: userId } });
     },
-    { timeout: 60_000 }
+    { timeout: 60_000 },
   );
 }

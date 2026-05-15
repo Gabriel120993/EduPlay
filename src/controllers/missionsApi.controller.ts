@@ -1,21 +1,21 @@
-import type { Request, Response } from "express";
-import { z } from "zod";
+import type { Request, Response } from 'express';
+import { z } from 'zod';
 import {
   computeProgressRatio,
   getThematicMissionBySlug,
   isThematicMissionAvailableNow,
   thematicMissionStepCount,
   THEMATIC_MISSIONS,
-} from "../lib/thematicMissionsCatalog";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { formatZodError } from "../lib/validation/schemas";
-import { getThematicMissionsCatalog } from "./missions.controller";
+} from '../lib/thematicMissionsCatalog';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { formatZodError } from '../lib/validation/schemas';
+import { getThematicMissionsCatalog } from './missions.controller';
 
 function childUserId(req: Request, res: Response): string | null {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(403).json({ error: "Solo menores autenticados." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(403).json({ error: 'Solo menores autenticados.' });
     return null;
   }
   return auth.userId;
@@ -30,12 +30,12 @@ export async function listMissionsRest(req: Request, res: Response): Promise<voi
 export async function getMissionDetailRest(req: Request, res: Response): Promise<void> {
   const slug = req.params.missionId?.trim();
   if (!slug) {
-    res.status(400).json({ error: "missionId inválido." });
+    res.status(400).json({ error: 'missionId inválido.' });
     return;
   }
   const def = getThematicMissionBySlug(slug);
   if (!def) {
-    res.status(404).json({ error: "Misión no encontrada." });
+    res.status(404).json({ error: 'Misión no encontrada.' });
     return;
   }
   const now = new Date();
@@ -60,18 +60,18 @@ export async function postStartMission(req: Request, res: Response): Promise<voi
 
   const slug = req.params.missionId?.trim();
   if (!slug) {
-    res.status(400).json({ error: "missionId inválido." });
+    res.status(400).json({ error: 'missionId inválido.' });
     return;
   }
 
   const def = getThematicMissionBySlug(slug);
   if (!def) {
-    res.status(404).json({ error: "Misión no encontrada." });
+    res.status(404).json({ error: 'Misión no encontrada.' });
     return;
   }
   const now = new Date();
   if (!isThematicMissionAvailableNow(def, now)) {
-    res.status(403).json({ error: "Misión no disponible ahora." });
+    res.status(403).json({ error: 'Misión no disponible ahora.' });
     return;
   }
 
@@ -99,8 +99,8 @@ export async function postStartMission(req: Request, res: Response): Promise<voi
       },
     });
   } catch (e) {
-    logError("missionsApi.start", e);
-    res.status(500).json({ error: "Error al iniciar misión." });
+    logError('missionsApi.start', e);
+    res.status(500).json({ error: 'Error al iniciar misión.' });
   }
 }
 
@@ -112,12 +112,12 @@ export async function getMyMissionsProgress(req: Request, res: Response): Promis
   try {
     const rows = await prisma.userThematicMissionProgress.findMany({
       where: { userId, completed: false },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { updatedAt: 'desc' },
     });
     res.json({ progress: rows });
   } catch (e) {
-    logError("missionsApi.myProgress", e);
-    res.status(500).json({ error: "Error al listar progreso." });
+    logError('missionsApi.myProgress', e);
+    res.status(500).json({ error: 'Error al listar progreso.' });
   }
 }
 
@@ -129,17 +129,17 @@ export async function getMyMissionsCompleted(req: Request, res: Response): Promi
   try {
     const rows = await prisma.userThematicMissionProgress.findMany({
       where: { userId, completed: true },
-      orderBy: { completedAt: "desc" },
+      orderBy: { completedAt: 'desc' },
     });
     res.json({ completed: rows });
   } catch (e) {
-    logError("missionsApi.myCompleted", e);
-    res.status(500).json({ error: "Error al listar misiones completadas." });
+    logError('missionsApi.myCompleted', e);
+    res.status(500).json({ error: 'Error al listar misiones completadas.' });
   }
 }
 
 const completeActivitySchema = z.object({
-  action: z.literal("advance"),
+  action: z.literal('advance'),
   score: z.number().int().min(0).max(10_000).optional(),
 });
 
@@ -150,7 +150,7 @@ export async function postCompleteMissionActivity(req: Request, res: Response): 
 
   const progressId = req.params.progressId?.trim();
   if (!progressId) {
-    res.status(400).json({ error: "progressId inválido." });
+    res.status(400).json({ error: 'progressId inválido.' });
     return;
   }
 
@@ -165,24 +165,24 @@ export async function postCompleteMissionActivity(req: Request, res: Response): 
       where: { id: progressId, userId },
     });
     if (!row) {
-      res.status(404).json({ error: "Progreso no encontrado." });
+      res.status(404).json({ error: 'Progreso no encontrado.' });
       return;
     }
 
     const def = getThematicMissionBySlug(row.missionSlug);
     if (!def) {
-      res.status(400).json({ error: "Definición de misión inválida." });
+      res.status(400).json({ error: 'Definición de misión inválida.' });
       return;
     }
     const now = new Date();
     if (!isThematicMissionAvailableNow(def, now)) {
-      res.status(403).json({ error: "Misión no disponible ahora." });
+      res.status(403).json({ error: 'Misión no disponible ahora.' });
       return;
     }
 
     const total = thematicMissionStepCount(def);
     if (row.completed) {
-      res.status(409).json({ error: "Misión ya completada." });
+      res.status(409).json({ error: 'Misión ya completada.' });
       return;
     }
 
@@ -214,8 +214,8 @@ export async function postCompleteMissionActivity(req: Request, res: Response): 
       },
     });
   } catch (e) {
-    logError("missionsApi.completeActivity", e);
-    res.status(500).json({ error: "Error al actualizar actividad." });
+    logError('missionsApi.completeActivity', e);
+    res.status(500).json({ error: 'Error al actualizar actividad.' });
   }
 }
 
@@ -226,7 +226,7 @@ export async function postClaimMissionRewards(req: Request, res: Response): Prom
 
   const progressId = req.params.progressId?.trim();
   if (!progressId) {
-    res.status(400).json({ error: "progressId inválido." });
+    res.status(400).json({ error: 'progressId inválido.' });
     return;
   }
 
@@ -235,18 +235,18 @@ export async function postClaimMissionRewards(req: Request, res: Response): Prom
       where: { id: progressId, userId, completed: true },
     });
     if (!row) {
-      res.status(404).json({ error: "No hay recompensas pendientes para este progreso." });
+      res.status(404).json({ error: 'No hay recompensas pendientes para este progreso.' });
       return;
     }
 
     const def = THEMATIC_MISSIONS.find((m) => m.slug === row.missionSlug);
     res.json({
       claimed: true,
-      reward: def?.reward ?? "Recompensa simbólica",
-      note: "Las recompensas reales se aplican vía XP/monedas en la app principal.",
+      reward: def?.reward ?? 'Recompensa simbólica',
+      note: 'Las recompensas reales se aplican vía XP/monedas en la app principal.',
     });
   } catch (e) {
-    logError("missionsApi.claim", e);
-    res.status(500).json({ error: "Error al reclamar recompensas." });
+    logError('missionsApi.claim', e);
+    res.status(500).json({ error: 'Error al reclamar recompensas.' });
   }
 }

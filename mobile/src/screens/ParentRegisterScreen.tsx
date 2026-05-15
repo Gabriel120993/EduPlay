@@ -1,5 +1,14 @@
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { formatApiError } from "../lib/apiErrors";
@@ -27,7 +36,7 @@ export function ParentRegisterScreen() {
       lastName.trim().length > 0 &&
       phone.trim().length >= 6 &&
       acceptedTerms,
-    [acceptedTerms, email, firstName, lastName, password, phone]
+    [acceptedTerms, email, firstName, lastName, password, phone],
   );
 
   const onSubmit = async () => {
@@ -53,26 +62,52 @@ export function ParentRegisterScreen() {
   };
 
   return (
-    <ScrollView style={[styles.root, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.root, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.content}
+    >
       <Text style={[styles.title, { color: colors.text }]}>Registro de padre/madre</Text>
-      <Text style={[styles.subtitle, { color: colors.textMuted }]}>Completá tus datos para crear la cuenta familiar.</Text>
+      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+        Completá tus datos para crear la cuenta familiar.
+      </Text>
 
       <TextInput
-        style={[styles.input, { borderColor: colors.inputBorder, color: colors.inputText, backgroundColor: colors.card }]}
+        style={[
+          styles.input,
+          {
+            borderColor: colors.inputBorder,
+            color: colors.inputText,
+            backgroundColor: colors.card,
+          },
+        ]}
         value={firstName}
         onChangeText={setFirstName}
         placeholder="Nombre"
         placeholderTextColor={colors.placeholder}
       />
       <TextInput
-        style={[styles.input, { borderColor: colors.inputBorder, color: colors.inputText, backgroundColor: colors.card }]}
+        style={[
+          styles.input,
+          {
+            borderColor: colors.inputBorder,
+            color: colors.inputText,
+            backgroundColor: colors.card,
+          },
+        ]}
         value={lastName}
         onChangeText={setLastName}
         placeholder="Apellido"
         placeholderTextColor={colors.placeholder}
       />
       <TextInput
-        style={[styles.input, { borderColor: colors.inputBorder, color: colors.inputText, backgroundColor: colors.card }]}
+        style={[
+          styles.input,
+          {
+            borderColor: colors.inputBorder,
+            color: colors.inputText,
+            backgroundColor: colors.card,
+          },
+        ]}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -81,7 +116,14 @@ export function ParentRegisterScreen() {
         placeholderTextColor={colors.placeholder}
       />
       <TextInput
-        style={[styles.input, { borderColor: colors.inputBorder, color: colors.inputText, backgroundColor: colors.card }]}
+        style={[
+          styles.input,
+          {
+            borderColor: colors.inputBorder,
+            color: colors.inputText,
+            backgroundColor: colors.card,
+          },
+        ]}
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
@@ -89,7 +131,14 @@ export function ParentRegisterScreen() {
         placeholderTextColor={colors.placeholder}
       />
       <TextInput
-        style={[styles.input, { borderColor: colors.inputBorder, color: colors.inputText, backgroundColor: colors.card }]}
+        style={[
+          styles.input,
+          {
+            borderColor: colors.inputBorder,
+            color: colors.inputText,
+            backgroundColor: colors.card,
+          },
+        ]}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -99,7 +148,9 @@ export function ParentRegisterScreen() {
 
       <View style={styles.termsRow}>
         <Switch value={acceptedTerms} onValueChange={setAcceptedTerms} />
-        <Text style={[styles.termsText, { color: colors.textBody }]}>Acepto términos y condiciones.</Text>
+        <Text style={[styles.termsText, { color: colors.textBody }]}>
+          Acepto términos y condiciones.
+        </Text>
       </View>
 
       <Pressable
@@ -107,7 +158,9 @@ export function ParentRegisterScreen() {
         onPress={onSubmit}
         style={[styles.btn, { backgroundColor: valid ? colors.primary : colors.border }]}
       >
-        <Text style={[styles.btnText, { color: colors.textOnPrimary }]}>{busy ? "Registrando..." : "Crear cuenta"}</Text>
+        <Text style={[styles.btnText, { color: colors.textOnPrimary }]}>
+          {busy ? "Registrando..." : "Crear cuenta"}
+        </Text>
       </Pressable>
     </ScrollView>
   );
@@ -118,7 +171,13 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   title: { fontSize: 24, fontWeight: "800" },
   subtitle: { fontSize: 14, marginBottom: 8 },
-  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
   termsRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 },
   termsText: { fontSize: 14, flex: 1 },
   btn: { marginTop: 8, paddingVertical: 12, borderRadius: 12, alignItems: "center" },

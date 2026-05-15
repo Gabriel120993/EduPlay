@@ -5,7 +5,12 @@ export function formatFeedTime(createdAt: string, createdAtFormatted?: string): 
   try {
     const d = new Date(createdAt);
     if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
     return "";
   }

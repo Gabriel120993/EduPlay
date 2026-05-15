@@ -1,114 +1,22 @@
-import type { Request, Response } from "express";
-import { ContentFilterLevel, FriendStatus } from "@prisma/client";
-import { assertOutgoingChatAllowed, getChildIdsWithParentChatDisabled } from "../lib/chatAccess";
-import { assertChatSendSafety } from "../lib/chatSafetyLimits";
-import { filterOutgoingChatMessage } from "../lib/chatFilter";
-import { areAcceptedFriends } from "../lib/chatFriendship";
-import { notifyRecipientNewChatMessage } from "../lib/chatRecipientPush";
-import {
-  ensureChatForUsers,
-  findChatById,
-  peerUserIdFromChat,
-} from "../lib/chatThreadRegistry";
-import { recordAndNotifyParentsForChatFilterSignal } from "../lib/parentSuspiciousNotify";
-import { prisma } from "../lib/prisma";
-import { assertAllowChat } from "../lib/parentalRestrictions";
+import type { Request, Response } from 'express';
+import { FriendStatus } from '@prisma/client';
+import { getChildIdsWithParentChatDisabled } from '../lib/chatAccess';
+import { executeChildOutgoingChat } from '../services/chat.service';
+import { areAcceptedFriends } from '../lib/chatFriendship';
+import { ensureChatForUsers, findChatById, peerUserIdFromChat } from '../lib/chatThreadRegistry';
+import { prisma } from '../lib/prisma';
+import { assertAllowChat } from '../lib/parentalRestrictions';
 
-const MAX_CHAT_LEN = 2000;
 const THREAD_PAGE_DEFAULT = 60;
 const THREAD_PAGE_MAX = 100;
 
-type OutgoingRow = {
-  id: string;
-  body: string;
-  blocked: boolean;
-  blockReason: string | null;
-  moderationFlagged: boolean;
-  createdAt: Date;
-};
-
-type SendFail = { ok: false; status: number; error: string; code?: string };
-
-async function executeChildOutgoingChat(
-  senderId: string,
-  recipientId: string,
-  text: string
-): Promise<{ ok: true; row: OutgoingRow } | SendFail> {
-  if (text.length > MAX_CHAT_LEN) {
-    return { ok: false, status: 400, error: `El mensaje no puede superar ${MAX_CHAT_LEN} caracteres.` };
-  }
-
-  const gate = await assertOutgoingChatAllowed(senderId, recipientId);
-  if (!gate.ok) {
-    return { ok: false, status: gate.status, error: gate.error };
-  }
-
-  const settings = await prisma.parentSettings.findUnique({
-    where: { childId: senderId },
-    select: { contentFilterLevel: true },
-  });
-  const level = settings?.contentFilterLevel ?? ContentFilterLevel.MEDIUM;
-  const filtered = filterOutgoingChatMessage(text, level);
-
-  if (!filtered.allowed && filtered.blockReason === "EMPTY") {
-    return { ok: false, status: 400, error: "El mensaje no puede estar vacío." };
-  }
-
-  const safety = assertChatSendSafety(senderId, text);
-  if (!safety.ok) {
-    return { ok: false, status: 429, error: safety.error, code: safety.code };
-  }
-
-  const row = await prisma.chatMessage.create({
-    data: {
-      senderId,
-      recipientId,
-      body: filtered.deliveredBody,
-      blocked: !filtered.allowed,
-      blockReason: filtered.blockReason,
-      auditPlain: filtered.auditPlain,
-      moderationFlagged: filtered.moderationFlagged,
-    },
-    select: {
-      id: true,
-      body: true,
-      blocked: true,
-      blockReason: true,
-      moderationFlagged: true,
-      createdAt: true,
-    },
-  });
-
-  if (row.blocked || row.moderationFlagged) {
-    void recordAndNotifyParentsForChatFilterSignal({
-      messageId: row.id,
-      senderId,
-      recipientId,
-      blocked: row.blocked,
-      moderationFlagged: row.moderationFlagged,
-      blockReason: row.blockReason,
-    });
-  }
-
-  if (!row.blocked && row.body.trim().length > 0) {
-    void notifyRecipientNewChatMessage({
-      recipientId,
-      senderId,
-      messageId: row.id,
-      body: row.body,
-    });
-  }
-
-  return { ok: true, row };
-}
-
 function parsePeerId(req: Request): string {
-  return String(req.params.peerId ?? "").trim();
+  return String(req.params.peerId ?? '').trim();
 }
 
 function parseBefore(req: Request): Date | undefined {
   const raw = req.query.before;
-  if (raw == null || raw === "") return undefined;
+  if (raw == null || raw === '') return undefined;
   const s = Array.isArray(raw) ? String(raw[0]) : String(raw);
   const d = new Date(s);
   return Number.isNaN(d.getTime()) ? undefined : d;
@@ -116,7 +24,7 @@ function parseBefore(req: Request): Date | undefined {
 
 function parseThreadTake(req: Request): number {
   const raw = req.query.limit;
-  if (raw == null || raw === "") return THREAD_PAGE_DEFAULT;
+  if (raw == null || raw === '') return THREAD_PAGE_DEFAULT;
   const s = Array.isArray(raw) ? String(raw[0]) : String(raw);
   const n = Number(s);
   if (!Number.isFinite(n) || !Number.isInteger(n) || n < 1) return THREAD_PAGE_DEFAULT;
@@ -125,28 +33,30 @@ function parseThreadTake(req: Request): number {
 
 export async function postChatMessage(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
-  if (auth?.kind !== "child") {
-    res.status(401).json({ error: "No autenticado." });
+  if (auth?.kind !== 'child') {
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
   const senderId = auth.userId;
 
-  if (req.body === null || typeof req.body !== "object") {
-    res.status(400).json({ error: "El cuerpo debe ser un objeto JSON." });
+  if (req.body === null || typeof req.body !== 'object') {
+    res.status(400).json({ error: 'El cuerpo debe ser un objeto JSON.' });
     return;
   }
   const b = req.body as Record<string, unknown>;
-  const recipientId = typeof b.recipientId === "string" ? b.recipientId.trim() : "";
-  const text = typeof b.text === "string" ? b.text : "";
+  const recipientId = typeof b.recipientId === 'string' ? b.recipientId.trim() : '';
+  const text = typeof b.text === 'string' ? b.text : '';
 
   if (!recipientId) {
-    res.status(400).json({ error: "recipientId es obligatorio." });
+    res.status(400).json({ error: 'recipientId es obligatorio.' });
     return;
   }
 
   const result = await executeChildOutgoingChat(senderId, recipientId, text);
   if (!result.ok) {
-    res.status(result.status).json({ error: result.error, ...(result.code ? { code: result.code } : {}) });
+    res
+      .status(result.status)
+      .json({ error: result.error, ...(result.code ? { code: result.code } : {}) });
     return;
   }
   const { row } = result;
@@ -166,27 +76,27 @@ export async function postChatMessage(req: Request, res: Response): Promise<void
  */
 export async function postRestMessage(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
-  if (auth?.kind !== "child") {
-    res.status(401).json({ error: "No autenticado." });
+  if (auth?.kind !== 'child') {
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
   const senderId = auth.userId;
 
-  if (req.body === null || typeof req.body !== "object") {
-    res.status(400).json({ error: "El cuerpo debe ser un objeto JSON." });
+  if (req.body === null || typeof req.body !== 'object') {
+    res.status(400).json({ error: 'El cuerpo debe ser un objeto JSON.' });
     return;
   }
   const b = req.body as Record<string, unknown>;
-  const text = typeof b.text === "string" ? b.text : "";
-  const chatId = typeof b.chatId === "string" ? b.chatId.trim() : "";
-  const recipientIdRaw = typeof b.recipientId === "string" ? b.recipientId.trim() : "";
+  const text = typeof b.text === 'string' ? b.text : '';
+  const chatId = typeof b.chatId === 'string' ? b.chatId.trim() : '';
+  const recipientIdRaw = typeof b.recipientId === 'string' ? b.recipientId.trim() : '';
 
   if (chatId && recipientIdRaw) {
-    res.status(400).json({ error: "Enviá solo chatId o solo recipientId, no ambos." });
+    res.status(400).json({ error: 'Enviá solo chatId o solo recipientId, no ambos.' });
     return;
   }
   if (!chatId && !recipientIdRaw) {
-    res.status(400).json({ error: "Incluí chatId o recipientId, y text." });
+    res.status(400).json({ error: 'Incluí chatId o recipientId, y text.' });
     return;
   }
 
@@ -194,12 +104,12 @@ export async function postRestMessage(req: Request, res: Response): Promise<void
   if (chatId) {
     const chat = await findChatById(chatId);
     if (!chat) {
-      res.status(404).json({ error: "Chat no encontrado." });
+      res.status(404).json({ error: 'Chat no encontrado.' });
       return;
     }
     const peer = peerUserIdFromChat(chat, senderId);
     if (!peer) {
-      res.status(403).json({ error: "No participás en este chat." });
+      res.status(403).json({ error: 'No participás en este chat.' });
       return;
     }
     recipientId = peer;
@@ -209,7 +119,9 @@ export async function postRestMessage(req: Request, res: Response): Promise<void
 
   const result = await executeChildOutgoingChat(senderId, recipientId, text);
   if (!result.ok) {
-    res.status(result.status).json({ error: result.error, ...(result.code ? { code: result.code } : {}) });
+    res
+      .status(result.status)
+      .json({ error: result.error, ...(result.code ? { code: result.code } : {}) });
     return;
   }
   const { row } = result;
@@ -238,7 +150,9 @@ type ConversationSummary = {
   };
 };
 
-async function loadChildConversationSummaries(userId: string): Promise<ConversationSummary[] | { error: string }> {
+async function loadChildConversationSummaries(
+  userId: string,
+): Promise<ConversationSummary[] | { error: string }> {
   const allow = await assertAllowChat(userId);
   if (!allow.ok) {
     return { error: allow.message };
@@ -248,7 +162,7 @@ async function loadChildConversationSummaries(userId: string): Promise<Conversat
     where: {
       OR: [{ senderId: userId }, { recipientId: userId, blocked: false }],
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: 400,
     select: {
       id: true,
@@ -277,7 +191,10 @@ async function loadChildConversationSummaries(userId: string): Promise<Conversat
   const acceptedRows = await prisma.friend.findMany({
     where: {
       status: FriendStatus.ACCEPTED,
-      OR: [{ userId: userId, friendId: { in: peerIds } }, { friendId: userId, userId: { in: peerIds } }],
+      OR: [
+        { userId: userId, friendId: { in: peerIds } },
+        { friendId: userId, userId: { in: peerIds } },
+      ],
     },
     select: { userId: true, friendId: true },
   });
@@ -307,7 +224,7 @@ async function loadChildConversationSummaries(userId: string): Promise<Conversat
     const fromSelf = m.senderId === userId;
     const preview =
       m.blocked && fromSelf
-        ? "No se entregó (filtro o política)"
+        ? 'No se entregó (filtro o política)'
         : m.body.length > 140
           ? `${m.body.slice(0, 137)}…`
           : m.body;
@@ -330,7 +247,8 @@ async function loadChildConversationSummaries(userId: string): Promise<Conversat
   }
 
   conversations.sort(
-    (a, b) => new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime()
+    (a, b) =>
+      new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime(),
   );
 
   return conversations;
@@ -338,8 +256,8 @@ async function loadChildConversationSummaries(userId: string): Promise<Conversat
 
 export async function listChatConversations(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
-  if (auth?.kind !== "child") {
-    res.status(401).json({ error: "No autenticado." });
+  if (auth?.kind !== 'child') {
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
   const userId = auth.userId;
@@ -358,13 +276,13 @@ export async function listChatConversations(req: Request, res: Response): Promis
  */
 export async function getRestChatsByUserId(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
-  if (auth?.kind !== "child") {
-    res.status(401).json({ error: "No autenticado." });
+  if (auth?.kind !== 'child') {
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
-  const paramUserId = String(req.params.userId ?? "").trim();
+  const paramUserId = String(req.params.userId ?? '').trim();
   if (!paramUserId || paramUserId !== auth.userId) {
-    res.status(403).json({ error: "Solo podés listar tus propios chats." });
+    res.status(403).json({ error: 'Solo podés listar tus propios chats.' });
     return;
   }
 
@@ -383,7 +301,7 @@ export async function getRestChatsByUserId(req: Request, res: Response): Promise
         peer: s.peer,
         lastMessage: s.lastMessage,
       };
-    })
+    }),
   );
 
   res.json({ chats });
@@ -393,7 +311,7 @@ async function loadPeerThreadPayload(
   userId: string,
   peerId: string,
   before: Date | undefined,
-  take: number
+  take: number,
 ): Promise<
   | {
       messages: {
@@ -416,11 +334,11 @@ async function loadPeerThreadPayload(
 
   const allowPeer = await assertAllowChat(peerId);
   if (!allowPeer.ok) {
-    return { status: 403, error: "El chat no está disponible con ese usuario." };
+    return { status: 403, error: 'El chat no está disponible con ese usuario.' };
   }
 
   if (!(await areAcceptedFriends(userId, peerId))) {
-    return { status: 403, error: "Solo podés ver el chat con amigos aceptados." };
+    return { status: 403, error: 'Solo podés ver el chat con amigos aceptados.' };
   }
 
   const rows = await prisma.chatMessage.findMany({
@@ -435,7 +353,7 @@ async function loadPeerThreadPayload(
         before ? { createdAt: { lt: before } } : {},
       ],
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take,
     select: {
       id: true,
@@ -466,21 +384,21 @@ async function loadPeerThreadPayload(
 
 export async function getChatThread(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
-  if (auth?.kind !== "child") {
-    res.status(401).json({ error: "No autenticado." });
+  if (auth?.kind !== 'child') {
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
   const userId = auth.userId;
   const peerId = parsePeerId(req);
   if (!peerId) {
-    res.status(400).json({ error: "peerId inválido." });
+    res.status(400).json({ error: 'peerId inválido.' });
     return;
   }
 
   const before = parseBefore(req);
   const take = THREAD_PAGE_DEFAULT;
   const payload = await loadPeerThreadPayload(userId, peerId, before, take);
-  if ("error" in payload) {
+  if ('error' in payload) {
     res.status(payload.status).json({ error: payload.error });
     return;
   }
@@ -492,32 +410,32 @@ export async function getChatThread(req: Request, res: Response): Promise<void> 
  */
 export async function getRestMessagesByChatId(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
-  if (auth?.kind !== "child") {
-    res.status(401).json({ error: "No autenticado." });
+  if (auth?.kind !== 'child') {
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
   const userId = auth.userId;
-  const chatId = String(req.params.chatId ?? "").trim();
+  const chatId = String(req.params.chatId ?? '').trim();
   if (!chatId) {
-    res.status(400).json({ error: "chatId inválido." });
+    res.status(400).json({ error: 'chatId inválido.' });
     return;
   }
 
   const chat = await findChatById(chatId);
   if (!chat) {
-    res.status(404).json({ error: "Chat no encontrado." });
+    res.status(404).json({ error: 'Chat no encontrado.' });
     return;
   }
   const peerId = peerUserIdFromChat(chat, userId);
   if (!peerId) {
-    res.status(403).json({ error: "No participás en este chat." });
+    res.status(403).json({ error: 'No participás en este chat.' });
     return;
   }
 
   const before = parseBefore(req);
   const take = parseThreadTake(req);
   const payload = await loadPeerThreadPayload(userId, peerId, before, take);
-  if ("error" in payload) {
+  if ('error' in payload) {
     res.status(payload.status).json({ error: payload.error });
     return;
   }

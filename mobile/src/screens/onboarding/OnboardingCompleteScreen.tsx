@@ -81,10 +81,16 @@ export function OnboardingCompleteScreen({ onContinue, variant = "child" }: Prop
       colors={[...GRADIENT]}
       start={{ x: 0, y: 0 }}
       end={{ x: 0.2, y: 1 }}
-      style={[styles.gradient, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.md }]}
+      style={[
+        styles.gradient,
+        { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.md },
+      ]}
     >
       <Animated.View style={[styles.content, { opacity: opacityAnim }]}>
-        <Animated.Text style={[styles.emoji, { transform: [{ scale: scaleAnim }] }]} accessibilityLabel="Celebración">
+        <Animated.Text
+          style={[styles.emoji, { transform: [{ scale: scaleAnim }] }]}
+          accessibilityLabel="Celebración"
+        >
           🎉
         </Animated.Text>
         <Text style={styles.title}>{copy.title}</Text>

@@ -3,15 +3,15 @@
  * Prisma envía esos valores como parámetros enlazados (no concatenación), lo que mitiga inyección SQL.
  * No uses plantillas de cadena normales para armar SQL con entrada del cliente.
  */
-import { Prisma } from "@prisma/client";
-import type { Request, Response } from "express";
+import { Prisma } from '@prisma/client';
+import type { Request, Response } from 'express';
 
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { sanitizeShortUserText } from "../lib/sanitizeUserInput";
-import { utcDayStart } from "../lib/screenTime";
-import { parseUuidParam } from "../lib/validation/schemas";
-import { XP_PER_LEVEL } from "../lib/xpLevel";
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { sanitizeShortUserText } from '../lib/sanitizeUserInput';
+import { utcDayStart } from '../lib/screenTime';
+import { parseUuidParam } from '../lib/validation/schemas';
+import { XP_PER_LEVEL } from '../lib/xpLevel';
 
 const SUMMARY_TOP_LIMIT = 10;
 
@@ -22,23 +22,23 @@ type AnalyticsBody = {
 
 export async function postAnalytics(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
-    res.status(401).json({ error: "No autenticado." });
+  if (!auth || auth.kind !== 'child') {
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
 
   const body = req.body as AnalyticsBody;
   const rawName =
-    typeof body.eventName === "string" ? sanitizeShortUserText(body.eventName, 128) : "";
+    typeof body.eventName === 'string' ? sanitizeShortUserText(body.eventName, 128) : '';
   if (!rawName) {
-    res.status(400).json({ error: "eventName es obligatorio." });
+    res.status(400).json({ error: 'eventName es obligatorio.' });
     return;
   }
 
   let metadata: Prisma.InputJsonValue = {};
   if (body.metadata !== undefined && body.metadata !== null) {
-    if (typeof body.metadata !== "object" || Array.isArray(body.metadata)) {
-      res.status(400).json({ error: "metadata debe ser un objeto JSON." });
+    if (typeof body.metadata !== 'object' || Array.isArray(body.metadata)) {
+      res.status(400).json({ error: 'metadata debe ser un objeto JSON.' });
       return;
     }
     metadata = body.metadata as Prisma.InputJsonValue;
@@ -151,8 +151,14 @@ function mergeWeeklyDays(
   days: string[],
   xpByDay: Map<string, number>,
   gamesByDay: Map<string, number>,
-  missionsByDay: Map<string, number>
-): { date: string; xpGained: number; gamesPlayed: number; missionsCompleted: number; activityScore: number }[] {
+  missionsByDay: Map<string, number>,
+): {
+  date: string;
+  xpGained: number;
+  gamesPlayed: number;
+  missionsCompleted: number;
+  activityScore: number;
+}[] {
   return days.map((date) => {
     const xpGained = xpByDay.get(date) ?? 0;
     const gamesPlayed = gamesByDay.get(date) ?? 0;
@@ -172,8 +178,8 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
   const parentId = idParsed.uuid;
 
   const auth = req.auth;
-  if (!auth || auth.kind !== "parent" || auth.parentId !== parentId) {
-    res.status(403).json({ error: "No autorizado." });
+  if (!auth || auth.kind !== 'parent' || auth.parentId !== parentId) {
+    res.status(403).json({ error: 'No autorizado.' });
     return;
   }
 
@@ -196,7 +202,7 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
         },
         parentSettings: { select: { dailyScreenTimeLimit: true } },
       },
-      orderBy: { username: "asc" },
+      orderBy: { username: 'asc' },
     });
 
     if (children.length === 0) {
@@ -206,9 +212,17 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
 
     const childIds = children.map((c) => c.id);
 
-    const [xpRows, gameRows, missionRows, interestRows, gameCatRows, missionTotals, achievementTotals, gameTotals] =
-      await Promise.all([
-        prisma.$queryRaw<DayMetricRow[]>(Prisma.sql`
+    const [
+      xpRows,
+      gameRows,
+      missionRows,
+      interestRows,
+      gameCatRows,
+      missionTotals,
+      achievementTotals,
+      gameTotals,
+    ] = await Promise.all([
+      prisma.$queryRaw<DayMetricRow[]>(Prisma.sql`
           SELECT x."userId" AS "userId",
             to_char(date_trunc('day', x."createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS day,
             SUM(x.amount)::int AS total
@@ -218,7 +232,7 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
             AND x."createdAt" >= ${weekStart}
           GROUP BY x."userId", date_trunc('day', x."createdAt" AT TIME ZONE 'UTC')
         `),
-        prisma.$queryRaw<DayMetricRow[]>(Prisma.sql`
+      prisma.$queryRaw<DayMetricRow[]>(Prisma.sql`
           SELECT gr."userId" AS "userId",
             to_char(date_trunc('day', gr."createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS day,
             COUNT(*)::int AS total
@@ -228,7 +242,7 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
             AND gr."createdAt" >= ${weekStart}
           GROUP BY gr."userId", date_trunc('day', gr."createdAt" AT TIME ZONE 'UTC')
         `),
-        prisma.$queryRaw<DayMetricRow[]>(Prisma.sql`
+      prisma.$queryRaw<DayMetricRow[]>(Prisma.sql`
           SELECT um."userId" AS "userId",
             to_char(um.date, 'YYYY-MM-DD') AS day,
             COUNT(*)::int AS total
@@ -239,12 +253,12 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
             AND um.date >= ${weekStart}
           GROUP BY um."userId", um.date
         `),
-        prisma.userInterest.findMany({
-          where: { userId: { in: childIds } },
-          select: { userId: true, category: true, score: true },
-          orderBy: [{ userId: "asc" }, { score: "desc" }],
-        }),
-        prisma.$queryRaw<{ userId: string; category: string; n: number }[]>(Prisma.sql`
+      prisma.userInterest.findMany({
+        where: { userId: { in: childIds } },
+        select: { userId: true, category: true, score: true },
+        orderBy: [{ userId: 'asc' }, { score: 'desc' }],
+      }),
+      prisma.$queryRaw<{ userId: string; category: string; n: number }[]>(Prisma.sql`
           SELECT gr."userId" AS "userId", g.category::text AS category, COUNT(*)::int AS n
           FROM "GameResult" gr
           INNER JOIN "Game" g ON g.id = gr."gameId"
@@ -252,22 +266,22 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
           WHERE u."parentId" = ${parentId}
           GROUP BY gr."userId", g.category
         `),
-        prisma.userMission.groupBy({
-          by: ["userId"],
-          where: { userId: { in: childIds }, completed: true },
-          _count: { _all: true },
-        }),
-        prisma.userAchievement.groupBy({
-          by: ["userId"],
-          where: { userId: { in: childIds } },
-          _count: { _all: true },
-        }),
-        prisma.gameResult.groupBy({
-          by: ["userId"],
-          where: { userId: { in: childIds } },
-          _count: { _all: true },
-        }),
-      ]);
+      prisma.userMission.groupBy({
+        by: ['userId'],
+        where: { userId: { in: childIds }, completed: true },
+        _count: { _all: true },
+      }),
+      prisma.userAchievement.groupBy({
+        by: ['userId'],
+        where: { userId: { in: childIds } },
+        _count: { _all: true },
+      }),
+      prisma.gameResult.groupBy({
+        by: ['userId'],
+        where: { userId: { in: childIds } },
+        _count: { _all: true },
+      }),
+    ]);
 
     const xpMap = new Map<string, Map<string, number>>();
     const gameMap = new Map<string, Map<string, number>>();
@@ -327,7 +341,7 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
         dayKeys,
         xpMap.get(c.id) ?? new Map(),
         gameMap.get(c.id) ?? new Map(),
-        missionMap.get(c.id) ?? new Map()
+        missionMap.get(c.id) ?? new Map(),
       );
 
       return {
@@ -355,7 +369,7 @@ export async function getParentChildAnalytics(req: Request, res: Response): Prom
 
     res.json({ children: payload });
   } catch (err) {
-    logError("analytics", err);
-    res.status(500).json({ error: "Error al cargar analíticas familiares." });
+    logError('analytics', err);
+    res.status(500).json({ error: 'Error al cargar analíticas familiares.' });
   }
 }

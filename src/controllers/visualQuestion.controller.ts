@@ -1,8 +1,8 @@
-import type { Request, Response } from "express";
-import type { Difficulty, Prisma } from "@prisma/client";
-import { logError } from "../lib/logger";
-import { prisma } from "../lib/prisma";
-import { pickImageUrl } from "../lib/imageProxyUrl";
+import type { Request, Response } from 'express';
+import type { Difficulty, Prisma } from '@prisma/client';
+import { logError } from '../lib/logger';
+import { prisma } from '../lib/prisma';
+import { pickImageUrl } from '../lib/imageProxyUrl';
 
 const VISUAL_SAMPLE_SIZE = 5;
 
@@ -22,21 +22,23 @@ const visualQuestionPublicSelect = {
   createdAt: true,
 } satisfies Prisma.VisualQuestionSelect;
 
-type VisualQuestionPublic = Prisma.VisualQuestionGetPayload<{ select: typeof visualQuestionPublicSelect }>;
+type VisualQuestionPublic = Prisma.VisualQuestionGetPayload<{
+  select: typeof visualQuestionPublicSelect;
+}>;
 
 function parseStringQuery(value: unknown): string | undefined {
-  if (typeof value === "string" && value.trim() !== "") return value.trim();
+  if (typeof value === 'string' && value.trim() !== '') return value.trim();
   if (Array.isArray(value) && value[0] != null) {
     const first = String(value[0]).trim();
-    if (first !== "") return first;
+    if (first !== '') return first;
   }
   return undefined;
 }
 
-function parseDifficultyQuery(value: unknown): "EASY" | "MEDIUM" | "HARD" | undefined {
+function parseDifficultyQuery(value: unknown): 'EASY' | 'MEDIUM' | 'HARD' | undefined {
   const raw = parseStringQuery(value);
   if (!raw) return undefined;
-  if (raw === "EASY" || raw === "MEDIUM" || raw === "HARD") return raw;
+  if (raw === 'EASY' || raw === 'MEDIUM' || raw === 'HARD') return raw;
   return undefined;
 }
 
@@ -44,7 +46,7 @@ function parseExcludeIdsQuery(value: unknown): string[] {
   const raw = parseStringQuery(value);
   if (!raw) return [];
   return raw
-    .split(",")
+    .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
     .slice(0, 200);
@@ -72,7 +74,7 @@ function optionsAsStrings(options: unknown): string[] {
  * (evita 429/403 de CDNs externos cuando `<img>` se carga desde el navegador).
  */
 function pickVisualImageUrl(q: VisualQuestionPublic): string {
-  return pickImageUrl(q.imageAsset ?? null, q.imageUrl) ?? "";
+  return pickImageUrl(q.imageAsset ?? null, q.imageUrl) ?? '';
 }
 
 function toVisualQuestionResponse(q: VisualQuestionPublic): {
@@ -108,17 +110,17 @@ export async function getRandomVisualQuiz(req: Request, res: Response): Promise<
   const excludeIds = parseExcludeIdsQuery(req.query.excludeIds);
 
   if (!category) {
-    res.status(400).json({ error: "Query param category es obligatorio." });
+    res.status(400).json({ error: 'Query param category es obligatorio.' });
     return;
   }
   if (req.query.difficulty == null || !difficulty) {
-    res.status(400).json({ error: "Query param difficulty es obligatorio (EASY, MEDIUM o HARD)." });
+    res.status(400).json({ error: 'Query param difficulty es obligatorio (EASY, MEDIUM o HARD).' });
     return;
   }
 
   try {
     const normalizedCat = category.trim().toLowerCase();
-    const isMixed = normalizedCat === "mixed";
+    const isMixed = normalizedCat === 'mixed';
 
     const rows = await prisma.visualQuestion.findMany({
       where: isMixed
@@ -127,7 +129,7 @@ export async function getRandomVisualQuiz(req: Request, res: Response): Promise<
             ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
           }
         : {
-            category: { equals: category, mode: "insensitive" },
+            category: { equals: category, mode: 'insensitive' },
             difficulty,
             ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
           },
@@ -140,7 +142,7 @@ export async function getRandomVisualQuiz(req: Request, res: Response): Promise<
         where: isMixed
           ? { difficulty }
           : {
-              category: { equals: category, mode: "insensitive" },
+              category: { equals: category, mode: 'insensitive' },
               difficulty,
             },
         select: visualQuestionPublicSelect,
@@ -154,7 +156,7 @@ export async function getRandomVisualQuiz(req: Request, res: Response): Promise<
 
     res.json({ questions });
   } catch (err) {
-    logError("visualQuestion.getRandomVisualQuiz", err);
-    res.status(500).json({ error: "Error al cargar el juego visual." });
+    logError('visualQuestion.getRandomVisualQuiz', err);
+    res.status(500).json({ error: 'Error al cargar el juego visual.' });
   }
 }

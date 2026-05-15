@@ -5,7 +5,11 @@ import { space, typography } from "../theme/tokens";
 
 import { AppIcon } from "./AppIcon";
 
-type Props = { category: string | undefined; compact?: boolean; /** En fila junto al tipo de post (sin margen superior extra). */ inline?: boolean };
+type Props = {
+  category: string | undefined;
+  compact?: boolean;
+  /** En fila junto al tipo de post (sin margen superior extra). */ inline?: boolean;
+};
 
 /** Chip de categoría (feed / explorar): borde y fondo del sistema de color por categoría. */
 export function PostCategoryTag({ category, compact, inline }: Props) {

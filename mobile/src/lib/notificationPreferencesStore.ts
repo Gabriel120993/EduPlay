@@ -27,7 +27,9 @@ function ensureLoadStarted(): void {
         const p = JSON.parse(raw) as Partial<UserNotificationPreferences>;
         cached = {
           notificationsEnabled:
-            typeof p.notificationsEnabled === "boolean" ? p.notificationsEnabled : NOTIFICATION_PREFS_DEFAULTS.notificationsEnabled,
+            typeof p.notificationsEnabled === "boolean"
+              ? p.notificationsEnabled
+              : NOTIFICATION_PREFS_DEFAULTS.notificationsEnabled,
           notificationSoundsEnabled:
             typeof p.notificationSoundsEnabled === "boolean"
               ? p.notificationSoundsEnabled
@@ -57,7 +59,9 @@ export async function refreshNotificationPreferencesFromStorage(): Promise<UserN
   return { ...cached };
 }
 
-export async function applyNotificationPreferencesFromProfile(profile: UserProfileResponse): Promise<void> {
+export async function applyNotificationPreferencesFromProfile(
+  profile: UserProfileResponse,
+): Promise<void> {
   ensureLoadStarted();
   await loadPromise;
   cached = { ...profile.preferences };
@@ -69,7 +73,9 @@ export async function applyNotificationPreferencesFromProfile(profile: UserProfi
   notify();
 }
 
-export async function applyNotificationPreferencesLocal(prefs: UserNotificationPreferences): Promise<void> {
+export async function applyNotificationPreferencesLocal(
+  prefs: UserNotificationPreferences,
+): Promise<void> {
   ensureLoadStarted();
   await loadPromise;
   cached = { ...prefs };

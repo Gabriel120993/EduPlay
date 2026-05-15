@@ -46,7 +46,7 @@ export const SCREEN_TIME_LIMIT_TITLE = READ_ONLY_BANNER_TEXT;
 
 function useScreenTimeSession(
   userId: string | null,
-  onTick: (deltaSeconds: number) => Promise<void>
+  onTick: (deltaSeconds: number) => Promise<void>,
 ): void {
   const lastTickRef = useRef<number | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -132,7 +132,7 @@ export function ScreenTimeProvider({ userId, children }: { userId: string; child
         /* red de tick: no bloquear uso; el próximo GET/refresh sincroniza */
       }
     },
-    [userId, enabled]
+    [userId, enabled],
   );
 
   useEffect(() => {
@@ -152,7 +152,7 @@ export function ScreenTimeProvider({ userId, children }: { userId: string; child
       enabled,
       refresh,
     }),
-    [limitExceeded, readOnlyMode, isUnlimited, metrics, enabled, refresh]
+    [limitExceeded, readOnlyMode, isUnlimited, metrics, enabled, refresh],
   );
 
   return (

@@ -1,10 +1,10 @@
-import type { NextFunction, Request, Response } from "express";
-import { Router } from "express";
-import multer from "multer";
+import type { NextFunction, Request, Response } from 'express';
+import { Router } from 'express';
+import multer from 'multer';
 
-import { postMediaUpload } from "../controllers/media.controller";
-import { authWriteLimiter } from "../middlewares/rateLimit.middleware";
-import { requireChild } from "../middlewares/rbac.middleware";
+import { postMediaUpload } from '../controllers/media.controller';
+import { authWriteLimiter } from '../middlewares/rateLimit.middleware';
+import { requireChild } from '../middlewares/rbac.middleware';
 
 const MAX_BYTES = 80 * 1024 * 1024;
 
@@ -14,10 +14,10 @@ const upload = multer({
 });
 
 function uploadSingleMiddleware(req: Request, res: Response, next: NextFunction): void {
-  upload.single("file")(req, res, (err: unknown) => {
+  upload.single('file')(req, res, (err: unknown) => {
     if (err instanceof multer.MulterError) {
-      if (err.code === "LIMIT_FILE_SIZE") {
-        res.status(400).json({ error: "El archivo supera el tamaño máximo permitido (80 MB)." });
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        res.status(400).json({ error: 'El archivo supera el tamaño máximo permitido (80 MB).' });
         return;
       }
       res.status(400).json({ error: err.message });
@@ -33,4 +33,10 @@ function uploadSingleMiddleware(req: Request, res: Response, next: NextFunction)
 
 export const mediaRouter = Router();
 
-mediaRouter.post("/upload", authWriteLimiter, requireChild, uploadSingleMiddleware, postMediaUpload);
+mediaRouter.post(
+  '/upload',
+  authWriteLimiter,
+  requireChild,
+  uploadSingleMiddleware,
+  postMediaUpload,
+);

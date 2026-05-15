@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
@@ -16,7 +17,11 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AppIcon } from "../components/AppIcon";
 import { BrandLogo } from "../components/BrandLogo";
-import { ContentCard, type ContentCardCategory, type ContentCardDifficulty } from "../components/ContentCard";
+import {
+  ContentCard,
+  type ContentCardCategory,
+  type ContentCardDifficulty,
+} from "../components/ContentCard";
 import { ContinueLearningSection } from "../components/ContinueLearningSection";
 import { BrandEmptyState } from "../components/BrandEmptyState";
 import { FeedPostTypeLabel } from "../components/FeedPostTypeLabel";
@@ -70,7 +75,14 @@ import { avatarSize, space } from "../theme/tokens";
 import { useExploreStyles } from "./exploreScreenStyles";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Explore">;
-type QuizCategory = "astronomy" | "math" | "science" | "history" | "geography" | "creativity" | "mixed";
+type QuizCategory =
+  | "astronomy"
+  | "math"
+  | "science"
+  | "history"
+  | "geography"
+  | "creativity"
+  | "mixed";
 
 const QUIZ_GAME_ENTRIES: Array<{
   category: QuizCategory;
@@ -280,34 +292,192 @@ type ExploreContentCardItem = {
 };
 
 const LEARN_FALLBACK_CARDS: ExploreContentCardItem[] = [
-  { id: "learn-sistema-solar", title: "🌌 El Sistema Solar", description: "Video 3 min · Ciencias", type: "video", category: "ciencias", difficulty: "easy", duration: 3, xpReward: 12, isNew: true },
-  { id: "learn-mariposa", title: "🦋 Metamorfosis de la Mariposa", description: "Lectura interactiva · Ciencias", type: "reading", category: "ciencias", difficulty: "easy", duration: 6, xpReward: 14 },
-  { id: "learn-romanos", title: "🏛️ Los Romanos y su Imperio", description: "Documental 5 min · Historia", type: "video", category: "historia", difficulty: "medium", duration: 5, xpReward: 16 },
-  { id: "learn-shakespeare", title: "🎭 Shakespeare para Niños", description: "Cuento adaptado · Lenguaje", type: "reading", category: "lenguaje", difficulty: "medium", duration: 8, xpReward: 15 },
-  { id: "learn-frida", title: "🎨 Frida Kahlo: Vida y Obra", description: "Biografía interactiva · Arte", type: "reading", category: "arte", difficulty: "easy", duration: 7, xpReward: 14, isNew: true },
-  { id: "learn-agua", title: "🌊 El Ciclo del Agua", description: "Experimento virtual · Ciencias", type: "learn", category: "ciencias", difficulty: "easy", duration: 6, xpReward: 13 },
-  { id: "learn-mapamundi", title: "🗺️ Mapamundi Interactivo", description: "Juego de geografía · Geografía", type: "game", category: "geografia", difficulty: "medium", duration: 9, xpReward: 18 },
-  { id: "learn-tablas", title: "🧮 Tablas de Multiplicar", description: "Canción + Quiz · Matemáticas", type: "quiz", category: "matematicas", difficulty: "easy", duration: 5, xpReward: 15 },
-  { id: "learn-selva", title: "🦁 Animales de la Selva", description: "Tarjetas de vocabulario · Ciencias", type: "reading", category: "ciencias", difficulty: "easy", duration: 6, xpReward: 12 },
-  { id: "learn-electricidad", title: "⚡ Grandes Inventos: La Electricidad", description: "Video 4 min · Historia", type: "video", category: "historia", difficulty: "medium", duration: 4, xpReward: 16 },
+  {
+    id: "learn-sistema-solar",
+    title: "🌌 El Sistema Solar",
+    description: "Video 3 min · Ciencias",
+    type: "video",
+    category: "ciencias",
+    difficulty: "easy",
+    duration: 3,
+    xpReward: 12,
+    isNew: true,
+  },
+  {
+    id: "learn-mariposa",
+    title: "🦋 Metamorfosis de la Mariposa",
+    description: "Lectura interactiva · Ciencias",
+    type: "reading",
+    category: "ciencias",
+    difficulty: "easy",
+    duration: 6,
+    xpReward: 14,
+  },
+  {
+    id: "learn-romanos",
+    title: "🏛️ Los Romanos y su Imperio",
+    description: "Documental 5 min · Historia",
+    type: "video",
+    category: "historia",
+    difficulty: "medium",
+    duration: 5,
+    xpReward: 16,
+  },
+  {
+    id: "learn-shakespeare",
+    title: "🎭 Shakespeare para Niños",
+    description: "Cuento adaptado · Lenguaje",
+    type: "reading",
+    category: "lenguaje",
+    difficulty: "medium",
+    duration: 8,
+    xpReward: 15,
+  },
+  {
+    id: "learn-frida",
+    title: "🎨 Frida Kahlo: Vida y Obra",
+    description: "Biografía interactiva · Arte",
+    type: "reading",
+    category: "arte",
+    difficulty: "easy",
+    duration: 7,
+    xpReward: 14,
+    isNew: true,
+  },
+  {
+    id: "learn-agua",
+    title: "🌊 El Ciclo del Agua",
+    description: "Experimento virtual · Ciencias",
+    type: "learn",
+    category: "ciencias",
+    difficulty: "easy",
+    duration: 6,
+    xpReward: 13,
+  },
+  {
+    id: "learn-mapamundi",
+    title: "🗺️ Mapamundi Interactivo",
+    description: "Juego de geografía · Geografía",
+    type: "game",
+    category: "geografia",
+    difficulty: "medium",
+    duration: 9,
+    xpReward: 18,
+  },
+  {
+    id: "learn-tablas",
+    title: "🧮 Tablas de Multiplicar",
+    description: "Canción + Quiz · Matemáticas",
+    type: "quiz",
+    category: "matematicas",
+    difficulty: "easy",
+    duration: 5,
+    xpReward: 15,
+  },
+  {
+    id: "learn-selva",
+    title: "🦁 Animales de la Selva",
+    description: "Tarjetas de vocabulario · Ciencias",
+    type: "reading",
+    category: "ciencias",
+    difficulty: "easy",
+    duration: 6,
+    xpReward: 12,
+  },
+  {
+    id: "learn-electricidad",
+    title: "⚡ Grandes Inventos: La Electricidad",
+    description: "Video 4 min · Historia",
+    type: "video",
+    category: "historia",
+    difficulty: "medium",
+    duration: 4,
+    xpReward: 16,
+  },
 ];
 
 const QUICK_QUIZ_FALLBACK_CARDS: ExploreContentCardItem[] = [
-  { id: "quick-logica", title: "🧠 Quiz Express: Lógica", description: "5 preguntas · 3 min", type: "quiz", category: "matematicas", difficulty: "medium", duration: 3, xpReward: 15, quizCategory: "mixed", isNew: true },
-  { id: "quick-tablas", title: "🔢 Quiz Express: Tablas", description: "10 preguntas · 5 min", type: "quiz", category: "matematicas", difficulty: "easy", duration: 5, xpReward: 18, quizCategory: "math" },
-  { id: "quick-banderas", title: "🌍 Quiz Express: Banderas", description: "8 preguntas · 4 min", type: "quiz", category: "geografia", difficulty: "medium", duration: 4, xpReward: 16, quizCategory: "geography" },
-  { id: "quick-dinosaurios", title: "🦕 Quiz Express: Dinosaurios", description: "5 preguntas · 3 min", type: "quiz", category: "historia", difficulty: "easy", duration: 3, xpReward: 15, quizCategory: "history" },
-  { id: "quick-arte", title: "🎨 Quiz Express: Arte", description: "5 preguntas · 3 min", type: "quiz", category: "arte", difficulty: "easy", duration: 3, xpReward: 15, quizCategory: "creativity" },
-  { id: "quick-ciencia", title: "🧪 Quiz Express: Ciencia", description: "5 preguntas · 3 min", type: "quiz", category: "ciencias", difficulty: "easy", duration: 3, xpReward: 15, quizCategory: "science" },
+  {
+    id: "quick-logica",
+    title: "🧠 Quiz Express: Lógica",
+    description: "5 preguntas · 3 min",
+    type: "quiz",
+    category: "matematicas",
+    difficulty: "medium",
+    duration: 3,
+    xpReward: 15,
+    quizCategory: "mixed",
+    isNew: true,
+  },
+  {
+    id: "quick-tablas",
+    title: "🔢 Quiz Express: Tablas",
+    description: "10 preguntas · 5 min",
+    type: "quiz",
+    category: "matematicas",
+    difficulty: "easy",
+    duration: 5,
+    xpReward: 18,
+    quizCategory: "math",
+  },
+  {
+    id: "quick-banderas",
+    title: "🌍 Quiz Express: Banderas",
+    description: "8 preguntas · 4 min",
+    type: "quiz",
+    category: "geografia",
+    difficulty: "medium",
+    duration: 4,
+    xpReward: 16,
+    quizCategory: "geography",
+  },
+  {
+    id: "quick-dinosaurios",
+    title: "🦕 Quiz Express: Dinosaurios",
+    description: "5 preguntas · 3 min",
+    type: "quiz",
+    category: "historia",
+    difficulty: "easy",
+    duration: 3,
+    xpReward: 15,
+    quizCategory: "history",
+  },
+  {
+    id: "quick-arte",
+    title: "🎨 Quiz Express: Arte",
+    description: "5 preguntas · 3 min",
+    type: "quiz",
+    category: "arte",
+    difficulty: "easy",
+    duration: 3,
+    xpReward: 15,
+    quizCategory: "creativity",
+  },
+  {
+    id: "quick-ciencia",
+    title: "🧪 Quiz Express: Ciencia",
+    description: "5 preguntas · 3 min",
+    type: "quiz",
+    category: "ciencias",
+    difficulty: "easy",
+    duration: 3,
+    xpReward: 15,
+    quizCategory: "science",
+  },
 ];
 
 function isPlaceholderTitle(text: string): boolean {
   const lower = text.toLowerCase();
-  return lower.includes("demo de recurso") || lower.includes("demostración de recurso") || lower.includes("demostracion de recurso") || lower.includes("recurso demo");
+  return (
+    lower.includes("demo de recurso") ||
+    lower.includes("demostración de recurso") ||
+    lower.includes("demostracion de recurso") ||
+    lower.includes("recurso demo")
+  );
 }
 function interleaveExploreForYou(
   content: RecommendedEducationalItem[],
-  games: RecommendedGameMixItem[]
+  games: RecommendedGameMixItem[],
 ): Array<
   | { kind: "content"; item: RecommendedEducationalItem }
   | { kind: "game"; item: RecommendedGameMixItem }
@@ -326,7 +496,15 @@ function interleaveExploreForYou(
 
 function toQuizCategoryFromApi(raw: string): QuizCategory {
   const c = raw.trim().toLowerCase();
-  const allowed: QuizCategory[] = ["astronomy", "math", "science", "history", "geography", "creativity", "mixed"];
+  const allowed: QuizCategory[] = [
+    "astronomy",
+    "math",
+    "science",
+    "history",
+    "geography",
+    "creativity",
+    "mixed",
+  ];
   return allowed.includes(c as QuizCategory) ? (c as QuizCategory) : "mixed";
 }
 
@@ -360,7 +538,10 @@ function contentTypeToCardType(item: EducationalContentItem): ExploreContentCard
   return "learn";
 }
 
-function educationalContentToCard(item: EducationalContentItem, index: number): ExploreContentCardItem {
+function educationalContentToCard(
+  item: EducationalContentItem,
+  index: number,
+): ExploreContentCardItem {
   return {
     id: item.id,
     contentId: item.id,
@@ -376,7 +557,14 @@ function educationalContentToCard(item: EducationalContentItem, index: number): 
 }
 
 function quizToQuickCard(item: QuizListItem, index: number): ExploreContentCardItem {
-  const categories: QuizCategory[] = ["mixed", "math", "geography", "history", "creativity", "science"];
+  const categories: QuizCategory[] = [
+    "mixed",
+    "math",
+    "geography",
+    "history",
+    "creativity",
+    "science",
+  ];
   const category = categories[index % categories.length] ?? "mixed";
   return {
     id: item.id,
@@ -447,12 +635,19 @@ function ExplorePostCard({
     >
       <View style={styles.exploreCardInner}>
         <View style={styles.exploreCardHeader}>
-          <View style={[styles.exploreAvatarOuter, { width: av, height: av, borderRadius: av / 2 }]}>
+          <View
+            style={[styles.exploreAvatarOuter, { width: av, height: av, borderRadius: av / 2 }]}
+          >
             {glyph ? (
               <View
-                style={[styles.exploreAvatarPh, { width: av, height: av, borderRadius: av / 2, borderColor: chrome.accent }]}
+                style={[
+                  styles.exploreAvatarPh,
+                  { width: av, height: av, borderRadius: av / 2, borderColor: chrome.accent },
+                ]}
               >
-                <Text style={[styles.exploreAvatarPhText, { fontSize: Math.round(av * 0.48) }]}>{glyph}</Text>
+                <Text style={[styles.exploreAvatarPhText, { fontSize: Math.round(av * 0.48) }]}>
+                  {glyph}
+                </Text>
               </View>
             ) : showRemoteImage ? (
               <Image
@@ -461,8 +656,15 @@ function ExplorePostCard({
                 onError={() => setImgFail(true)}
               />
             ) : (
-              <View style={[styles.exploreAvatarPh, { width: av, height: av, borderRadius: av / 2, borderColor: chrome.accent }]}>
-                <Text style={[styles.exploreAvatarPhText, { fontSize: Math.round(av * 0.38) }]}>{initial}</Text>
+              <View
+                style={[
+                  styles.exploreAvatarPh,
+                  { width: av, height: av, borderRadius: av / 2, borderColor: chrome.accent },
+                ]}
+              >
+                <Text style={[styles.exploreAvatarPhText, { fontSize: Math.round(av * 0.38) }]}>
+                  {initial}
+                </Text>
               </View>
             )}
           </View>
@@ -484,7 +686,9 @@ function ExplorePostCard({
               ) : null}
             </View>
             <View style={styles.exploreTypeAndCategoryRow}>
-              {typeLabel ? <FeedPostTypeLabel label={typeLabel} postType={item.type} compact /> : null}
+              {typeLabel ? (
+                <FeedPostTypeLabel label={typeLabel} postType={item.type} compact />
+              ) : null}
               <PostCategoryTag category={item.category} compact inline />
             </View>
           </View>
@@ -493,7 +697,11 @@ function ExplorePostCard({
         {item.content ? <Text style={styles.exploreContent}>{item.content}</Text> : null}
 
         {item.imageUrl ? (
-          <Image source={{ uri: item.imageUrl }} style={styles.explorePostImage} resizeMode="cover" />
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.explorePostImage}
+            resizeMode="cover"
+          />
         ) : null}
 
         {item.badge && rarityVis ? (
@@ -519,7 +727,9 @@ function ExplorePostCard({
                 },
               ]}
             >
-              <Text style={[styles.exploreRarityText, { color: rarityVis.accent }]}>{item.badge.rarity}</Text>
+              <Text style={[styles.exploreRarityText, { color: rarityVis.accent }]}>
+                {item.badge.rarity}
+              </Text>
             </View>
           </View>
         ) : null}
@@ -540,6 +750,7 @@ function ExplorePostCard({
 }
 
 export function ExploreScreen({ route }: Props) {
+  const { t } = useTranslation();
   const styles = useExploreStyles();
   const { colors } = useTheme();
   const tabNavigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
@@ -551,12 +762,16 @@ export function ExploreScreen({ route }: Props) {
   const readOnly = screenTime.readOnlyMode;
 
   const openSettings = useCallback(() => {
-    const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+    const root = tabNavigation.getParent() as
+      | NativeStackNavigationProp<RootStackParamList>
+      | undefined;
     root?.navigate("Settings");
   }, [tabNavigation]);
 
   const openChat = useCallback(() => {
-    const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+    const root = tabNavigation.getParent() as
+      | NativeStackNavigationProp<RootStackParamList>
+      | undefined;
     root?.navigate("ChatInbox");
   }, [tabNavigation]);
 
@@ -608,7 +823,7 @@ export function ExploreScreen({ route }: Props) {
   useFocusEffect(
     useCallback(() => {
       void loadViewerLevel();
-    }, [loadViewerLevel])
+    }, [loadViewerLevel]),
   );
 
   useFocusEffect(
@@ -620,12 +835,12 @@ export function ExploreScreen({ route }: Props) {
       return () => {
         cancelled = true;
       };
-    }, [])
+    }, []),
   );
 
   const recommendedDifficulty = useMemo(
     () => (viewerLevel != null ? difficultyFromUserLevel(viewerLevel) : "EASY"),
-    [viewerLevel]
+    [viewerLevel],
   );
 
   const orderedQuizEntries = useMemo(() => {
@@ -641,7 +856,9 @@ export function ExploreScreen({ route }: Props) {
 
   const learnRowsForExplore = useMemo(() => {
     const rec = recommendations?.recommendedEducationalContent ?? [];
-    const validLearning = learningContent.filter((c) => !isPlaceholderTitle(`${c.title} ${c.description}`));
+    const validLearning = learningContent.filter(
+      (c) => !isPlaceholderTitle(`${c.title} ${c.description}`),
+    );
     if (rec.length === 0) return validLearning;
     const seen = new Set(rec.map((r) => r.id));
     const rest = validLearning.filter((c) => !seen.has(c.id));
@@ -688,8 +905,8 @@ export function ExploreScreen({ route }: Props) {
           getEducationalContent(),
           Promise.all(
             QUIZ_GAME_ENTRIES.filter((entry) => entry.category !== "mixed").map((entry) =>
-              getQuizzes({ category: entry.category }).catch(() => [])
-            )
+              getQuizzes({ category: entry.category }).catch(() => []),
+            ),
           ).then((groups) => groups.flat()),
         ]);
         setLearningContent(contentRows);
@@ -722,7 +939,7 @@ export function ExploreScreen({ route }: Props) {
       trackEvent("screen_open", { screen: "Explore" });
       void touchChildLastActiveAt();
       void fetchInitial();
-    }, [userId, fetchInitial])
+    }, [userId, fetchInitial]),
   );
 
   const onRefresh = useCallback(async () => {
@@ -746,8 +963,8 @@ export function ExploreScreen({ route }: Props) {
           getEducationalContent(),
           Promise.all(
             QUIZ_GAME_ENTRIES.filter((entry) => entry.category !== "mixed").map((entry) =>
-              getQuizzes({ category: entry.category }).catch(() => [])
-            )
+              getQuizzes({ category: entry.category }).catch(() => []),
+            ),
           ).then((groups) => groups.flat()),
         ]);
         setLearningContent(contentRows);
@@ -841,45 +1058,57 @@ export function ExploreScreen({ route }: Props) {
         setPendingKey(null);
       }
     },
-    [userId, readOnly]
+    [userId, readOnly],
   );
 
   const openContentDetail = useCallback(
     (contentId: string) => {
-      const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+      const root = tabNavigation.getParent() as
+        | NativeStackNavigationProp<RootStackParamList>
+        | undefined;
       root?.navigate("ContentDetail", { contentId });
     },
-    [tabNavigation]
+    [tabNavigation],
   );
 
   const openQuiz = useCallback(() => {
-    const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+    const root = tabNavigation.getParent() as
+      | NativeStackNavigationProp<RootStackParamList>
+      | undefined;
     root?.navigate("Quiz", { category: "astronomy", difficulty: recommendedDifficulty });
   }, [tabNavigation, recommendedDifficulty]);
 
   const openQuizByCategory = useCallback(
     (category: QuizCategory) => {
-      const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+      const root = tabNavigation.getParent() as
+        | NativeStackNavigationProp<RootStackParamList>
+        | undefined;
       root?.navigate("GameCategory", { category, difficulty: recommendedDifficulty });
     },
-    [tabNavigation, recommendedDifficulty]
+    [tabNavigation, recommendedDifficulty],
   );
 
   const openQuizAreas = useCallback(() => {
-    const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+    const root = tabNavigation.getParent() as
+      | NativeStackNavigationProp<RootStackParamList>
+      | undefined;
     root?.navigate("QuizAreas");
   }, [tabNavigation]);
 
   const openVisualGame = useCallback(
     (category: "astronomy" | "geography", gameId?: string) => {
-      const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+      const root = tabNavigation.getParent() as
+        | NativeStackNavigationProp<RootStackParamList>
+        | undefined;
       root?.navigate("VisualGame", { category, difficulty: recommendedDifficulty, gameId });
     },
-    [tabNavigation, recommendedDifficulty]
+    [tabNavigation, recommendedDifficulty],
   );
 
   const openMiniGamesHub = useCallback(() => {
-    const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+    const root = tabNavigation.getParent() as
+      | NativeStackNavigationProp<RootStackParamList>
+      | undefined;
     root?.navigate("MiniGamesHub");
   }, [tabNavigation]);
 
@@ -890,7 +1119,9 @@ export function ExploreScreen({ route }: Props) {
     }
     const g = continueLearning.game;
     if (!g) return;
-    const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+    const root = tabNavigation.getParent() as
+      | NativeStackNavigationProp<RootStackParamList>
+      | undefined;
     if (g.kind === "quiz") {
       root?.navigate("Quiz", {
         category: g.category as QuizCategory,
@@ -908,7 +1139,9 @@ export function ExploreScreen({ route }: Props) {
     }
     const c = continueLearning.content;
     if (!c) return;
-    const root = tabNavigation.getParent() as NativeStackNavigationProp<RootStackParamList> | undefined;
+    const root = tabNavigation.getParent() as
+      | NativeStackNavigationProp<RootStackParamList>
+      | undefined;
     root?.navigate("ContentDetail", { contentId: c.contentId });
   }, [continueLearning.content, readOnly, tabNavigation]);
 
@@ -920,7 +1153,13 @@ export function ExploreScreen({ route }: Props) {
     const target = pickMostRecentResumeTarget(continueLearning.game, continueLearning.content);
     if (target === "game") handleResumeLastGame();
     else if (target === "content") handleResumeLastContent();
-  }, [readOnly, continueLearning.game, continueLearning.content, handleResumeLastGame, handleResumeLastContent]);
+  }, [
+    readOnly,
+    continueLearning.game,
+    continueLearning.content,
+    handleResumeLastGame,
+    handleResumeLastContent,
+  ]);
 
   if (!userId && !loading) {
     return (
@@ -1000,15 +1239,29 @@ export function ExploreScreen({ route }: Props) {
         <View style={styles.listHeader}>
           {screenTime.enabled ? <TimeUsageBar /> : null}
           {readOnly ? <ReadOnlyBanner /> : null}
-          <View style={styles.exploreBrandRow} accessibilityRole="header" accessibilityLabel={APP_TAGLINE}>
+          <View
+            style={styles.exploreBrandRow}
+            accessibilityRole="header"
+            accessibilityLabel={APP_TAGLINE}
+          >
             <BrandLogo width={36} height={36} />
             <View style={styles.exploreBrandTextCol}>
               <Text style={[styles.exploreBrandTitle, { color: colors.text }]}>EduPlay</Text>
-              <Text style={[styles.exploreBrandTagline, { color: colors.textMuted }]}>{appTaglineSubtitle()}</Text>
+              <Text style={[styles.exploreBrandTagline, { color: colors.textMuted }]}>
+                {appTaglineSubtitle()}
+              </Text>
             </View>
           </View>
           <View style={styles.heroTitleRow}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, flex: 1, minWidth: 0 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: space.sm,
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
               <AppIcon name="compass-outline" color={colors.exploreHeroTitle} size="lg" />
               <Text style={styles.heroTitle}>Descubrir</Text>
             </View>
@@ -1043,22 +1296,31 @@ export function ExploreScreen({ route }: Props) {
             onContinue={handleContinue}
           />
 
-          {error ? (
-            <Text style={styles.inlineErr}>{error}</Text>
-          ) : null}
+          {error ? <Text style={styles.inlineErr}>{error}</Text> : null}
 
           {exploreForYouLoading && !exploreForYou ? (
             <View style={[styles.recForYouSection, { alignItems: "flex-start" }]}>
               <Text style={styles.recForYouTitle}>⭐ Recomendado para vos</Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, marginTop: space.sm }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: space.sm,
+                  marginTop: space.sm,
+                }}
+              >
                 <ActivityIndicator color={colors.primary} />
-                <Text style={[styles.recForYouSubtitle, { marginBottom: 0 }]}>Cargando ideas para vos…</Text>
+                <Text style={[styles.recForYouSubtitle, { marginBottom: 0 }]}>
+                  {t("explore.loading")}
+                </Text>
               </View>
             </View>
           ) : exploreForYouMixed.length > 0 ? (
             <View style={styles.recForYouSection}>
               <Text style={styles.recForYouTitle}>⭐ Recomendado para vos</Text>
-              <Text style={styles.recForYouSubtitle}>Contenido y juegos mezclados según tus intereses</Text>
+              <Text style={styles.recForYouSubtitle}>
+                Contenido y juegos mezclados según tus intereses
+              </Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -1103,7 +1365,10 @@ export function ExploreScreen({ route }: Props) {
                           }
                           openQuizByCategory(toQuizCategoryFromApi(g.category));
                         }}
-                        style={({ pressed }) => [styles.recForYouGameCard, pressed && styles.gameCardPressed]}
+                        style={({ pressed }) => [
+                          styles.recForYouGameCard,
+                          pressed && styles.gameCardPressed,
+                        ]}
                         accessibilityRole="button"
                         accessibilityLabel={`Quiz: ${g.question}`}
                       >
@@ -1129,7 +1394,10 @@ export function ExploreScreen({ route }: Props) {
                         }
                         openVisualGame(toVisualCategoryFromApi(g.category));
                       }}
-                      style={({ pressed }) => [styles.recForYouGameCard, pressed && styles.gameCardPressed]}
+                      style={({ pressed }) => [
+                        styles.recForYouGameCard,
+                        pressed && styles.gameCardPressed,
+                      ]}
                       accessibilityRole="button"
                       accessibilityLabel={`Juego visual: ${g.question}`}
                     >
@@ -1137,7 +1405,11 @@ export function ExploreScreen({ route }: Props) {
                         <Text style={styles.recForYouMixedBadgeText}>🖼️ Visual</Text>
                       </View>
                       {g.imageUrl ? (
-                        <Image source={{ uri: g.imageUrl }} style={styles.recForYouMixedThumb} resizeMode="cover" />
+                        <Image
+                          source={{ uri: g.imageUrl }}
+                          style={styles.recForYouMixedThumb}
+                          resizeMode="cover"
+                        />
                       ) : null}
                       <Text style={styles.recForYouGameTitle} numberOfLines={2}>
                         {g.question}
@@ -1162,7 +1434,11 @@ export function ExploreScreen({ route }: Props) {
                 }
                 openMiniGamesHub();
               }}
-              style={({ pressed }) => [styles.quizCtaBtn, { marginBottom: space.md }, pressed && styles.quizCtaBtnPressed]}
+              style={({ pressed }) => [
+                styles.quizCtaBtn,
+                { marginBottom: space.md },
+                pressed && styles.quizCtaBtnPressed,
+              ]}
               accessibilityRole="button"
               accessibilityLabel="Abrir minijuegos EduPlay"
             >
@@ -1189,7 +1465,11 @@ export function ExploreScreen({ route }: Props) {
             <Text style={styles.gamesDifficultyHint}>
               Conectado a /api/quizzes?category=X · fallback con preguntas reales si no hay datos.
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gamesCardsRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.gamesCardsRow}
+            >
               {orderedQuizEntries.map((entry) => (
                 <ContentCard
                   key={entry.category}
@@ -1215,7 +1495,11 @@ export function ExploreScreen({ route }: Props) {
             <Text style={styles.gamesDifficultyHint}>
               Imágenes reales, progreso guardado y XP por nivel completado.
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gamesCardsRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.gamesCardsRow}
+            >
               {VISUAL_GAME_ENTRIES.map((entry) => (
                 <ContentCard
                   key={`visual-${entry.gameId}`}
@@ -1236,8 +1520,14 @@ export function ExploreScreen({ route }: Props) {
           </View>
           <View style={styles.learnSection}>
             <Text style={styles.learnSectionTitle}>📚 Aprender</Text>
-            <Text style={styles.gamesDifficultyHint}>Contenido desde /api/content · fallback educativo si no hay datos.</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.learnCardsRow}>
+            <Text style={styles.gamesDifficultyHint}>
+              Contenido desde /api/content · fallback educativo si no hay datos.
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.learnCardsRow}
+            >
               {learnCardsForExplore.map((item) => (
                 <ContentCard
                   key={item.id}
@@ -1256,8 +1546,14 @@ export function ExploreScreen({ route }: Props) {
               ))}
             </ScrollView>
             <Text style={[styles.learnSectionTitle, { marginTop: space.lg }]}>🎯 Quiz rápido</Text>
-            <Text style={styles.gamesDifficultyHint}>Quizzes desde /api/quizzes · tarjetas express si no hay datos.</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.learnCardsRow}>
+            <Text style={styles.gamesDifficultyHint}>
+              Quizzes desde /api/quizzes · tarjetas express si no hay datos.
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.learnCardsRow}
+            >
               {quickQuizCards.map((item) => (
                 <ContentCard
                   key={item.id}
@@ -1275,7 +1571,11 @@ export function ExploreScreen({ route }: Props) {
         <BrandEmptyState
           emoji="🧭"
           title={error ? "No se pudo cargar Explorar" : "Todavía no hay nada para mostrar"}
-          subtitle={error ? "Probá tirar para actualizar." : "Volvé en un momento para descubrir más publicaciones."}
+          subtitle={
+            error
+              ? "Probá tirar para actualizar."
+              : "Volvé en un momento para descubrir más publicaciones."
+          }
         />
       }
       ItemSeparatorComponent={() => <View style={styles.postSeparator} />}
@@ -1283,7 +1583,7 @@ export function ExploreScreen({ route }: Props) {
         loadingMore ? (
           <View style={styles.footerLoad}>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.footerLoadText}>Cargando más…</Text>
+            <Text style={styles.footerLoadText}>{t("explore.loading")}</Text>
           </View>
         ) : !hasMore && posts.length > 0 ? (
           <Text style={styles.footerEndText}>No hay más publicaciones</Text>

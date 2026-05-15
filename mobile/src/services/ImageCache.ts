@@ -53,7 +53,11 @@ export class ImageCache {
    * Descarga `url` a disco si no existe y devuelve `file://…`.
    * En web o si no hay `cacheDirectory`, devuelve `url` sin descargar.
    */
-  static async cacheImage(assetId: string, url: string, headers?: Record<string, string>): Promise<string> {
+  static async cacheImage(
+    assetId: string,
+    url: string,
+    headers?: Record<string, string>,
+  ): Promise<string> {
     const trimmed = url.trim();
     if (!trimmed) return trimmed;
 
@@ -71,7 +75,11 @@ export class ImageCache {
     }
 
     try {
-      const result = await FileSystem.downloadAsync(trimmed, localPath, headers ? { headers } : undefined);
+      const result = await FileSystem.downloadAsync(
+        trimmed,
+        localPath,
+        headers ? { headers } : undefined,
+      );
       return result.uri;
     } catch {
       return trimmed;
@@ -100,7 +108,11 @@ export class ImageCache {
   /**
    * Resuelve URL remota a archivo local cuando es posible; alias práctico para UI (`recycleKey` = id de pregunta, etc.).
    */
-  static async resolveForDisplay(cacheKey: string, url: string, headers?: Record<string, string>): Promise<string> {
+  static async resolveForDisplay(
+    cacheKey: string,
+    url: string,
+    headers?: Record<string, string>,
+  ): Promise<string> {
     return this.cacheImage(cacheKey, url, headers);
   }
 }

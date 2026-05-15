@@ -1,4 +1,4 @@
-import helmet from "helmet";
+import helmet from 'helmet';
 
 /**
  * Cabeceras HTTP vía Helmet (API JSON).
@@ -9,6 +9,6 @@ import helmet from "helmet";
 export const securityHeadersMiddleware = helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  frameguard: { action: "deny" },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  frameguard: { action: 'deny' },
 });

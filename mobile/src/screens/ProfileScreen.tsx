@@ -76,7 +76,13 @@ function useBadgeGridCellWidth(): number {
   return (usable - BADGE_GRID_GAP * (cols - 1)) / cols;
 }
 
-function ProfileBadgeCell({ item, displayName }: { item: ProfileAchievementItem; displayName: string }) {
+function ProfileBadgeCell({
+  item,
+  displayName,
+}: {
+  item: ProfileAchievementItem;
+  displayName: string;
+}) {
   const { colors, mode } = useTheme();
   const isDark = mode === "dark";
   const rv = getRarityBadgeVisual(item.badge.rarity, isDark);
@@ -97,7 +103,9 @@ function ProfileBadgeCell({ item, displayName }: { item: ProfileAchievementItem;
           }
         : null;
   const androidElev =
-    Platform.OS === "android" ? Math.min(14, rv.androidElevation + (item.badge.rarity === "LEGENDARY" ? 4 : 2)) : null;
+    Platform.OS === "android"
+      ? Math.min(14, rv.androidElevation + (item.badge.rarity === "LEGENDARY" ? 4 : 2))
+      : null;
 
   return (
     <View
@@ -158,7 +166,11 @@ const GAMES_MILESTONES = [10, 25, 50, 100, 200];
 /** Barra de interés: referencia visual (no tope duro del servidor). */
 const INTEREST_SCORE_VISUAL_CAP = 200;
 
-function computeGamesProgress(totalGames: number): { pct: number; nextTarget: number; prevTarget: number } {
+function computeGamesProgress(totalGames: number): {
+  pct: number;
+  nextTarget: number;
+  prevTarget: number;
+} {
   const last = GAMES_MILESTONES[GAMES_MILESTONES.length - 1]!;
   if (totalGames >= last) {
     return { pct: 100, nextTarget: last, prevTarget: last };
@@ -220,7 +232,8 @@ function ProfileActivityStats({
   });
 
   const gamesLabel =
-    totalGames >= gamesProg.nextTarget && gamesProg.nextTarget === GAMES_MILESTONES[GAMES_MILESTONES.length - 1]
+    totalGames >= gamesProg.nextTarget &&
+    gamesProg.nextTarget === GAMES_MILESTONES[GAMES_MILESTONES.length - 1]
       ? `${totalGames} partidas`
       : `${totalGames} / ${gamesProg.nextTarget} hacia la próxima meta`;
 
@@ -238,11 +251,18 @@ function ProfileActivityStats({
       style={[styles.activityCard, { borderColor: colors.borderSubtle }]}
     >
       <View style={styles.activityRow}>
-        <View style={[styles.activityIconWrap, { backgroundColor: hexWithAlpha(interestBarColor, isDark ? 0.25 : 0.18) }]}>
+        <View
+          style={[
+            styles.activityIconWrap,
+            { backgroundColor: hexWithAlpha(interestBarColor, isDark ? 0.25 : 0.18) },
+          ]}
+        >
           <AppIcon name="heart-outline" color={interestBarColor} size="md" />
         </View>
         <View style={styles.activityTextCol}>
-          <Text style={[styles.activityKicker, { color: colors.textMuted }]}>Categoría favorita</Text>
+          <Text style={[styles.activityKicker, { color: colors.textMuted }]}>
+            Categoría favorita
+          </Text>
           {favorite ? (
             <>
               <View style={styles.activityTitleRow}>
@@ -277,7 +297,12 @@ function ProfileActivityStats({
       <View style={[styles.activityDivider, { backgroundColor: colors.borderSubtle }]} />
 
       <View style={styles.activityRow}>
-        <View style={[styles.activityIconWrap, { backgroundColor: hexWithAlpha(colors.primary, isDark ? 0.22 : 0.14) }]}>
+        <View
+          style={[
+            styles.activityIconWrap,
+            { backgroundColor: hexWithAlpha(colors.primary, isDark ? 0.22 : 0.14) },
+          ]}
+        >
           <AppIcon name="game-controller-outline" color={colors.primaryStrong} size="md" />
         </View>
         <View style={styles.activityTextCol}>
@@ -295,7 +320,12 @@ function ProfileActivityStats({
       <View style={[styles.activityDivider, { backgroundColor: colors.borderSubtle }]} />
 
       <View style={styles.activityRow}>
-        <View style={[styles.activityIconWrap, { backgroundColor: hexWithAlpha(colors.textMuted, 0.15) }]}>
+        <View
+          style={[
+            styles.activityIconWrap,
+            { backgroundColor: hexWithAlpha(colors.textMuted, 0.15) },
+          ]}
+        >
           <AppIcon name="flame-outline" color={colors.textMuted} size="md" />
         </View>
         <View style={styles.activityTextCol}>
@@ -390,7 +420,9 @@ function ProfileAvatar({
             { width: size, height: size, borderRadius: r, backgroundColor: colors.avatarPh },
           ]}
         >
-          <Text style={{ fontSize: Math.round(size * 0.45), lineHeight: Math.round(size * 0.52) }}>{glyph}</Text>
+          <Text style={{ fontSize: Math.round(size * 0.45), lineHeight: Math.round(size * 0.52) }}>
+            {glyph}
+          </Text>
         </View>
       ) : showPlaceholder ? (
         <View
@@ -616,7 +648,9 @@ function MissionsOverallProgress({
       <View style={styles.missionsOverallHeader}>
         <View style={styles.missionsOverallLabelRow}>
           <AppIcon name="bar-chart-outline" color={colors.text} size="sm" />
-          <Text style={[styles.missionsOverallLabel, { color: colors.text }]}>Progreso del día</Text>
+          <Text style={[styles.missionsOverallLabel, { color: colors.text }]}>
+            Progreso del día
+          </Text>
         </View>
         <Text style={[styles.missionsOverallCount, { color: colors.primaryStrong }]}>
           {completedCount}/{total} completadas
@@ -627,7 +661,12 @@ function MissionsOverallProgress({
         accessibilityRole="progressbar"
         accessibilityValue={{ min: 0, max: 100, now: pct }}
       >
-        <Animated.View style={[styles.missionsOverallFill, { width: widthInterpolated, backgroundColor: colors.primary }]} />
+        <Animated.View
+          style={[
+            styles.missionsOverallFill,
+            { width: widthInterpolated, backgroundColor: colors.primary },
+          ]}
+        />
       </View>
     </LinearGradient>
   );
@@ -650,12 +689,11 @@ function MissionCard({
 
   const shownProgress = Math.min(item.progress, item.targetValue);
   const progressFraction = `${shownProgress}/${item.targetValue}`;
-  const pct =
-    item.completed
-      ? 100
-      : item.targetValue > 0
-        ? Math.min(100, Math.round((shownProgress / item.targetValue) * 100))
-        : 0;
+  const pct = item.completed
+    ? 100
+    : item.targetValue > 0
+      ? Math.min(100, Math.round((shownProgress / item.targetValue) * 100))
+      : 0;
 
   const barAnim = useRef(new Animated.Value(0)).current;
   const celebrateScale = useRef(new Animated.Value(1)).current;
@@ -716,9 +754,7 @@ function MissionCard({
   let rewardLabel: string;
   if (item.completed) {
     rewardLabel =
-      item.rewardXpGranted != null
-        ? `+${item.rewardXpGranted} XP obtenidos`
-        : "¡Completada!";
+      item.rewardXpGranted != null ? `+${item.rewardXpGranted} XP obtenidos` : "¡Completada!";
   } else {
     rewardLabel = `Recompensa: ${rewardXpMin}–${rewardXpMax} XP`;
   }
@@ -765,7 +801,10 @@ function MissionCard({
       >
         <View style={styles.missionCardRow}>
           <View
-            style={[styles.missionEmojiCircle, { backgroundColor: typeTint.iconBg, borderColor: typeTint.border }]}
+            style={[
+              styles.missionEmojiCircle,
+              { backgroundColor: typeTint.iconBg, borderColor: typeTint.border },
+            ]}
             accessible
             accessibilityRole="text"
             accessibilityLabel={missionTypeAccessibilityLabel(item.type)}
@@ -784,8 +823,15 @@ function MissionCard({
                 {item.title}
               </Text>
               {item.completed ? (
-                <Animated.View style={{ transform: [{ scale: checkScale }] }} accessibilityElementsHidden>
-                  <AppIcon name="checkmark-circle" color={isDark ? "#4ade80" : "#059669"} size="lg" />
+                <Animated.View
+                  style={{ transform: [{ scale: checkScale }] }}
+                  accessibilityElementsHidden
+                >
+                  <AppIcon
+                    name="checkmark-circle"
+                    color={isDark ? "#4ade80" : "#059669"}
+                    size="lg"
+                  />
                 </Animated.View>
               ) : null}
             </View>
@@ -806,7 +852,9 @@ function MissionCard({
                 now: shownProgress,
               }}
             >
-              <Animated.View style={[styles.missionBarFillCard, { width: barWidth, backgroundColor: fillBg }]} />
+              <Animated.View
+                style={[styles.missionBarFillCard, { width: barWidth, backgroundColor: fillBg }]}
+              />
             </View>
             <Text
               style={[
@@ -830,9 +878,7 @@ export function ProfileScreen({ route }: Props) {
   const { viewerUserId: authViewerId, token } = useAuth();
   const { readOnlyMode } = useScreenTime();
   const userId =
-    authViewerId?.trim() ||
-    route.params?.userId?.trim() ||
-    (token ? "" : VIEWER_USER_ID);
+    authViewerId?.trim() || route.params?.userId?.trim() || (token ? "" : VIEWER_USER_ID);
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
   const [dailyMissions, setDailyMissions] = useState<TodayMissionsResponse | null>(null);
   const [highlightedMissionIds, setHighlightedMissionIds] = useState<Set<string>>(() => new Set());
@@ -843,31 +889,36 @@ export function ProfileScreen({ route }: Props) {
   const missionsFetchGen = useRef(0);
   const highlightClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const applyMissionsData = useCallback((missionsData: TodayMissionsResponse) => {
-    const prev = missionSnapshotRef.current;
-    if (prev !== null) {
-      const transitions: { userMissionId: string; xpReward: number }[] = [];
-      for (const m of missionsData.missions) {
-        if (prev.get(m.userMissionId) === false && m.completed) {
-          transitions.push({
-            userMissionId: m.userMissionId,
-            xpReward: m.rewardXpGranted ?? 0,
-          });
+  const applyMissionsData = useCallback(
+    (missionsData: TodayMissionsResponse) => {
+      const prev = missionSnapshotRef.current;
+      if (prev !== null) {
+        const transitions: { userMissionId: string; xpReward: number }[] = [];
+        for (const m of missionsData.missions) {
+          if (prev.get(m.userMissionId) === false && m.completed) {
+            transitions.push({
+              userMissionId: m.userMissionId,
+              xpReward: m.rewardXpGranted ?? 0,
+            });
+          }
+        }
+        const shownIds = tryAlertMissionCompletions(transitions);
+        if (shownIds.length > 0) {
+          if (highlightClearRef.current) clearTimeout(highlightClearRef.current);
+          setHighlightedMissionIds(new Set(shownIds));
+          highlightClearRef.current = setTimeout(() => {
+            setHighlightedMissionIds(new Set());
+            highlightClearRef.current = null;
+          }, 4500);
         }
       }
-      const shownIds = tryAlertMissionCompletions(transitions);
-      if (shownIds.length > 0) {
-        if (highlightClearRef.current) clearTimeout(highlightClearRef.current);
-        setHighlightedMissionIds(new Set(shownIds));
-        highlightClearRef.current = setTimeout(() => {
-          setHighlightedMissionIds(new Set());
-          highlightClearRef.current = null;
-        }, 4500);
-      }
-    }
-    missionSnapshotRef.current = new Map(missionsData.missions.map((m) => [m.userMissionId, m.completed]));
-    setDailyMissions(missionsData);
-  }, [userId]);
+      missionSnapshotRef.current = new Map(
+        missionsData.missions.map((m) => [m.userMissionId, m.completed]),
+      );
+      setDailyMissions(missionsData);
+    },
+    [userId],
+  );
 
   const refreshMissions = useCallback(async () => {
     if (!userId) return;
@@ -917,7 +968,7 @@ export function ProfileScreen({ route }: Props) {
     useCallback(() => {
       if (!userId || !profile) return;
       void refreshMissions();
-    }, [userId, profile, refreshMissions])
+    }, [userId, profile, refreshMissions]),
   );
 
   useFocusEffect(
@@ -925,7 +976,7 @@ export function ProfileScreen({ route }: Props) {
       if (!userId) return;
       trackEvent("screen_open", { screen: "Profile" });
       void touchChildLastActiveAt();
-    }, [userId])
+    }, [userId]),
   );
 
   useEffect(() => {
@@ -940,14 +991,14 @@ export function ProfileScreen({ route }: Props) {
         <Text style={styles.errorText}>
           {token ? (
             <>
-              Tu cuenta de tutor no tiene ningún menor vinculado. Hace falta un usuario hijo en la base de datos para
-              ver el perfil y las misiones.
+              Tu cuenta de tutor no tiene ningún menor vinculado. Hace falta un usuario hijo en la
+              base de datos para ver el perfil y las misiones.
             </>
           ) : (
             <>
               Editá <Text style={styles.mono}>mobile/.env</Text> y definí{" "}
-              <Text style={styles.mono}>EXPO_PUBLIC_USER_ID</Text> o iniciá sesión con un tutor que tenga hijos
-              cargados.
+              <Text style={styles.mono}>EXPO_PUBLIC_USER_ID</Text> o iniciá sesión con un tutor que
+              tenga hijos cargados.
             </>
           )}
         </Text>
@@ -991,164 +1042,194 @@ export function ProfileScreen({ route }: Props) {
       style={styles.screenGradient}
     >
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-      {readOnlyMode ? <ReadOnlyBanner /> : null}
-      <ProfileHeroCard
-        username={user.username}
-        avatarUrl={user.avatarUrl}
-        level={user.level}
-        experience={user.experience}
-      />
-
-      <Pressable
-        onPress={() => navigation.navigate("AchievementSystem")}
-        style={({ pressed }) => [
-          {
-            marginHorizontal: space.md,
-            marginBottom: space.md,
-            padding: space.md,
-            borderRadius: radius.cardSm,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: space.md,
-            borderWidth: 1,
-            borderColor: colors.borderSubtle,
-            backgroundColor: colors.card,
-          },
-          pressed ? { opacity: 0.92 } : null,
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel="Abrir mural de logros y colecciones"
-      >
-        <AppIcon name="trophy-outline" color={colors.primary} size="md" />
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.text, fontWeight: "900", fontSize: typography.bodyLarge }}>Mural de logros</Text>
-          <Text style={{ color: colors.textMuted, fontWeight: "600", fontSize: typography.secondary, marginTop: 2 }}>
-            Progreso, habilidad, social, especiales y coleccionables · compará con amigos
-          </Text>
-        </View>
-        <AppIcon name="chevron-forward" color={colors.textMuted} size="sm" />
-      </Pressable>
-
-      <SectionTitle iconName="analytics-outline" emoji="📊" title="Tu actividad" tintIndex={4} />
-      <ProfileActivityStats interests={interests} totalGames={totalGamesPlayed} />
-
-      <SectionTitle iconName="bulb-outline" emoji="🌟" title="Intereses" tintIndex={0} />
-      {topInterests.length === 0 ? (
-        <BrandEmptyState
-          emoji="🌈"
-          title="Todavía no hay intereses"
-          subtitle="Jugá, completá logros o publicá y aparecerán aquí."
+        {readOnlyMode ? <ReadOnlyBanner /> : null}
+        <ProfileHeroCard
+          username={user.username}
+          avatarUrl={user.avatarUrl}
+          level={user.level}
+          experience={user.experience}
         />
-      ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.interestsScroll}
+
+        <Pressable
+          onPress={() => navigation.navigate("AchievementSystem")}
+          style={({ pressed }) => [
+            {
+              marginHorizontal: space.md,
+              marginBottom: space.md,
+              padding: space.md,
+              borderRadius: radius.cardSm,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: space.md,
+              borderWidth: 1,
+              borderColor: colors.borderSubtle,
+              backgroundColor: colors.card,
+            },
+            pressed ? { opacity: 0.92 } : null,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir mural de logros y colecciones"
         >
-          {topInterests.map((it, idx) => {
-            const ui = getCategoryUi(it.category);
-            if (!ui) return null;
-            return (
-              <View
-                key={it.category}
-                style={[
-                  styles.interestChip,
-                  idx === 0 ? styles.interestChipFavorite : undefined,
-                  {
-                    borderColor: ui.accent,
-                    backgroundColor: ui.softBg,
-                    borderLeftWidth: 4,
-                    borderLeftColor: ui.highlight,
-                  },
-                ]}
-                accessibilityRole="summary"
-                accessibilityLabel={`Interés ${categoryDisplayLabel(ui)}${idx === 0 ? " · favorita" : ""}`}
-              >
-                {idx === 0 ? (
-                  <View style={[styles.interestTopBadge, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.interestTopBadgeText}>Favorita</Text>
-                  </View>
-                ) : null}
-                <AppIcon name={ui.icon} color={ui.accent} size="md" />
-                <View style={styles.interestChipTextCol}>
-                  <Text style={[styles.interestChipLabel, { color: ui.accent }]} numberOfLines={1}>
-                    {categoryDisplayLabel(ui)}
-                  </Text>
-                  <Text style={[styles.interestChipScore, { color: colors.textMuted }]}>{it.score} pts</Text>
-                </View>
-              </View>
-            );
-          })}
-        </ScrollView>
-      )}
+          <AppIcon name="trophy-outline" color={colors.primary} size="md" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.text, fontWeight: "900", fontSize: typography.bodyLarge }}>
+              Mural de logros
+            </Text>
+            <Text
+              style={{
+                color: colors.textMuted,
+                fontWeight: "600",
+                fontSize: typography.secondary,
+                marginTop: 2,
+              }}
+            >
+              Progreso, habilidad, social, especiales y coleccionables · compará con amigos
+            </Text>
+          </View>
+          <AppIcon name="chevron-forward" color={colors.textMuted} size="sm" />
+        </Pressable>
 
-      <SectionTitle iconName="flag-outline" emoji="🎯" title="Misiones" tintIndex={1} />
-      {dailyMissions == null ? (
-        <BrandEmptyState
-          emoji="🛰️"
-          title="No se pudieron cargar las misiones"
-          subtitle="Reintentá más tarde."
-        />
-      ) : dailyMissions.missions.length === 0 ? (
-        <BrandEmptyState
-          emoji={false}
-          title="No hay misiones hoy 🎯"
-          subtitle="¡Mañana volvés con energía y nuevas misiones!"
-        />
-   ) : (
-        <>
-          <Text style={[styles.missionsDate, { color: colors.textMuted }]}>Día UTC: {dailyMissions.date}</Text>
-          <MissionsOverallProgress
-            completedCount={dailyMissions.missions.filter((x) => x.completed).length}
-            total={dailyMissions.missions.length}
+        <SectionTitle iconName="analytics-outline" emoji="📊" title="Tu actividad" tintIndex={4} />
+        <ProfileActivityStats interests={interests} totalGames={totalGamesPlayed} />
+
+        <SectionTitle iconName="bulb-outline" emoji="🌟" title="Intereses" tintIndex={0} />
+        {topInterests.length === 0 ? (
+          <BrandEmptyState
+            emoji="🌈"
+            title="Todavía no hay intereses"
+            subtitle="Jugá, completá logros o publicá y aparecerán aquí."
           />
-          {"dailyChallengeBonus" in dailyMissions && dailyMissions.dailyChallengeBonus?.granted ? (
-            <Text style={[styles.missionsDate, { color: colors.success, fontWeight: "800", marginBottom: space.sm }]}>
-              Bonus reto diario: +{dailyMissions.dailyChallengeBonus.bonusXp} XP
-              {dailyMissions.dailyChallengeBonus.grantedAt
-                ? ` · ${new Date(dailyMissions.dailyChallengeBonus.grantedAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
-                : ""}{" "}
-              · insignia «Campeón del día» 🏆 (la primera vez)
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.interestsScroll}
+          >
+            {topInterests.map((it, idx) => {
+              const ui = getCategoryUi(it.category);
+              if (!ui) return null;
+              return (
+                <View
+                  key={it.category}
+                  style={[
+                    styles.interestChip,
+                    idx === 0 ? styles.interestChipFavorite : undefined,
+                    {
+                      borderColor: ui.accent,
+                      backgroundColor: ui.softBg,
+                      borderLeftWidth: 4,
+                      borderLeftColor: ui.highlight,
+                    },
+                  ]}
+                  accessibilityRole="summary"
+                  accessibilityLabel={`Interés ${categoryDisplayLabel(ui)}${idx === 0 ? " · favorita" : ""}`}
+                >
+                  {idx === 0 ? (
+                    <View style={[styles.interestTopBadge, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.interestTopBadgeText}>Favorita</Text>
+                    </View>
+                  ) : null}
+                  <AppIcon name={ui.icon} color={ui.accent} size="md" />
+                  <View style={styles.interestChipTextCol}>
+                    <Text
+                      style={[styles.interestChipLabel, { color: ui.accent }]}
+                      numberOfLines={1}
+                    >
+                      {categoryDisplayLabel(ui)}
+                    </Text>
+                    <Text style={[styles.interestChipScore, { color: colors.textMuted }]}>
+                      {it.score} pts
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </ScrollView>
+        )}
+
+        <SectionTitle iconName="flag-outline" emoji="🎯" title="Misiones" tintIndex={1} />
+        {dailyMissions == null ? (
+          <BrandEmptyState
+            emoji="🛰️"
+            title="No se pudieron cargar las misiones"
+            subtitle="Reintentá más tarde."
+          />
+        ) : dailyMissions.missions.length === 0 ? (
+          <BrandEmptyState
+            emoji={false}
+            title="No hay misiones hoy 🎯"
+            subtitle="¡Mañana volvés con energía y nuevas misiones!"
+          />
+        ) : (
+          <>
+            <Text style={[styles.missionsDate, { color: colors.textMuted }]}>
+              Día UTC: {dailyMissions.date}
             </Text>
-          ) : "dailyChallengeBonusXp" in dailyMissions ? (
-            <Text style={[styles.missionsDate, { color: colors.textMuted, marginBottom: space.sm }]}>
-              Completá las 3 misiones para +{dailyMissions.dailyChallengeBonusXp} XP extra e insignia (primera vez).
-            </Text>
-          ) : null}
-          {dailyMissions.missions.map((m) => (
-            <MissionCard
-              key={m.userMissionId}
-              item={m}
-              rewardXpMin={dailyMissions.rewardXpRange.min}
-              rewardXpMax={dailyMissions.rewardXpRange.max}
-              justCompleted={highlightedMissionIds.has(m.userMissionId)}
+            <MissionsOverallProgress
+              completedCount={dailyMissions.missions.filter((x) => x.completed).length}
+              total={dailyMissions.missions.length}
             />
-          ))}
-        </>
-      )}
+            {"dailyChallengeBonus" in dailyMissions &&
+            dailyMissions.dailyChallengeBonus?.granted ? (
+              <Text
+                style={[
+                  styles.missionsDate,
+                  { color: colors.success, fontWeight: "800", marginBottom: space.sm },
+                ]}
+              >
+                Bonus reto diario: +{dailyMissions.dailyChallengeBonus.bonusXp} XP
+                {dailyMissions.dailyChallengeBonus.grantedAt
+                  ? ` · ${new Date(dailyMissions.dailyChallengeBonus.grantedAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
+                  : ""}{" "}
+                · insignia «Campeón del día» 🏆 (la primera vez)
+              </Text>
+            ) : "dailyChallengeBonusXp" in dailyMissions ? (
+              <Text
+                style={[styles.missionsDate, { color: colors.textMuted, marginBottom: space.sm }]}
+              >
+                Completá las 3 misiones para +{dailyMissions.dailyChallengeBonusXp} XP extra e
+                insignia (primera vez).
+              </Text>
+            ) : null}
+            {dailyMissions.missions.map((m) => (
+              <MissionCard
+                key={m.userMissionId}
+                item={m}
+                rewardXpMin={dailyMissions.rewardXpRange.min}
+                rewardXpMax={dailyMissions.rewardXpRange.max}
+                justCompleted={highlightedMissionIds.has(m.userMissionId)}
+              />
+            ))}
+          </>
+        )}
 
-      <SectionTitle iconName="sparkles-outline" emoji="✨" title="Insignias destacadas" tintIndex={2} />
-      {featuredBadges.length === 0 ? (
-        <BrandEmptyState
+        <SectionTitle
+          iconName="sparkles-outline"
           emoji="✨"
-          title="Aún no hay insignias destacadas"
-          subtitle="Seguí jugando y desbloqueá insignias para brillar acá."
+          title="Insignias destacadas"
+          tintIndex={2}
         />
-      ) : (
-        <ProfileBadgeGrid items={featuredBadges} displayName={(fb) => fb.badge.label} />
-      )}
+        {featuredBadges.length === 0 ? (
+          <BrandEmptyState
+            emoji="✨"
+            title="Aún no hay insignias destacadas"
+            subtitle="Seguí jugando y desbloqueá insignias para brillar acá."
+          />
+        ) : (
+          <ProfileBadgeGrid items={featuredBadges} displayName={(fb) => fb.badge.label} />
+        )}
 
-      <SectionTitle iconName="trophy-outline" emoji="🏆" title="Logros" tintIndex={3} />
-      {achievements.length === 0 ? (
-        <BrandEmptyState
-          emoji={false}
-          title="No hay logros todavía 🚀"
-          subtitle="Completá juegos y misiones para llenar esta vitrina."
-        />
-      ) : (
-        <ProfileBadgeGrid items={achievements} displayName={(a) => a.title} />
-      )}
-    </ScrollView>
+        <SectionTitle iconName="trophy-outline" emoji="🏆" title="Logros" tintIndex={3} />
+        {achievements.length === 0 ? (
+          <BrandEmptyState
+            emoji={false}
+            title="No hay logros todavía 🚀"
+            subtitle="Completá juegos y misiones para llenar esta vitrina."
+          />
+        ) : (
+          <ProfileBadgeGrid items={achievements} displayName={(a) => a.title} />
+        )}
+      </ScrollView>
     </LinearGradient>
   );
 }

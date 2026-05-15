@@ -25,7 +25,6 @@ import type {
   QuizKnowledgeArea,
   QuizQuestionType,
   ReactionType,
-  StreakKind,
   StudyGroupRole,
   SubscriptionTier,
   UserStatus,
@@ -33,14 +32,14 @@ import type {
   VerificationMethod,
   VerificationStatus,
   Visibility,
-} from "@prisma/client";
+} from '@prisma/client';
 
 // =============================================================================
 // 12. Genéricos request/response
 // =============================================================================
 
 /** Orden de listados */
-export type SortOrder = "asc" | "desc";
+export type SortOrder = 'asc' | 'desc';
 
 /**
  * Paginación estándar.
@@ -263,7 +262,7 @@ export interface CollectionDto {
 /** Ítem de inventario cosmético (producto; no todos tienen tabla Prisma dedicada). */
 export interface InventoryItemDto {
   id: string;
-  kind: "avatar" | "badge" | "frame" | "other";
+  kind: 'avatar' | 'badge' | 'frame' | 'other';
   name: string;
   assetKey: string;
   equipped: boolean;
@@ -308,12 +307,12 @@ export interface TopicDto {
 
 /** Metadatos por tipo de recurso educativo */
 export type ContentPayloadDto =
-  | { contentType: "VIDEO"; durationSeconds?: number; videoUrl?: string }
-  | { contentType: "READING"; estimatedMinutes?: number }
-  | { contentType: "EXPERIMENT"; materials?: string[]; safetyNote?: string }
-  | { contentType: "INTERACTIVE"; embedUrl?: string }
-  | { contentType: "WORKSHEET"; pageCount?: number }
-  | { contentType: "AUDIO"; durationSeconds?: number; audioUrl?: string };
+  | { contentType: 'VIDEO'; durationSeconds?: number; videoUrl?: string }
+  | { contentType: 'READING'; estimatedMinutes?: number }
+  | { contentType: 'EXPERIMENT'; materials?: string[]; safetyNote?: string }
+  | { contentType: 'INTERACTIVE'; embedUrl?: string }
+  | { contentType: 'WORKSHEET'; pageCount?: number }
+  | { contentType: 'AUDIO'; durationSeconds?: number; audioUrl?: string };
 
 export interface ContentDto {
   id: string;
@@ -386,9 +385,9 @@ export interface QuizDto {
 
 /** Opciones según tipo de pregunta */
 export type QuestionOptionsDto =
-  | { questionType: "MULTIPLE_CHOICE"; options: [string, string, string, string] }
-  | { questionType: "TRUE_FALSE"; options: ["Verdadero", "Falso"] }
-  | { questionType: "ORDER"; options: string[] };
+  | { questionType: 'MULTIPLE_CHOICE'; options: [string, string, string, string] }
+  | { questionType: 'TRUE_FALSE'; options: ['Verdadero', 'Falso'] }
+  | { questionType: 'ORDER'; options: string[] };
 
 export interface QuestionDto {
   id: string;
@@ -524,7 +523,15 @@ export interface MissionProgressDto {
 }
 
 export interface MissionActivityDto {
-  kind: "video" | "quiz" | "game" | "reading" | "experiment" | "activity" | "challenge" | "creative";
+  kind:
+    | 'video'
+    | 'quiz'
+    | 'game'
+    | 'reading'
+    | 'experiment'
+    | 'activity'
+    | 'challenge'
+    | 'creative';
   title: string;
   summary: string;
   order: number;
@@ -713,7 +720,7 @@ export interface ChildProgressDto {
 export interface ChildActivityDto {
   id: string;
   childId: string;
-  kind: "quiz" | "game" | "content" | "mission" | "social";
+  kind: 'quiz' | 'game' | 'content' | 'mission' | 'social';
   summary: string;
   occurredAt: string;
   metadata?: Record<string, unknown>;
@@ -753,7 +760,7 @@ export interface EventReminderDto {
   eventId: string;
   userId: string;
   remindAt: string;
-  channel: "push" | "email" | "in_app";
+  channel: 'push' | 'email' | 'in_app';
 }
 
 // =============================================================================
@@ -853,4 +860,4 @@ export interface ReactionDto {
 }
 
 /** Origen de XP para listados de ledger (re-export Prisma). */
-export type { XpGainSource } from "@prisma/client";
+export type { XpGainSource } from '@prisma/client';

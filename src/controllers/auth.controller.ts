@@ -1,12 +1,21 @@
-import type { NextFunction, Request, Response } from "express";
-import bcrypt from "bcrypt";
-import { ActivityType, Prisma } from "@prisma/client";
-import { z } from "zod";
-import { createChildAuthToken, createParentAuthToken } from "../lib/auth";
-import { logError } from "../lib/logger";
-import { hashPassword } from "../lib/password";
-import { parentHasActivePremium } from "../lib/parentPremiumAccess";
-import { prisma } from "../lib/prisma";
+import type { NextFunction, Request, Response } from 'express';
+import bcrypt from 'bcrypt';
+import { ActivityType, Prisma } from '@prisma/client';
+import { z } from 'zod';
+import { createChildAuthToken, createParentAuthToken } from '../lib/auth';
+import { logError } from '../lib/logger';
+import { hashPassword } from '../lib/password';
+import { parentHasActivePremium } from '../lib/parentPremiumAccess';
+import { prisma } from '../lib/prisma';
+import {
+  type MinorApprovalStatus,
+  type ParentPremiumRow,
+  LEGACY_DEMO_CHILD_USERNAMES,
+  inferMinorApprovalStatus,
+  isRegisterParentPrismaConflict,
+  loginUnifiedTransactional,
+  registerParentTransactional,
+} from '../services/auth.service';
 import {
   childLoginSchema,
   formatZodError,
@@ -14,76 +23,69 @@ import {
   passwordSchema,
   parentCredentialsSchema,
   usernameSchema,
-} from "../lib/validation/schemas";
+} from '../lib/validation/schemas';
 
-type ParentPremiumRow = { isPremium: boolean; premiumUntil: Date | null };
-type MinorApprovalStatus = "approved" | "pending" | "blocked";
+const registerParentSchema = z
+  .object({
+    email: z.string().trim().email('Email inv?lido.').max(320),
+    password: passwordSchema,
+    firstName: z.string().trim().min(1).max(100).optional().default('Tutor'),
+    lastName: z.string().trim().min(1).max(100).optional().default('EduPlay'),
+    phone: z.string().trim().min(6).max(30).optional().default('000000'),
+  })
+  .strict();
 
-const registerParentSchema = z.object({
-  email: z.string().trim().email("Email inv?lido.").max(320),
-  password: passwordSchema,
-  firstName: z.string().trim().min(1).max(100).optional().default("Tutor"),
-  lastName: z.string().trim().min(1).max(100).optional().default("EduPlay"),
-  phone: z.string().trim().min(6).max(30).optional().default("000000"),
-});
+const registerMinorSchema = z
+  .object({
+    username: usernameSchema,
+    password: passwordSchema,
+    age: z.coerce.number().int().min(3).max(17),
+    avatar: minorAvatarOptionalSchema,
+    interests: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
+  })
+  .strict();
 
-const registerMinorSchema = z.object({
-  username: usernameSchema,
-  password: passwordSchema,
-  age: z.coerce.number().int().min(3).max(17),
-  avatar: minorAvatarOptionalSchema,
-  interests: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
-});
-
-const minorCodeLoginSchema = z.object({
-  username: usernameSchema,
-  accessCode: z.string().trim().min(4).max(16),
-});
+const minorCodeLoginSchema = z
+  .object({
+    username: usernameSchema,
+    accessCode: z.string().trim().min(4).max(16),
+  })
+  .strict();
 
 const loginUnifiedSchema = parentCredentialsSchema.or(
-  childLoginSchema.extend({
-    parent_code: z.string().trim().min(1).max(320).optional(),
-  })
+  childLoginSchema
+    .extend({
+      parent_code: z.string().trim().min(1).max(320).optional(),
+    })
+    .strict(),
 );
 
-const BASIC_READ_PATHS = new Set(["/api/auth/me", "/auth/me", "/api/minors", "/api/minors/"]);
+const BASIC_READ_PATHS = new Set(['/api/auth/me', '/auth/me', '/api/minors', '/api/minors/']);
 
-const LEGACY_DEMO_CHILD_USERNAMES: Record<string, string> = {
-  lucia_explora: "lucia_demo",
-  mateo_numeros: "mateo_demo",
-  sofia_ciencia: "sofia_demo",
-  daniel_mapas: "daniel_demo",
-  emma_lectora: "emma_demo",
-};
-
-function inferMinorApprovalStatus(user: {
-  status: "active" | "inactive" | "suspended";
-  parentAccountApprovedAt: Date | null;
-}): MinorApprovalStatus {
-  if (user.status !== "active") return "blocked";
-  if (!user.parentAccountApprovedAt) return "pending";
-  return "approved";
-}
-
-function actionFromRequest(req: Request): "post" | "friend_request" | "purchase" | "content_access" {
+function actionFromRequest(
+  req: Request,
+): 'post' | 'friend_request' | 'purchase' | 'content_access' {
   const path = req.path.toLowerCase();
   const method = req.method.toUpperCase();
-  if (path.includes("/friends") || path.includes("friend")) return "friend_request";
-  if (path.includes("/purchase") || path.includes("/iap") || path.includes("/premium")) return "purchase";
-  if (path.includes("/posts") || path.includes("/content") || method === "POST") return "post";
-  return "content_access";
+  if (path.includes('/friends') || path.includes('friend')) return 'friend_request';
+  if (path.includes('/purchase') || path.includes('/iap') || path.includes('/premium'))
+    return 'purchase';
+  if (path.includes('/posts') || path.includes('/content') || method === 'POST') return 'post';
+  return 'content_access';
 }
 
-function generateToken(input:
-  | { userType: "parent"; parentId: string; email: string }
-  | {
-      userType: "minor";
-      userId: string;
-      username: string;
-      parentId: string;
-      approvalStatus: MinorApprovalStatus;
-    }): string {
-  if (input.userType === "parent") {
+function generateToken(
+  input:
+    | { userType: 'parent'; parentId: string; email: string }
+    | {
+        userType: 'minor';
+        userId: string;
+        username: string;
+        parentId: string;
+        approvalStatus: MinorApprovalStatus;
+      },
+): string {
+  if (input.userType === 'parent') {
     return createParentAuthToken(input.parentId, input.email);
   }
   return createChildAuthToken(input.userId, input.username, input.parentId, input.approvalStatus);
@@ -91,21 +93,6 @@ function generateToken(input:
 
 function generateMinorAccessCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function buildAuthResponse(parentId: string, email: string, premium: ParentPremiumRow): {
-  token: string;
-  parent: { id: string; email: string; isPremium: boolean; premiumUntil: string | null };
-} {
-  return {
-    token: generateToken({ userType: "parent", parentId, email }),
-    parent: {
-      id: parentId,
-      email,
-      isPremium: parentHasActivePremium(premium),
-      premiumUntil: premium.premiumUntil?.toISOString() ?? null,
-    },
-  };
 }
 
 export async function register(req: Request, res: Response): Promise<void> {
@@ -117,73 +104,15 @@ export async function register(req: Request, res: Response): Promise<void> {
   const body = parsed.data;
 
   try {
-    const parentPasswordHash = await hashPassword(body.password);
-    const parent = await prisma.parent.create({
-      data: {
-        email: body.email.toLowerCase(),
-        password: parentPasswordHash,
-      },
-      select: { id: true, email: true, isPremium: true, premiumUntil: true },
-    });
-
-    // Perfil User del tutor para relaciones nuevas (minorProfile/parentChildRelation).
-    const parentUserPasswordHash = await hashPassword(body.password);
-    const parentUser = await prisma.user.create({
-      data: {
-        username: `parent_${parent.id.slice(0, 8)}`,
-        realName: `${body.firstName} ${body.lastName}`.trim(),
-        passwordHash: parentUserPasswordHash,
-        age: 30,
-        parentId: parent.id,
-        type: "parent",
-        status: "active",
-        parentAccountApprovedAt: new Date(),
-      },
-      select: { id: true },
-    });
-
-    await prisma.parentProfile.create({
-      data: {
-        userId: parentUser.id,
-        verificationStatus: "pending",
-        verificationMethod: "email",
-        subscriptionTier: "free",
-      },
-    });
-
-    await prisma.analyticsEvent.create({
-      data: {
-        userId: parentUser.id,
-        eventName: "parent_registered",
-        metadata: {
-          firstName: body.firstName,
-          lastName: body.lastName,
-          phone: body.phone,
-          emailVerified: false,
-        },
-      },
-    });
-
-    res.status(201).json({
-      ...buildAuthResponse(parent.id, parent.email, parent),
-      parent: {
-        id: parent.id,
-        email: parent.email,
-        isPremium: parentHasActivePremium(parent),
-        premiumUntil: parent.premiumUntil?.toISOString() ?? null,
-        firstName: body.firstName,
-        lastName: body.lastName,
-        phone: body.phone,
-        emailVerificationStatus: "pending",
-      },
-    });
+    const payload = await registerParentTransactional(body);
+    res.status(201).json(payload);
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      res.status(409).json({ error: "Ese email ya est? registrado." });
+    if (isRegisterParentPrismaConflict(error)) {
+      res.status(409).json({ error: 'Ese email ya est? registrado.' });
       return;
     }
-    logError("auth", error);
-    res.status(500).json({ error: "Error al registrar cuenta." });
+    logError('auth', error);
+    res.status(500).json({ error: 'Error al registrar cuenta.' });
   }
 }
 
@@ -193,8 +122,8 @@ export async function registerParent(req: Request, res: Response): Promise<void>
 
 export async function registerMinor(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
-  if (!auth || auth.kind !== "parent") {
-    res.status(403).json({ error: "Solo un tutor autenticado puede crear menores." });
+  if (!auth || auth.kind !== 'parent') {
+    res.status(403).json({ error: 'Solo un tutor autenticado puede crear menores.' });
     return;
   }
 
@@ -210,18 +139,19 @@ export async function registerMinor(req: Request, res: Response): Promise<void> 
       select: { id: true, email: true },
     });
     if (!parent) {
-      res.status(404).json({ error: "Cuenta tutor no encontrada." });
+      res.status(404).json({ error: 'Cuenta tutor no encontrada.' });
       return;
     }
 
     const parentUser = await prisma.user.findFirst({
-      where: { parentId: parent.id, type: "parent" },
+      where: { parentId: parent.id, type: 'parent' },
       select: { id: true },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: 'asc' },
     });
     if (!parentUser) {
       res.status(400).json({
-        error: "No existe perfil User de tipo parent para esta cuenta. Complet? primero el perfil de tutor.",
+        error:
+          'No existe perfil User de tipo parent para esta cuenta. Complet? primero el perfil de tutor.',
       });
       return;
     }
@@ -239,8 +169,8 @@ export async function registerMinor(req: Request, res: Response): Promise<void> 
           age: parsed.data.age,
           avatarUrl: parsed.data.avatar ?? null,
           parentId: parent.id,
-          type: "minor",
-          status: "active",
+          type: 'minor',
+          status: 'active',
           // Alta creada por el tutor autenticado: queda aprobada para login inmediato.
           parentAccountApprovedAt: new Date(),
         },
@@ -267,17 +197,17 @@ export async function registerMinor(req: Request, res: Response): Promise<void> 
         data: {
           parentId: parentUser.id,
           childId: created.id,
-          status: "active",
-          approvalRequiredFor: ["friend_request", "post", "purchase", "content_access"],
+          status: 'active',
+          approvalRequiredFor: ['friend_request', 'post', 'purchase', 'content_access'],
         },
       });
 
       await tx.parentFamilyEvent.create({
         data: {
           parentId: parent.id,
-          kind: "MINOR_REGISTERED",
+          kind: 'MINOR_REGISTERED',
           childId: created.id,
-          title: "Nuevo menor registrado",
+          title: 'Nuevo menor registrado',
           body: `Se cre? la cuenta ${created.username}. Lista para iniciar sesi?n.`,
         },
       });
@@ -292,18 +222,18 @@ export async function registerMinor(req: Request, res: Response): Promise<void> 
         age: minor.age,
         avatar: minor.avatarUrl,
         parentId: minor.parentId,
-        approvalStatus: "approved",
+        approvalStatus: 'approved',
       },
       accessCode,
-      notification: "Se notific? al tutor del registro del menor.",
+      notification: 'Se notific? al tutor del registro del menor.',
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      res.status(409).json({ error: "El username ya est? en uso." });
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      res.status(409).json({ error: 'El username ya est? en uso.' });
       return;
     }
-    logError("auth.registerMinor", error);
-    res.status(500).json({ error: "Error al registrar cuenta de menor." });
+    logError('auth.registerMinor', error);
+    res.status(500).json({ error: 'Error al registrar cuenta de menor.' });
   }
 }
 
@@ -316,78 +246,19 @@ export async function login(req: Request, res: Response): Promise<void> {
   const body = parsed.data;
 
   try {
-    if ("email" in body) {
-      const parent = await prisma.parent.findUnique({
-        where: { email: body.email },
-        select: { id: true, email: true, password: true, isPremium: true, premiumUntil: true },
-      });
-      if (!parent) {
-        res.status(401).json({ error: "Credenciales inv?lidas." });
-        return;
-      }
-      const ok = await bcrypt.compare(body.password, parent.password);
-      if (!ok) {
-        res.status(401).json({ error: "Credenciales inv?lidas." });
-        return;
-      }
-      res.json(buildAuthResponse(parent.id, parent.email, parent));
+    const result = await loginUnifiedTransactional(body);
+    if (result.kind === 'error') {
+      res.status(result.status).json({ error: result.message });
       return;
     }
-
-    const username = LEGACY_DEMO_CHILD_USERNAMES[body.username] ?? body.username;
-    const user = await prisma.user.findUnique({
-      where: { username },
-      select: {
-        id: true,
-        username: true,
-        realName: true,
-        passwordHash: true,
-        parentId: true,
-        parentAccountApprovedAt: true,
-        status: true,
-      },
-    });
-    if (!user?.passwordHash) {
-      res.status(401).json({ error: "Credenciales inv?lidas o cuenta sin contrase?a." });
+    if (result.kind === 'parent') {
+      res.json(result.json);
       return;
     }
-    const ok = await bcrypt.compare(body.password, user.passwordHash);
-    if (!ok) {
-      res.status(401).json({ error: "Credenciales inv?lidas." });
-      return;
-    }
-    if (body.parent_code) {
-      const parentCode = body.parent_code.trim().toLowerCase();
-      const parent = await prisma.parent.findUnique({
-        where: { id: user.parentId },
-        select: { id: true, email: true },
-      });
-      if (!parent) {
-        res.status(401).json({ error: "C?digo parental inv?lido." });
-        return;
-      }
-      const matches = parent.id.toLowerCase() === parentCode || parent.email.toLowerCase() === parentCode;
-      if (!matches) {
-        res.status(401).json({ error: "C?digo parental inv?lido." });
-        return;
-      }
-    }
-
-    const approvalStatus = inferMinorApprovalStatus(user);
-    res.json({
-      token: generateToken({
-        userType: "minor",
-        userId: user.id,
-        username: user.username,
-        parentId: user.parentId,
-        approvalStatus,
-      }),
-      user: { id: user.id, username: user.username, realName: user.realName, type: "minor" as const },
-      approvalStatus,
-    });
+    res.json(result.json);
   } catch (error) {
-    logError("auth", error);
-    res.status(500).json({ error: "Error al iniciar sesi?n." });
+    logError('auth', error);
+    res.status(500).json({ error: 'Error al iniciar sesi?n.' });
   }
 }
 
@@ -418,47 +289,56 @@ export async function loginMinorWithCode(req: Request, res: Response): Promise<v
         minorProfile: { select: { contentRestrictions: true } },
       },
     });
-    if (!user || user.type !== "minor") {
-      res.status(401).json({ error: "Credenciales inv?lidas." });
+    if (!user || user.type !== 'minor') {
+      res.status(401).json({ error: 'Credenciales inv?lidas.' });
       return;
     }
 
     const restrictions = (user.minorProfile?.contentRestrictions ?? {}) as Record<string, unknown>;
     const accessCodeHash =
-      typeof restrictions.accessCodeHash === "string" ? restrictions.accessCodeHash : "";
+      typeof restrictions.accessCodeHash === 'string' ? restrictions.accessCodeHash : '';
     if (!accessCodeHash) {
-      res.status(401).json({ error: "Esta cuenta no tiene c?digo de acceso configurado." });
+      res.status(401).json({ error: 'Esta cuenta no tiene c?digo de acceso configurado.' });
       return;
     }
 
     const matches = await bcrypt.compare(parsed.data.accessCode, accessCodeHash);
     if (!matches) {
-      res.status(401).json({ error: "Credenciales inv?lidas." });
+      res.status(401).json({ error: 'Credenciales inv?lidas.' });
       return;
     }
 
     const approvalStatus = inferMinorApprovalStatus(user);
     res.json({
       token: generateToken({
-        userType: "minor",
+        userType: 'minor',
         userId: user.id,
         username: user.username,
         parentId: user.parentId,
         approvalStatus,
       }),
-      user: { id: user.id, username: user.username, realName: user.realName, type: "minor" as const },
+      user: {
+        id: user.id,
+        username: user.username,
+        realName: user.realName,
+        type: 'minor' as const,
+      },
       approvalStatus,
     });
   } catch (error) {
-    logError("auth.loginMinorWithCode", error);
-    res.status(500).json({ error: "Error al iniciar sesi?n con c?digo." });
+    logError('auth.loginMinorWithCode', error);
+    res.status(500).json({ error: 'Error al iniciar sesi?n con c?digo.' });
   }
 }
 
 /** Menor pendiente: solo lectura b?sica. Menor bloqueado: rechazar todo. */
-export async function verifyMinorStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function verifyMinorStatus(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
+  if (!auth || auth.kind !== 'child') {
     next();
     return;
   }
@@ -468,39 +348,45 @@ export async function verifyMinorStatus(req: Request, res: Response, next: NextF
       select: { status: true, parentAccountApprovedAt: true },
     });
     if (!row) {
-      res.status(401).json({ error: "Sesi?n inv?lida." });
+      res.status(401).json({ error: 'Sesi?n inv?lida.' });
       return;
     }
     const approvalStatus = inferMinorApprovalStatus(row);
-    if (approvalStatus === "blocked") {
-      res.status(403).json({ error: "Tu cuenta est? bloqueada por tu tutor.", code: "MINOR_BLOCKED" });
+    if (approvalStatus === 'blocked') {
+      res
+        .status(403)
+        .json({ error: 'Tu cuenta est? bloqueada por tu tutor.', code: 'MINOR_BLOCKED' });
       return;
     }
-    if (approvalStatus === "pending" && !BASIC_READ_PATHS.has(req.path)) {
+    if (approvalStatus === 'pending' && !BASIC_READ_PATHS.has(req.path)) {
       res.status(403).json({
-        error: "Tu cuenta est? pendiente de aprobaci?n. Solo ten?s acceso de lectura b?sica.",
-        code: "MINOR_PENDING_APPROVAL_READ_ONLY",
+        error: 'Tu cuenta est? pendiente de aprobaci?n. Solo ten?s acceso de lectura b?sica.',
+        code: 'MINOR_PENDING_APPROVAL_READ_ONLY',
       });
       return;
     }
     next();
   } catch (error) {
-    logError("auth.verifyMinorStatus", error);
-    res.status(500).json({ error: "Error al verificar estado del menor." });
+    logError('auth.verifyMinorStatus', error);
+    res.status(500).json({ error: 'Error al verificar estado del menor.' });
   }
 }
 
 /** Verifica si la acci?n del menor requiere aprobaci?n parental. */
-export async function checkParentalApproval(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function checkParentalApproval(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   const auth = req.auth;
-  if (!auth || auth.kind !== "child") {
+  if (!auth || auth.kind !== 'child') {
     next();
     return;
   }
 
   try {
     const relation = await prisma.parentChildRelation.findFirst({
-      where: { childId: auth.userId, status: "active" },
+      where: { childId: auth.userId, status: 'active' },
       select: { approvalRequiredFor: true },
     });
     if (!relation) {
@@ -521,41 +407,47 @@ export async function checkParentalApproval(req: Request, res: Response, next: N
       where: {
         minorId: auth.userId,
         activityType: action as ActivityType,
-        status: "pending",
+        status: 'pending',
       },
-      orderBy: { requestedAt: "desc" },
+      orderBy: { requestedAt: 'desc' },
       select: { id: true },
     });
     if (pending) {
       res.status(403).json({
-        error: "Esta acci?n requiere aprobaci?n parental pendiente.",
-        code: "PARENTAL_APPROVAL_PENDING",
+        error: 'Esta acci?n requiere aprobaci?n parental pendiente.',
+        code: 'PARENTAL_APPROVAL_PENDING',
         approvalId: pending.id,
       });
       return;
     }
     next();
   } catch (error) {
-    logError("auth.checkParentalApproval", error);
-    res.status(500).json({ error: "Error al verificar aprobaci?n parental." });
+    logError('auth.checkParentalApproval', error);
+    res.status(500).json({ error: 'Error al verificar aprobaci?n parental.' });
   }
 }
 
 export async function me(req: Request, res: Response): Promise<void> {
   const auth = req.auth;
   if (!auth) {
-    res.status(401).json({ error: "No autenticado." });
+    res.status(401).json({ error: 'No autenticado.' });
     return;
   }
 
-  if (auth.kind === "child") {
+  if (auth.kind === 'child') {
     try {
       const user = await prisma.user.findUnique({
         where: { id: auth.userId },
-        select: { id: true, username: true, realName: true, parentId: true, parentAccountApprovedAt: true },
+        select: {
+          id: true,
+          username: true,
+          realName: true,
+          parentId: true,
+          parentAccountApprovedAt: true,
+        },
       });
       if (!user) {
-        res.status(401).json({ error: "Sesi?n inv?lida." });
+        res.status(401).json({ error: 'Sesi?n inv?lida.' });
         return;
       }
       const parent = await prisma.parent.findUnique({
@@ -563,14 +455,14 @@ export async function me(req: Request, res: Response): Promise<void> {
         select: { id: true, email: true },
       });
       res.json({
-        role: "child" as const,
+        role: 'child' as const,
         child: { id: user.id, username: user.username, realName: user.realName },
         accountApproved: user.parentAccountApprovedAt != null,
         parent: parent ? { id: parent.id, email: parent.email } : null,
       });
     } catch (error) {
-      logError("auth", error);
-      res.status(500).json({ error: "Error al cargar la sesi?n." });
+      logError('auth', error);
+      res.status(500).json({ error: 'Error al cargar la sesi?n.' });
     }
     return;
   }
@@ -582,12 +474,19 @@ export async function me(req: Request, res: Response): Promise<void> {
         select: { isPremium: true, premiumUntil: true },
       }),
       prisma.user.findMany({
-        where: { parentId: auth.parentId, type: "minor" },
-        select: { id: true, username: true, realName: true, age: true, status: true, parentAccountApprovedAt: true },
-        orderBy: { createdAt: "asc" },
+        where: { parentId: auth.parentId, type: 'minor' },
+        select: {
+          id: true,
+          username: true,
+          realName: true,
+          age: true,
+          status: true,
+          parentAccountApprovedAt: true,
+        },
+        orderBy: { createdAt: 'asc' },
       }),
       prisma.user.findFirst({
-        where: { parentId: auth.parentId, type: "parent" },
+        where: { parentId: auth.parentId, type: 'parent' },
         select: { id: true },
       }),
     ]);
@@ -596,7 +495,7 @@ export async function me(req: Request, res: Response): Promise<void> {
       premiumUntil: parentRow?.premiumUntil ?? null,
     };
     res.json({
-      role: "parent" as const,
+      role: 'parent' as const,
       parent: {
         id: auth.parentId,
         email: auth.email,
@@ -607,7 +506,7 @@ export async function me(req: Request, res: Response): Promise<void> {
       children,
     });
   } catch (error) {
-    logError("auth", error);
-    res.status(500).json({ error: "Error al cargar la sesi?n." });
+    logError('auth', error);
+    res.status(500).json({ error: 'Error al cargar la sesi?n.' });
   }
 }

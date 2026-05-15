@@ -38,6 +38,8 @@ export function AnimatedFeedItem({ itemId, children, style }: Props) {
   }, [itemId, opacity, translateY]);
 
   return (
-    <Animated.View style={[{ opacity, transform: [{ translateY }] }, style]}>{children}</Animated.View>
+    <Animated.View style={[{ opacity, transform: [{ translateY }] }, style]}>
+      {children}
+    </Animated.View>
   );
 }

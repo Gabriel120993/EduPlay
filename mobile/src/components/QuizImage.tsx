@@ -34,7 +34,12 @@ const HEIGHT_BY_SIZE: Record<QuizImageSize, number> = {
 function resolveAbsoluteImageUrl(raw: string): string {
   const t = raw.trim();
   if (!t) return t;
-  if (t.startsWith("http://") || t.startsWith("https://") || t.startsWith("data:") || t.startsWith("file://")) {
+  if (
+    t.startsWith("http://") ||
+    t.startsWith("https://") ||
+    t.startsWith("data:") ||
+    t.startsWith("file://")
+  ) {
     return t;
   }
   if (t.startsWith("//")) return `https:${t}`;
@@ -105,12 +110,18 @@ export function QuizImage({
 
   const isLocalFile = useMemo(() => {
     const u = displayUri;
-    return u.startsWith("file://") || (Platform.OS !== "web" && u.startsWith("/") && !u.startsWith("http"));
+    return (
+      u.startsWith("file://") ||
+      (Platform.OS !== "web" && u.startsWith("/") && !u.startsWith("http"))
+    );
   }, [displayUri]);
 
   const source = useMemo(() => {
     if (!displayUri) return { uri: "" };
-    const fileUri = displayUri.startsWith("/") && !displayUri.startsWith("http") ? `file://${displayUri}` : displayUri;
+    const fileUri =
+      displayUri.startsWith("/") && !displayUri.startsWith("http")
+        ? `file://${displayUri}`
+        : displayUri;
     if (isLocalFile) {
       return { uri: fileUri.startsWith("file://") ? fileUri : `file://${fileUri}` };
     }
@@ -129,7 +140,7 @@ export function QuizImage({
       fill
         ? { width: "100%", height: "100%", objectFit: "contain", display: "block" }
         : { width: "100%", height: fixedHeight, objectFit: "contain", display: "block" },
-    [fill, fixedHeight]
+    [fill, fixedHeight],
   );
 
   if (!uri) return null;
@@ -147,48 +158,48 @@ export function QuizImage({
           <ActivityIndicator color={colors.primary} />
         </View>
       ) : null}
-      {Platform.OS === "web"
-        ? createElement("img", {
-            key: `${cacheKey}-${displayUri}-${headerAttempt}`,
-            src: displayUri,
-            alt: "Imagen de la pregunta",
-            /** Wikimedia y similares suelen rechazar hotlink con Referer de localhost. */
-            referrerPolicy: "no-referrer",
-            loading: "lazy",
-            decoding: "async",
-            style: webImgStyle,
-            onLoad: () => {
-              setLoading(false);
-              setFatalError(false);
-            },
-            onError: () => {
-              setLoading(false);
-              setFatalError(true);
-            },
-          })
-        : (
-          <Image
-            key={`${cacheKey}-${displayUri}-${headerAttempt}`}
-            source={source}
-            style={imageStyle}
-            resizeMode="contain"
-            accessibilityLabel="Imagen de la pregunta"
-            onLoadStart={() => {
+      {Platform.OS === "web" ? (
+        createElement("img", {
+          key: `${cacheKey}-${displayUri}-${headerAttempt}`,
+          src: displayUri,
+          alt: "Imagen de la pregunta",
+          /** Wikimedia y similares suelen rechazar hotlink con Referer de localhost. */
+          referrerPolicy: "no-referrer",
+          loading: "lazy",
+          decoding: "async",
+          style: webImgStyle,
+          onLoad: () => {
+            setLoading(false);
+            setFatalError(false);
+          },
+          onError: () => {
+            setLoading(false);
+            setFatalError(true);
+          },
+        })
+      ) : (
+        <Image
+          key={`${cacheKey}-${displayUri}-${headerAttempt}`}
+          source={source}
+          style={imageStyle}
+          resizeMode="contain"
+          accessibilityLabel="Imagen de la pregunta"
+          onLoadStart={() => {
+            setLoading(true);
+            setFatalError(false);
+          }}
+          onLoadEnd={() => setLoading(false)}
+          onError={() => {
+            setLoading(false);
+            if (!isLocalFile && headerAttempt === 0) {
+              setHeaderAttempt(1);
               setLoading(true);
-              setFatalError(false);
-            }}
-            onLoadEnd={() => setLoading(false)}
-            onError={() => {
-              setLoading(false);
-              if (!isLocalFile && headerAttempt === 0) {
-                setHeaderAttempt(1);
-                setLoading(true);
-                return;
-              }
-              setFatalError(true);
-            }}
-          />
-        )}
+              return;
+            }
+            setFatalError(true);
+          }}
+        />
+      )}
       {fatalError ? (
         <View
           style={[styles.errorOverlay, { backgroundColor: colors.ghostBg }]}

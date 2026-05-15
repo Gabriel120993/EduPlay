@@ -75,7 +75,9 @@ export function TimeUsageBar() {
             />
           </View>
           <Text style={[styles.hint, { color: colors.textMuted }]} numberOfLines={1}>
-            {readOnlyMode ? "Límite alcanzado · modo lectura" : remainingMinutesLabel(metrics.remainingSeconds)}
+            {readOnlyMode
+              ? "Límite alcanzado · modo lectura"
+              : remainingMinutesLabel(metrics.remainingSeconds)}
           </Text>
         </>
       ) : null}

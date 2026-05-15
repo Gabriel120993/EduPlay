@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from 'express';
 import {
   acceptFriendRequest,
   getAcceptedFriends,
@@ -7,26 +7,26 @@ import {
   parentRejectFriendAwaiting,
   rejectFriendRequest,
   sendFriendRequest,
-} from "../controllers/friend.controller";
+} from '../controllers/friend.controller';
 import {
   friendRequestBurstLimiter,
   friendRequestWindowLimiter,
-} from "../middlewares/rateLimit.middleware";
-import { requireChild, requireParent } from "../middlewares/rbac.middleware";
+} from '../middlewares/rateLimit.middleware';
+import { requireChild, requireParent } from '../middlewares/rbac.middleware';
 
 export const friendRouter = Router();
 
-friendRouter.post("/parent-approve", requireParent, parentApproveFriendRequest);
-friendRouter.post("/parent-reject-awaiting", requireParent, parentRejectFriendAwaiting);
+friendRouter.post('/parent-approve', requireParent, parentApproveFriendRequest);
+friendRouter.post('/parent-reject-awaiting', requireParent, parentRejectFriendAwaiting);
 
 friendRouter.post(
-  "/request",
+  '/request',
   requireChild,
   friendRequestBurstLimiter,
   friendRequestWindowLimiter,
-  sendFriendRequest
+  sendFriendRequest,
 );
-friendRouter.post("/accept", requireChild, acceptFriendRequest);
-friendRouter.post("/reject", requireChild, rejectFriendRequest);
-friendRouter.get("/requests/:userId", requireChild, getPendingFriendRequests);
-friendRouter.get("/:userId", requireChild, getAcceptedFriends);
+friendRouter.post('/accept', requireChild, acceptFriendRequest);
+friendRouter.post('/reject', requireChild, rejectFriendRequest);
+friendRouter.get('/requests/:userId', requireChild, getPendingFriendRequests);
+friendRouter.get('/:userId', requireChild, getAcceptedFriends);

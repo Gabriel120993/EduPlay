@@ -1,55 +1,103 @@
-name: CI
+name: CI — tests y auditoría QA
 
 on:
   push:
-    branches: ["**"]
+    branches: [master, main, develop]
   pull_request:
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [master, main]
 
 jobs:
-  test:
-    name: Test Suite
+  backend:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          node-version: "22"
+          cache: "npm"
 
-      - name: Install dependencies
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Prepare Prisma client
-        run: npm run test:prepare
+      - name: Prisma generate
+        run: npx prisma generate
 
-      - name: Run fast tests
+      - name: Validar schema Prisma
+        run: npx prisma validate
+
+      - name: Typecheck API (src/)
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Tests Vitest (sin tests de DB)
         run: npm test
 
-  test-db:
-    name: Integration DB Tests
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier (check)
+        run: npm run format:check
+
+      - name: Auditoría QA (script)
+        run: npm run qa:audit
+
+  docker-build:
+    name: Verificar imagen Docker
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API image
+        uses: docker/build-push-action@v6
         with:
-          node-version: 22
-          cache: npm
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: eduplay-api:ci
 
-      - name: Install dependencies
+  test-db:
+    name: Tests con PostgreSQL (Testcontainers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Prepare Prisma client
-        run: npm run test:prepare
+      - name: Prisma generate
+        run: npx prisma generate
 
-      - name: Run PostgreSQL container tests
+      - name: Tests Vitest (Testcontainers + DB real)
         run: npm run test:db
+
+  mobile-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Instalar mobile
+        working-directory: mobile
+        run: npm ci
+
+      - name: Typecheck mobile
+        working-directory: mobile
+        run: npx tsc --noEmit
+
+      - name: ESLint mobile
+        working-directory: mobile
+        run: npm run lint
+
+      - name: Prettier mobile (check)
+        working-directory: mobile
+        run: npm run format:check

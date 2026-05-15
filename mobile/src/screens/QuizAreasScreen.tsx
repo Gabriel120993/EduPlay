@@ -22,7 +22,12 @@ const AREAS: Array<{
   { area: "language", label: "Lenguaje", icon: "📖", legacyCategory: "education" },
   { area: "art_culture", label: "Arte y cultura", icon: "🎨", legacyCategory: "creativity" },
   { area: "logic_thinking", label: "Pensamiento lógico", icon: "🧩", legacyCategory: "puzzle" },
-  { area: "emotions_values", label: "Emociones y valores", icon: "💚", legacyCategory: "education" },
+  {
+    area: "emotions_values",
+    label: "Emociones y valores",
+    icon: "💚",
+    legacyCategory: "education",
+  },
 ];
 
 export function QuizAreasScreen({ navigation }: Props) {

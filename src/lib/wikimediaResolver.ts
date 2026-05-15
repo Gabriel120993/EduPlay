@@ -9,11 +9,11 @@
  * Doc: https://www.mediawiki.org/wiki/API:Imageinfo
  */
 
-const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
+const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
 
 const HEADERS: Record<string, string> = {
-  "User-Agent": "EduPlay/1.0 (https://eduplay.local; contact: dev@eduplay.local)",
-  Accept: "application/json",
+  'User-Agent': 'EduPlay/1.0 (https://eduplay.local; contact: dev@eduplay.local)',
+  Accept: 'application/json',
 };
 
 const cache = new Map<string, { url: string | null; expiresAt: number }>();
@@ -57,7 +57,10 @@ type ApiResponse = {
  * Devuelve la URL canónica del thumbnail al ancho pedido (o la URL original si Wikimedia no genera thumb).
  * Devuelve `null` si el archivo no existe o la API falla.
  */
-export async function resolveWikimediaUrl(originalUrl: string, width: number): Promise<string | null> {
+export async function resolveWikimediaUrl(
+  originalUrl: string,
+  width: number,
+): Promise<string | null> {
   if (!isCommonsUploadUrl(originalUrl)) return originalUrl;
 
   const fileName = extractFileName(originalUrl);
@@ -68,14 +71,14 @@ export async function resolveWikimediaUrl(originalUrl: string, width: number): P
   if (hit && hit.expiresAt > Date.now()) return hit.url;
 
   const params = new URLSearchParams({
-    action: "query",
+    action: 'query',
     titles: `File:${fileName}`,
-    prop: "imageinfo",
-    iiprop: "url|size",
+    prop: 'imageinfo',
+    iiprop: 'url|size',
     iiurlwidth: String(width),
-    format: "json",
-    formatversion: "2",
-    redirects: "1",
+    format: 'json',
+    formatversion: '2',
+    redirects: '1',
   });
 
   const ctl = new AbortController();

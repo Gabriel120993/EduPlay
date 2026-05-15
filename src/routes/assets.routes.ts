@@ -1,10 +1,10 @@
-import { Router } from "express";
+import { Router } from 'express';
 import {
   getEducationalAssetById,
   listEducationalAssets,
   listEducationalAssetsByCategory,
-} from "../controllers/educationalAsset.controller";
-import { requireChild } from "../middlewares/rbac.middleware";
+} from '../controllers/educationalAsset.controller';
+import { requireChild } from '../middlewares/rbac.middleware';
 
 /**
  * Catálogo de activos educativos (alias corto de `/api/educational-assets`).
@@ -17,6 +17,6 @@ export const assetsRouter = Router();
 
 assetsRouter.use(requireChild);
 
-assetsRouter.get("/category/:category", listEducationalAssetsByCategory);
-assetsRouter.get("/:id", getEducationalAssetById);
-assetsRouter.get("/", listEducationalAssets);
+assetsRouter.get('/category/:category', listEducationalAssetsByCategory);
+assetsRouter.get('/:id', getEducationalAssetById);
+assetsRouter.get('/', listEducationalAssets);

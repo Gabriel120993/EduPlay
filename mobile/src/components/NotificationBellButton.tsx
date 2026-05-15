@@ -29,13 +29,13 @@ export function NotificationBellButton() {
         Animated.timing(bellScale, { toValue: 1, duration: 120, useNativeDriver: true }),
         Animated.timing(bellScale, { toValue: 1.06, duration: 100, useNativeDriver: true }),
         Animated.timing(bellScale, { toValue: 1, duration: 160, useNativeDriver: true }),
-      ])
+      ]),
     );
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(dotScale, { toValue: 1.3, duration: 520, useNativeDriver: true }),
         Animated.timing(dotScale, { toValue: 1, duration: 520, useNativeDriver: true }),
-      ])
+      ]),
     );
     wobble.start();
     pulse.start();
