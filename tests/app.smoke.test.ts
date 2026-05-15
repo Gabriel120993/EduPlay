@@ -26,6 +26,8 @@ describe('API smoke tests', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe('ok');
+    expect(response.body.api).toBe('ok');
+    expect(['ok', 'skipped']).toContain(response.body.database);
     expect(typeof response.body.timestamp).toBe('string');
   });
 

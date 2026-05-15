@@ -45,6 +45,7 @@ describe('Auth con PostgreSQL real', () => {
     const registerRes = await request(app).post('/auth/register').send({
       email: 'padre1@eduplay.dev',
       password: 'secreto123',
+      parentalConsent: true,
     });
 
     expect(registerRes.status).toBe(201);
@@ -65,6 +66,7 @@ describe('Auth con PostgreSQL real', () => {
     await request(app).post('/auth/register').send({
       email: 'padre2@eduplay.dev',
       password: 'password-ok',
+      parentalConsent: true,
     });
 
     const loginRes = await request(app).post('/auth/login').send({

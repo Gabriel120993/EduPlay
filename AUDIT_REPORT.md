@@ -1,34 +1,26 @@
 # Informe de auditoría — progreso (EduPlay)
 
-Actualizado según tabla de tareas (`table-1778864643810.csv` / `_pendientes_extract.txt`).
+## Pre-launch (`prompt_prelaunch.docx`)
 
-## Tabla de tareas
+| Tarea | Estado |
+|-------|--------|
+| 1 CORS: bloquear `*` en producción | ✅ `productionSafety.ts` + validación en `env.ts` + tests |
+| 2 Sentry backend + mobile | ✅ `@sentry/node`, `@sentry/react-native` (opcional con DSN) |
+| 3 Backups PostgreSQL | ✅ `scripts/backup-db.sh`, servicio `backup` en compose prod, docs |
+| 4 Health detallado + `/ready` | ✅ `GET /api/health`, `GET /api/health/ready` |
+| 5 Legal mínima | ✅ `legal/coppa-compliance.md`, consentimiento en registro tutor |
+| 6 Rate limit producción | ✅ defaults más estrictos en `env.ts` |
+| 7 Secrets producción | ✅ `.env.prod.example`, `npm run verify:prod` |
+| 8 Documentación deploy | ✅ `docs/DEPLOY.md` |
 
-| # | Tarea | Estado |
-|---|--------|--------|
-| 1 | ESLint + Prettier Mobile | ✅ `mobile/eslint.config.mjs`, scripts, CI `lint` + `format:check` |
-| 2 | Docker multi-stage + Compose | ✅ `Dockerfile` 3 etapas, `docker-compose.yml` db+api, job `docker-build` |
-| 3 | Performance backend | ✅ `compression`, logs Prisma en dev, `parsePaginationQuery` + listado contenido paginado |
-| 4 | Refactor services lote 1 | ✅ `parents.service`, `usersProfile.service` (+ auth/content previos) |
-| 5 | Refactor services lote 2 | ✅ `friends.service`, `chat.service` (+ quiz.service existente) |
-| 6 | Refactor services lote 3 | ✅ `gameResults.service` (validación) |
-| 7 | OpenAPI/Swagger | ✅ `src/lib/swagger.ts`, `/api/docs` en no-producción |
-| 8 | i18n mobile | ✅ `i18next` + 5 pantallas (Auth, MinorHome, Explore, Achievement, ContentDetail) |
-| 9 | Accesibilidad mobile | ✅ labels/roles en Auth, MinorHome, ContentDetail (parcial en Explore cards) |
-| 10 | Checklist final | ⏳ Ejecutar `npm test`, `npm run lint`, mobile lint/tsc localmente |
+## Tabla auditoría anterior (resumen)
 
-## Servicios (`src/services/`)
+Ver commits `67429b8` y posteriores: CORS allowlist, ESLint/Prettier, servicios, Docker, i18n, OpenAPI, etc.
 
-- `auth.service.ts`, `contentList.service.ts`, `quiz.service.ts` (previos)
-- `parents.service.ts`, `usersProfile.service.ts`
-- `friends.service.ts`, `chat.service.ts`, `gameResults.service.ts`
-- `challenges.service.ts`, `coach.service.ts`, `achievementSystemEnsure.service.ts`
-
-## Verificación recomendada
+## Verificación
 
 ```bash
-npm install && npm test && npm run lint && npm run format:check && npm run qa:audit
-cd mobile && npm install && npm run lint && npm run format:check && npx tsc --noEmit
+npm test
+npm run lint
+npm run verify:prod   # con .env.prod de prueba
 ```
-
-`npm run test:db` requiere Docker/Testcontainers.

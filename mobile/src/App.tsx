@@ -1,4 +1,7 @@
 import "./i18n";
+import { initMobileSentry } from "./lib/sentry";
+
+initMobileSentry();
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";

@@ -1,5 +1,8 @@
 import { createApp } from './app';
 import { env } from './config/env';
+import { initSentry } from './lib/sentry';
+
+initSentry();
 
 const app = createApp();
 

@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { assertPreLaunchProductionConfig } from './productionSafety';
 
 dotenv.config();
 
@@ -18,6 +19,15 @@ const trustProxy = process.env.TRUST_PROXY?.trim().toLowerCase() === 'true';
  */
 const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? '*').trim() || '*';
 
+const sentryDsn = process.env.SENTRY_DSN?.trim() || '';
+
+/** En producción, límites más estrictos por IP si no se definen explícitamente. */
+const prodApiRateLimitWindowMs = Math.max(
+  60_000,
+  Number(process.env.PROD_API_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+);
+const prodApiRateLimitMax = Math.max(10, Number(process.env.PROD_API_RATE_LIMIT_MAX) || 50);
+
 const bcryptRoundsRaw = Number(process.env.BCRYPT_ROUNDS);
 const bcryptRounds =
   Number.isFinite(bcryptRoundsRaw) && bcryptRoundsRaw >= 10 && bcryptRoundsRaw <= 14
@@ -32,9 +42,13 @@ const authRateLimitMax = Math.max(5, Number(process.env.AUTH_RATE_LIMIT_MAX) || 
 
 const apiRateLimitWindowMs = Math.max(
   10_000,
-  Number(process.env.API_RATE_LIMIT_WINDOW_MS) || 60_000,
+  Number(process.env.API_RATE_LIMIT_WINDOW_MS) ||
+    (nodeEnv === 'production' ? prodApiRateLimitWindowMs : 60_000),
 );
-const apiRateLimitMax = Math.max(30, Number(process.env.API_RATE_LIMIT_MAX) || 200);
+const apiRateLimitMax = Math.max(
+  30,
+  Number(process.env.API_RATE_LIMIT_MAX) || (nodeEnv === 'production' ? prodApiRateLimitMax : 200),
+);
 
 /** Por usuario autenticado (JWT): menores — ventana y máximo de solicitudes. */
 const apiChildUserRateLimitWindowMs = Math.max(
@@ -95,7 +109,7 @@ const loginRegisterRateLimitWindowMs = Math.max(
 );
 const loginRegisterRateLimitMax = Math.max(
   1,
-  Number(process.env.LOGIN_REGISTER_RATE_LIMIT_MAX) || 100,
+  Number(process.env.LOGIN_REGISTER_RATE_LIMIT_MAX) || (nodeEnv === 'production' ? 5 : 100),
 );
 
 if (!databaseUrl) {
@@ -117,6 +131,8 @@ if (jwtSecretFromEnv.length < JWT_SECRET_MIN_LENGTH) {
 }
 
 const jwtSecret = jwtSecretFromEnv;
+
+assertPreLaunchProductionConfig({ nodeEnv, corsAllowedOrigins });
 
 const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim() || '';
 const cloudinaryApiKey = process.env.CLOUDINARY_API_KEY?.trim() || '';
@@ -156,6 +172,9 @@ export const env = {
   nodeEnv,
   isProduction,
   corsAllowedOrigins,
+  sentryDsn,
+  prodApiRateLimitWindowMs,
+  prodApiRateLimitMax,
   databaseUrl,
   jwtSecret,
   trustProxy,

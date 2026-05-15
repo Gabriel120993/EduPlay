@@ -58,6 +58,45 @@ npm run prisma:migrate
 
 ---
 
+## Producción: el servidor no arranca (`CORS_ALLOWED_ORIGINS=*`)
+
+**Síntoma:** al definir `NODE_ENV=production` y `CORS_ALLOWED_ORIGINS=*`, el proceso termina al iniciar.
+
+**Causa:** política de seguridad pre-launch; `*` no está permitido en producción.
+
+**Qué hacer:** listar dominios explícitos en `.env.prod` (ver `.env.prod.example`).
+
+---
+
+## Backup de base de datos
+
+### Backup manual
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec db \
+  pg_dump -U eduplay eduplay > backup_$(date +%Y%m%d).sql
+```
+
+Comprimido:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec db \
+  sh -c 'pg_dump -U eduplay eduplay | gzip' > backup_$(date +%Y%m%d).sql.gz
+```
+
+### Restore
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T db \
+  psql -U eduplay eduplay < backup_20260115.sql
+```
+
+### Backup automático (opcional)
+
+El script `scripts/backup-db.sh` y el servicio `backup` en `docker-compose.prod.yml` ejecutan `pg_dump` diario y conservan 7 días. Requiere volumen `./backups` en el host.
+
+---
+
 ## Docker: build de la imagen API
 
 **Síntoma:** fallo en etapa `builder` o `runner`.

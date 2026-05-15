@@ -35,6 +35,7 @@
     "db:repair-checksums": "node scripts/prisma-repair-checksums.mjs && prisma db execute --file scripts/_repair_checksums.sql --schema prisma/schema.prisma",
     "verify": "node scripts/verify-installation.mjs",
     "check-env": "node scripts/check-env.mjs",
+    "verify:prod": "node scripts/verify-prod.mjs",
     "shortcut": "node scripts/run-shortcut.cjs",
     "shortcut:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-shortcut.ps1",
     "shortcut:unix": "bash scripts/create-shortcut.sh",
@@ -46,6 +47,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
+    "@sentry/node": "^9.5.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.9.0",
     "compression": "^1.8.0",

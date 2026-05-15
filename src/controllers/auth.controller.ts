@@ -32,8 +32,14 @@ const registerParentSchema = z
     firstName: z.string().trim().min(1).max(100).optional().default('Tutor'),
     lastName: z.string().trim().min(1).max(100).optional().default('EduPlay'),
     phone: z.string().trim().min(6).max(30).optional().default('000000'),
+    /** Consentimiento legal: responsable de menores registrados (app móvil puede enviar acceptedTermsAndPrivacy). */
+    parentalConsent: z.boolean().optional(),
+    acceptedTermsAndPrivacy: z.boolean().optional(),
   })
-  .strict();
+  .strict()
+  .refine((v) => v.parentalConsent === true || v.acceptedTermsAndPrivacy === true, {
+    message: 'Debés aceptar ser responsable legal de los menores registrados y los términos del servicio.',
+  });
 
 const registerMinorSchema = z
   .object({
@@ -101,10 +107,16 @@ export async function register(req: Request, res: Response): Promise<void> {
     res.status(400).json({ error: formatZodError(parsed.error) });
     return;
   }
-  const body = parsed.data;
+  const { email, password, firstName, lastName, phone } = parsed.data;
 
   try {
-    const payload = await registerParentTransactional(body);
+    const payload = await registerParentTransactional({
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+    });
     res.status(201).json(payload);
   } catch (error) {
     if (isRegisterParentPrismaConflict(error)) {

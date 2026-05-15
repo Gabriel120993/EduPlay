@@ -16,6 +16,7 @@ describe('Zod .strict() en payloads de auth', () => {
       firstName: 'A',
       lastName: 'B',
       phone: '1234567890',
+      parentalConsent: true,
       campoExtra: true,
     });
     expect(res.status).toBe(400);

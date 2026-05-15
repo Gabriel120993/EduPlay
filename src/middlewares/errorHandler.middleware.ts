@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { env } from '../config/env';
 import { logError, logSuspicious } from '../lib/logger';
+import { captureException } from '../lib/sentry';
 
 /** Error HTTP explícito para controladores y middlewares. */
 export class HttpError extends Error {
@@ -97,6 +98,19 @@ export function errorHandlerMiddleware(
     path: req.path,
     method: req.method,
   });
+
+  if (env.isProduction) {
+    const auth = req.auth;
+    captureException(err, {
+      extra: {
+        path: req.path,
+        method: req.method,
+        requestId,
+        userId: auth?.kind === 'child' ? auth.userId : undefined,
+        parentId: auth?.kind === 'parent' ? auth.parentId : undefined,
+      },
+    });
+  }
 
   res.status(500).json({
     error: env.isProduction ? 'Error interno del servidor.' : message,

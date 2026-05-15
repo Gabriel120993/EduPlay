@@ -94,13 +94,16 @@ Variables clave:
 - `JWT_SECRET`: obligatorio, mínimo 32 caracteres
 - `BCRYPT_ROUNDS`: recomendado entre `10` y `14`
 - `TRUST_PROXY`: `true` si estás detrás de reverse proxy
-- `CORS_ALLOWED_ORIGINS`: lista CSV de orígenes permitidos (p. ej. `https://app.tudominio.com,http://localhost:19006`). Valor `*` permite cualquier origen (solo recomendable en desarrollo local). En `NODE_ENV=development` también se permiten orígenes `http(s)://localhost:*` además de la lista.
+- `CORS_ALLOWED_ORIGINS`: lista CSV de orígenes permitidos (p. ej. `https://app.tudominio.com,http://localhost:19006`). Valor `*` solo en desarrollo; en **producción el servidor no arranca** si es `*`. Ver `.env.prod.example`.
+- `SENTRY_DSN`: monitoreo de errores en producción ([Sentry](https://sentry.io) → proyecto Node → copiar DSN)
+
+Producción: copiar `.env.prod.example` → `.env.prod` y ejecutar `npm run verify:prod` antes del deploy. Guía: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 Más ayuda en [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 Opcionales importantes:
 
-- límites de rate-limiting (`LOGIN_REGISTER_RATE_LIMIT_*`, `API_*`, etc.)
+- límites de rate-limiting (`LOGIN_REGISTER_RATE_LIMIT_*`, `API_*`, `PROD_API_RATE_LIMIT_*`, etc.)
 - IAP (`APPLE_IAP_SHARED_SECRET`, `GOOGLE_PLAY_*`)
 - Cloudinary (`CLOUDINARY_*`)
 
