@@ -24,6 +24,16 @@ import { ChallengeCreateScreen } from "../screens/ChallengeCreateScreen";
 import { ChallengeDetailScreen } from "../screens/ChallengeDetailScreen";
 import { StreaksScreen } from "../screens/StreaksScreen";
 import { SocialNotificationsScreen } from "../screens/SocialNotificationsScreen";
+import { MediaLibraryScreen } from "../screens/MediaLibraryScreen";
+import { LibraryDetailScreen } from "../screens/LibraryDetailScreen";
+import { VideoPlayerScreen } from "../screens/VideoPlayerScreen";
+import { AudiobookPlayerScreen } from "../screens/AudiobookPlayerScreen";
+import { ComicReaderScreen } from "../screens/ComicReaderScreen";
+import { LibraryChannelsScreen } from "../screens/LibraryChannelsScreen";
+import { ChannelDetailScreen } from "../screens/ChannelDetailScreen";
+import { LibraryBookmarksScreen } from "../screens/LibraryBookmarksScreen";
+import { LibraryHistoryScreen } from "../screens/LibraryHistoryScreen";
+import { ContentSearchScreen } from "../screens/ContentSearchScreen";
 import { ChatInboxScreen } from "../screens/ChatInboxScreen";
 import { ChatThreadScreen } from "../screens/ChatThreadScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
@@ -204,6 +214,16 @@ export function RootNavigator({ onLogout }: { onLogout: () => void }) {
       <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} options={{ headerShown: true, title: "Desafíos" }} />
       <Stack.Screen name="Streaks" component={StreaksScreen} options={{ headerShown: true, title: "Rachas" }} />
       <Stack.Screen name="SocialNotifications" component={SocialNotificationsScreen} options={{ headerShown: true, title: "Notificaciones" }} />
+      <Stack.Screen name="MediaLibrary" component={MediaLibraryScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="LibraryDetail" component={LibraryDetailScreen} options={{ headerShown: true, title: "Contenido" }} />
+      <Stack.Screen name="VideoPlayer" component={VideoPlayerScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="AudiobookPlayer" component={AudiobookPlayerScreen} options={{ headerShown: true, title: "Audiolibro" }} />
+      <Stack.Screen name="ComicReader" component={ComicReaderScreen} options={{ headerShown: true, title: "Cómic" }} />
+      <Stack.Screen name="LibraryChannels" component={LibraryChannelsScreen} options={{ headerShown: true, title: "Canales" }} />
+      <Stack.Screen name="ChannelDetail" component={ChannelDetailScreen} options={{ headerShown: true, title: "Canal" }} />
+      <Stack.Screen name="LibraryBookmarks" component={LibraryBookmarksScreen} options={{ headerShown: true, title: "Guardados" }} />
+      <Stack.Screen name="LibraryHistory" component={LibraryHistoryScreen} options={{ headerShown: true, title: "Historial" }} />
+      <Stack.Screen name="ContentSearch" component={ContentSearchScreen} options={{ headerShown: true, title: "Buscar" }} />
     </Stack.Navigator>
   );
 }

@@ -44,6 +44,18 @@ Ver commits `67429b8` y posteriores: CORS allowlist, ESLint/Prettier, servicios,
 | Pantallas mobile sociales (7) | ✅ |
 | Tests smoke feed | ✅ |
 
+## Biblioteca multimedia (`ContentLibrary`)
+
+| Entregable | Estado |
+|------------|--------|
+| Schema `ContentLibrary`, canales, progreso, bookmarks, ratings | ✅ |
+| Migración `20260518160000_add_content_library` | ✅ |
+| Seed 15 ítems + 5 canales (`npm run db:seed:library`) | ✅ |
+| API `/api/library`, `/api/channels` | ✅ |
+| Recomendaciones (`libraryRecommendation.service`) | ✅ |
+| 10 pantallas mobile (reproductores video/audio/cómic) | ✅ |
+| Tests smoke biblioteca | ✅ |
+
 ## Verificación
 
 ```bash

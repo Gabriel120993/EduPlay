@@ -95,6 +95,10 @@ model User {
   socialChallengeMembers  SocialGroupChallengeMember[]
   socialStreaksAsUser     SocialFriendStreak[] @relation("SocialStreakUser")
   socialStreaksAsFriend   SocialFriendStreak[] @relation("SocialStreakFriend")
+  libraryProgress         UserLibraryProgress[]
+  libraryBookmarks        UserLibraryBookmark[]
+  libraryRatings          LibraryContentRating[]
+  channelSubscriptions    UserChannelSubscription[]
   studyGroupMemberships StudyGroupMember[]
   studyGroupMessages    StudyGroupMessage[]
   liveEventAttendees    LiveEventAttendee[]
@@ -491,6 +495,137 @@ enum EducationalContentType {
   INTERACTIVE
   WORKSHEET
   AUDIO
+}
+
+// ---------------------------------------------------------------------------
+// Biblioteca multimedia (videos, audiolibros, cómics, canales)
+// ---------------------------------------------------------------------------
+
+model ContentChannel {
+  id                String   @id @default(uuid())
+  slug              String   @unique @db.VarChar(64)
+  name              String
+  description       String   @db.Text
+  iconUrl           String?
+  color             String   @db.VarChar(16)
+  isActive          Boolean  @default(true)
+  subscriberCount   Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  contents      ContentLibrary[]
+  subscriptions UserChannelSubscription[]
+
+  @@index([isActive])
+}
+
+model ContentLibrary {
+  id            String            @id @default(uuid())
+  slug          String            @unique @db.VarChar(96)
+  title         String
+  description   String            @db.Text
+  type          LibraryMediaType
+  category      LibraryCategory
+  ageRangeMin   Int
+  ageRangeMax   Int
+  durationSec   Int?
+  thumbnailUrl  String            @db.Text
+  mediaUrl      String            @db.Text
+  transcript    String?           @db.Text
+  isPremium     Boolean           @default(false)
+  isActive      Boolean           @default(true)
+  viewCount     Int               @default(0)
+  likeCount     Int               @default(0)
+  author        String?
+  channelId     String?
+  tags          String[]          @default([])
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  channel   ContentChannel?        @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  progress  UserLibraryProgress[]
+  bookmarks UserLibraryBookmark[]
+  ratings   LibraryContentRating[]
+
+  @@index([type])
+  @@index([category])
+  @@index([ageRangeMin, ageRangeMax])
+  @@index([isPremium])
+  @@index([channelId])
+  @@index([isActive])
+}
+
+model UserLibraryProgress {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId     String
+  content       ContentLibrary @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  progressSec   Int      @default(0)
+  isCompleted   Boolean  @default(false)
+  lastWatchedAt DateTime @default(now())
+
+  @@unique([userId, contentId])
+  @@index([userId, lastWatchedAt])
+}
+
+model UserLibraryBookmark {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   ContentLibrary @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, contentId])
+}
+
+model LibraryContentRating {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   ContentLibrary @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  rating    Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, contentId])
+  @@index([contentId])
+}
+
+model UserChannelSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channelId String
+  channel   ContentChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, channelId])
+}
+
+enum LibraryMediaType {
+  VIDEO
+  AUDIOBOOK
+  COMIC
+  INTERACTIVE
+  ARTICLE
+}
+
+enum LibraryCategory {
+  SCIENCE
+  HISTORY
+  GEOGRAPHY
+  MATH
+  LANGUAGE
+  ART
+  MUSIC
+  NATURE
+  TECHNOLOGY
+  EMOTIONAL_INTELLIGENCE
+  FINANCIAL_EDUCATION
+  HEALTH
+  SPORTS
 }
 
 // ---------------------------------------------------------------------------

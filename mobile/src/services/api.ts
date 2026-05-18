@@ -1222,3 +1222,71 @@ export async function fetchSocialFeedNotifications(): Promise<{
   const { data } = await api.get('/api/feed/notifications');
   return data;
 }
+
+// --- Biblioteca multimedia ---
+
+export async function fetchMediaLibrary(params?: {
+  search?: string;
+  type?: string;
+  category?: string;
+  page?: number;
+}): Promise<{ contents: unknown[]; pagination: { page: number; total: number } }> {
+  const { data } = await api.get('/api/library', { params });
+  return data;
+}
+
+export async function fetchMediaLibraryItem(slug: string): Promise<{
+  content: unknown;
+  related: unknown[];
+  isBookmarked: boolean;
+  userProgress: unknown;
+  averageRating: number;
+}> {
+  const { data } = await api.get(`/api/library/${encodeURIComponent(slug)}`);
+  return data;
+}
+
+export async function postMediaLibraryProgress(
+  slug: string,
+  body: { progressSec: number; isCompleted?: boolean },
+): Promise<{ progress: unknown; xpEarned: number }> {
+  const { data } = await api.post(`/api/library/${encodeURIComponent(slug)}/progress`, body);
+  return data;
+}
+
+export async function toggleMediaLibraryBookmark(slug: string): Promise<{ bookmarked: boolean }> {
+  const { data } = await api.post(`/api/library/${encodeURIComponent(slug)}/bookmark`);
+  return data;
+}
+
+export async function fetchMediaLibraryBookmarks(): Promise<{ contents: unknown[] }> {
+  const { data } = await api.get('/api/library/bookmarks');
+  return data;
+}
+
+export async function fetchMediaLibraryHistory(): Promise<{
+  contents: unknown[];
+  totalWatchTime: number;
+}> {
+  const { data } = await api.get('/api/library/history');
+  return data;
+}
+
+export async function fetchMediaChannels(): Promise<{ channels: unknown[] }> {
+  const { data } = await api.get('/api/channels');
+  return data;
+}
+
+export async function fetchMediaChannel(slug: string): Promise<{
+  channel: unknown;
+  contents: unknown[];
+  isSubscribed: boolean;
+}> {
+  const { data } = await api.get(`/api/channels/${encodeURIComponent(slug)}`);
+  return data;
+}
+
+export async function subscribeMediaChannel(slug: string): Promise<{ subscribed: boolean }> {
+  const { data } = await api.post(`/api/channels/${encodeURIComponent(slug)}/subscribe`);
+  return data;
+}

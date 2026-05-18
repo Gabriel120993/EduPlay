@@ -24,6 +24,7 @@
     "db:seed:safe": "cross-env SEED_SKIP_DB_CLEAR=1 prisma db seed",
     "db:seed:educational": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/seed-educational.ts",
     "db:seed:play-games": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/seed-play-games.ts",
+    "db:seed:library": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/seed-content-library.ts",
     "db:seed:images": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/seed-images.ts",
     "db:repair:wikimedia-widths": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/rewrite-wikimedia-widths.ts",
     "db:repair:asset-urls": "npx ts-node --project prisma/tsconfig.seed.json -r tsconfig-paths/register prisma/repair-broken-asset-urls.ts",

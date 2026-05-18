@@ -368,6 +368,21 @@ export function LibraryScreen() {
           <Text style={{ color: colors.textSecondary, marginTop: space.sm, fontWeight: "600" }}>
             {appTaglineSubtitle()}
           </Text>
+          <Pressable
+            onPress={() => rootNav?.navigate("MediaLibrary")}
+            style={{
+              marginTop: space.md,
+              backgroundColor: colors.primary,
+              paddingVertical: space.sm,
+              paddingHorizontal: space.md,
+              borderRadius: radius.md,
+              alignSelf: "flex-start",
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir biblioteca multimedia"
+          >
+            <Text style={{ color: "#fff", fontWeight: "800" }}>📺 Videos, audiolibros y canales</Text>
+          </Pressable>
         </View>
 
         <View

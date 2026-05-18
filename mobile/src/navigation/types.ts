@@ -74,6 +74,16 @@ export type RootStackParamList = {
   ChallengeDetail: undefined;
   Streaks: undefined;
   SocialNotifications: undefined;
+  MediaLibrary: undefined;
+  LibraryDetail: { slug: string };
+  VideoPlayer: { slug: string; mediaUrl: string; title: string };
+  AudiobookPlayer: { slug: string; mediaUrl: string; title: string };
+  ComicReader: { slug: string; mediaUrl: string; title: string };
+  LibraryChannels: undefined;
+  ChannelDetail: { slug: string };
+  LibraryBookmarks: undefined;
+  LibraryHistory: undefined;
+  ContentSearch: undefined;
 };
 
 /** Solo wizard de onboarding tutor (antes del panel principal). */
