@@ -17,10 +17,39 @@
 
 Ver commits `67429b8` y posteriores: CORS allowlist, ESLint/Prettier, servicios, Docker, i18n, OpenAPI, etc.
 
+## Juegos sociales (`PlayGame`)
+
+| Entregable | Estado |
+|------------|--------|
+| Schema Prisma `PlayGame`, sesiones, leaderboard, desafíos, progreso | ✅ |
+| Migración `20260518120000_add_social_play_games` | ✅ |
+| 5 engines (`src/games/*`) | ✅ |
+| API `/api/play-games` | ✅ |
+| XP y progreso (`computePlayGameXp`, `UserPlayGameProgress`) | ✅ |
+| Seed `prisma/seed-play-games.ts` | ✅ (`npm run db:seed:play-games`) |
+| Tests unitarios engines + XP | ✅ |
+| Mobile hub + pantallas juego/resultado/ranking/desafíos | ✅ |
+| Versus solo entre amigos aceptados | ✅ |
+
+**Nota:** `/api/games` sigue reservado a **minijuegos** (`MiniGame`). El catálogo social usa **`/api/play-games`** para no colisionar con el modelo legacy `Game`.
+
+## Feed social + landing (`prompt_social_landing`)
+
+| Entregable | Estado |
+|------------|--------|
+| PostType extendido + PostComment + desafíos grupales + rachas amigos | ✅ migración `20260518140000_social_feed_enhanced` |
+| Posts automáticos (`socialFeed.service`) | ✅ integrado en PlayGame complete |
+| API `/api/feed`, `/api/social-challenges`, `/api/social-streaks` | ✅ |
+| Landing comercial Next.js (`landing/`) | ✅ export estático |
+| Pantallas mobile sociales (7) | ✅ |
+| Tests smoke feed | ✅ |
+
 ## Verificación
 
 ```bash
 npm test
+npm run test:unit
 npm run lint
 npm run verify:prod   # con .env.prod de prueba
+npm run db:seed:play-games   # tras migrate
 ```

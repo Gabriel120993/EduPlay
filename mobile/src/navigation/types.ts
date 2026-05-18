@@ -61,6 +61,19 @@ export type RootStackParamList = {
   MiniGamesHub: undefined;
   MiniGamePlayer: { gameId: MiniGameId; levelIndex?: number };
   AchievementSystem: undefined;
+  GamesHub: undefined;
+  GameDetail: { slug: string };
+  PlayGame: { slug: string; difficulty?: number };
+  MemoryGame: { slug: string; sessionId: string };
+  GameResult: { slug: string; score: number; xpEarned: number };
+  PlayGameLeaderboard: { slug: string; gameName: string };
+  PlayGameChallenges: undefined;
+  CreatePost: undefined;
+  PostDetail: { postId: string };
+  ChallengeCreate: undefined;
+  ChallengeDetail: undefined;
+  Streaks: undefined;
+  SocialNotifications: undefined;
 };
 
 /** Solo wizard de onboarding tutor (antes del panel principal). */

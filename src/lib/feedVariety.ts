@@ -5,6 +5,12 @@ export const FEED_TYPE_LABEL_ES: Record<PostType, string> = {
   [PostType.POST]: '📚 Aprendizaje',
   [PostType.GAME_RESULT]: '🎮 Juego',
   [PostType.ACHIEVEMENT]: '🏆 Logro',
+  [PostType.CHALLENGE]: '🎯 Desafío',
+  [PostType.DAILY_STREAK]: '🔥 Racha',
+  [PostType.CONTENT_COMPLETED]: '📖 Biblioteca',
+  [PostType.LEVEL_UP]: '🆙 Nivel',
+  [PostType.FRIEND_MILESTONE]: '🤝 Amigos',
+  [PostType.GROUP_REWARD]: '🎁 Recompensa grupal',
 };
 
 export function feedLabelForPostType(type: PostType): string {

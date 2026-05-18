@@ -253,10 +253,19 @@ export async function createPost(req: Request, res: Response): Promise<void> {
   const { userId, content, imageUrl, videoUrl, mediaUploadId, category, type, visibility } =
     validation.data;
 
-  if (type === PostType.GAME_RESULT || type === PostType.ACHIEVEMENT) {
+  const autoOnly: PostType[] = [
+    PostType.GAME_RESULT,
+    PostType.ACHIEVEMENT,
+    PostType.CHALLENGE,
+    PostType.DAILY_STREAK,
+    PostType.CONTENT_COMPLETED,
+    PostType.LEVEL_UP,
+    PostType.FRIEND_MILESTONE,
+    PostType.GROUP_REWARD,
+  ];
+  if (autoOnly.includes(type)) {
     res.status(400).json({
-      error:
-        'Los posts de tipo GAME_RESULT o ACHIEVEMENT solo se crean automáticamente al registrar un resultado de juego o un logro. Usá POST /game-results o POST /user-achievements.',
+      error: 'Este tipo de post se genera automáticamente por el sistema.',
     });
     return;
   }

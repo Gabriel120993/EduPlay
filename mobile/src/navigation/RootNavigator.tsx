@@ -11,6 +11,19 @@ import { VisualGameScreen } from "../screens/VisualGameScreen";
 import { AchievementSystemScreen } from "../screens/AchievementSystemScreen";
 import { MiniGamePlayerScreen } from "../screens/MiniGamePlayerScreen";
 import { MiniGamesHubScreen } from "../screens/MiniGamesHubScreen";
+import { GamesHubScreen } from "../screens/GamesHubScreen";
+import { GameDetailScreen } from "../screens/GameDetailScreen";
+import { PlayGameScreen } from "../screens/PlayGameScreen";
+import { MemoryGameScreen } from "../screens/MemoryGameScreen";
+import { GameResultScreen } from "../screens/GameResultScreen";
+import { PlayGameLeaderboardScreen } from "../screens/PlayGameLeaderboardScreen";
+import { PlayGameChallengesScreen } from "../screens/PlayGameChallengesScreen";
+import { CreatePostScreen } from "../screens/CreatePostScreen";
+import { PostDetailScreen } from "../screens/PostDetailScreen";
+import { ChallengeCreateScreen } from "../screens/ChallengeCreateScreen";
+import { ChallengeDetailScreen } from "../screens/ChallengeDetailScreen";
+import { StreaksScreen } from "../screens/StreaksScreen";
+import { SocialNotificationsScreen } from "../screens/SocialNotificationsScreen";
 import { ChatInboxScreen } from "../screens/ChatInboxScreen";
 import { ChatThreadScreen } from "../screens/ChatThreadScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
@@ -170,6 +183,27 @@ export function RootNavigator({ onLogout }: { onLogout: () => void }) {
         component={AchievementSystemScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen name="GamesHub" component={GamesHubScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="GameDetail" component={GameDetailScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="PlayGame" component={PlayGameScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="MemoryGame" component={MemoryGameScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="GameResult" component={GameResultScreen} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="PlayGameLeaderboard"
+        component={PlayGameLeaderboardScreen}
+        options={{ headerShown: true, title: "Ranking" }}
+      />
+      <Stack.Screen
+        name="PlayGameChallenges"
+        component={PlayGameChallengesScreen}
+        options={{ headerShown: true, title: "Desafíos" }}
+      />
+      <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: true, title: "Publicar" }} />
+      <Stack.Screen name="PostDetail" component={PostDetailScreen} options={{ headerShown: true, title: "Post" }} />
+      <Stack.Screen name="ChallengeCreate" component={ChallengeCreateScreen} options={{ headerShown: true, title: "Nuevo desafío" }} />
+      <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} options={{ headerShown: true, title: "Desafíos" }} />
+      <Stack.Screen name="Streaks" component={StreaksScreen} options={{ headerShown: true, title: "Rachas" }} />
+      <Stack.Screen name="SocialNotifications" component={SocialNotificationsScreen} options={{ headerShown: true, title: "Notificaciones" }} />
     </Stack.Navigator>
   );
 }

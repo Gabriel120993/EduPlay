@@ -1112,6 +1112,13 @@ export function ExploreScreen({ route }: Props) {
     root?.navigate("MiniGamesHub");
   }, [tabNavigation]);
 
+  const openGamesHub = useCallback(() => {
+    const root = tabNavigation.getParent() as
+      | NativeStackNavigationProp<RootStackParamList>
+      | undefined;
+    root?.navigate("GamesHub");
+  }, [tabNavigation]);
+
   const handleResumeLastGame = useCallback(() => {
     if (readOnly) {
       showToast(READ_ONLY_TOAST_MSG, "error");
@@ -1443,6 +1450,24 @@ export function ExploreScreen({ route }: Props) {
               accessibilityLabel="Abrir minijuegos EduPlay"
             >
               <Text style={styles.quizCtaText}>🧩 Minijuegos EduPlay (10 juegos · 22 niveles)</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                if (readOnly) {
+                  showToast(READ_ONLY_TOAST_MSG, "error");
+                  return;
+                }
+                openGamesHub();
+              }}
+              style={({ pressed }) => [
+                styles.quizCtaBtn,
+                { marginBottom: space.md },
+                pressed && styles.quizCtaBtnPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Juegos con amigos"
+            >
+              <Text style={styles.quizCtaText}>🤝 Juegos con amigos (memory, patrones, versus)</Text>
             </Pressable>
             <Pressable
               onPress={() => {

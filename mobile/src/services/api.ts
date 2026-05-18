@@ -1055,3 +1055,170 @@ export async function postParentApprovePostModerationVisibility(
 export async function postExpoPushToken(userId: string, token: string | null): Promise<void> {
   await api.post(`/api/users/${encodeURIComponent(userId)}/push-token`, { token });
 }
+
+// --- Juegos sociales (PlayGame) ---
+
+export type PlayGameListItem = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  category: string;
+  type: string;
+  thumbnailUrl: string | null;
+  isPremium: boolean;
+  difficultyMin: number;
+  difficultyMax: number;
+};
+
+export async function fetchPlayGames(): Promise<{ games: PlayGameListItem[] }> {
+  const { data } = await api.get<{ games: PlayGameListItem[] }>('/api/play-games');
+  return data;
+}
+
+export async function fetchPlayGameDetail(slug: string): Promise<{
+  game: PlayGameListItem & { rules?: string | null };
+  rules: string | null;
+  howToPlay: string;
+}> {
+  const { data } = await api.get(`/api/play-games/${encodeURIComponent(slug)}`);
+  return data;
+}
+
+export async function startPlayGame(
+  slug: string,
+  body: { opponentId?: string; difficulty?: number },
+): Promise<{ sessionId: string; state: Record<string, unknown>; expiresAt: string }> {
+  const { data } = await api.post(`/api/play-games/${encodeURIComponent(slug)}/start`, body);
+  return data;
+}
+
+export async function playGameAction(
+  slug: string,
+  sessionId: string,
+  body: { action: string; data?: Record<string, unknown> },
+): Promise<{
+  state: Record<string, unknown>;
+  event: string;
+  isYourTurn: boolean;
+  score: number;
+}> {
+  const { data } = await api.post(
+    `/api/play-games/${encodeURIComponent(slug)}/${encodeURIComponent(sessionId)}/action`,
+    body,
+  );
+  return data;
+}
+
+export async function completePlayGame(
+  slug: string,
+  sessionId: string,
+  body: { durationMs: number; wonVersus?: boolean },
+): Promise<{ score: number; xpEarned: number; level: number; experience: number }> {
+  const { data } = await api.post(
+    `/api/play-games/${encodeURIComponent(slug)}/${encodeURIComponent(sessionId)}/complete`,
+    body,
+  );
+  return data;
+}
+
+export async function fetchPlayGameLeaderboard(
+  slug: string,
+  period = 'all_time',
+): Promise<{
+  leaderboard: { rank: number; userId: string; name: string; score: number; streak: number }[];
+}> {
+  const { data } = await api.get(`/api/play-games/leaderboard/${encodeURIComponent(slug)}`, {
+    params: { period },
+  });
+  return data;
+}
+
+export async function fetchPlayGameChallenges(): Promise<{
+  pending: unknown[];
+  sent: unknown[];
+}> {
+  const { data } = await api.get('/api/play-games/challenges');
+  return data;
+}
+
+// --- Feed social mejorado ---
+
+export async function fetchSocialFeed(page = 1): Promise<{
+  posts: Array<{
+    id: string;
+    type: string;
+    content: string | null;
+    user: { id: string; username: string; avatarUrl: string | null };
+    likes: number;
+    comments: number;
+    feedLabel?: string;
+    createdAt: string;
+  }>;
+  page: number;
+  total: number;
+}> {
+  const { data } = await api.get('/api/feed', { params: { page, limit: 20 } });
+  return data;
+}
+
+export async function createSocialFeedPost(body: {
+  content: string;
+  visibility?: 'PUBLIC' | 'FRIENDS' | 'PRIVATE';
+}): Promise<unknown> {
+  const { data } = await api.post('/api/feed/posts', body);
+  return data;
+}
+
+export async function toggleSocialPostLike(postId: string): Promise<{ liked: boolean }> {
+  const { data } = await api.post(`/api/feed/posts/${encodeURIComponent(postId)}/like`);
+  return data;
+}
+
+export async function fetchSocialPostDetail(postId: string): Promise<{
+  post: Record<string, unknown>;
+  comments: Array<{
+    id: string;
+    content: string;
+    user: { id: string; username: string };
+    createdAt: string;
+  }>;
+}> {
+  const { data } = await api.get(`/api/feed/posts/${encodeURIComponent(postId)}`);
+  return data;
+}
+
+export async function commentSocialPost(postId: string, content: string): Promise<unknown> {
+  const { data } = await api.post(`/api/feed/posts/${encodeURIComponent(postId)}/comment`, {
+    content,
+  });
+  return data;
+}
+
+export async function fetchSocialChallenges(): Promise<{
+  active: unknown[];
+  completed: unknown[];
+  invited: unknown[];
+}> {
+  const { data } = await api.get('/api/social-challenges');
+  return data;
+}
+
+export async function createSocialChallenge(body: Record<string, unknown>): Promise<unknown> {
+  const { data } = await api.post('/api/social-challenges', body);
+  return data;
+}
+
+export async function fetchSocialStreaks(): Promise<{
+  streaks: { friend: { username: string }; days: number; lastActivity: string }[];
+}> {
+  const { data } = await api.get('/api/social-streaks');
+  return data;
+}
+
+export async function fetchSocialFeedNotifications(): Promise<{
+  notifications: { id: string; type: string; message: string; read: boolean; createdAt: string }[];
+}> {
+  const { data } = await api.get('/api/feed/notifications');
+  return data;
+}

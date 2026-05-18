@@ -85,6 +85,16 @@ model User {
   gamificationSnapshots UserGamificationSnapshot?
   notifications         AppNotification[]
   miniGameSessions      MiniGameSession[]
+  playGameSessions      PlayGameSession[]
+  playGameLeaderboards  PlayGameLeaderboard[]
+  playGameChallengesSent     PlayGameChallenge[] @relation("PlayChallengeChallenger")
+  playGameChallengesReceived PlayGameChallenge[] @relation("PlayChallengeOpponent")
+  playGameProgress      UserPlayGameProgress[]
+  postComments          PostComment[]
+  socialChallengesCreated SocialGroupChallenge[] @relation("SocialChallengeCreator")
+  socialChallengeMembers  SocialGroupChallengeMember[]
+  socialStreaksAsUser     SocialFriendStreak[] @relation("SocialStreakUser")
+  socialStreaksAsFriend   SocialFriendStreak[] @relation("SocialStreakFriend")
   studyGroupMemberships StudyGroupMember[]
   studyGroupMessages    StudyGroupMessage[]
   liveEventAttendees    LiveEventAttendee[]
@@ -695,6 +705,146 @@ model MiniGameSession {
   @@index([miniGameId])
 }
 
+// ---------------------------------------------------------------------------
+// Juegos sociales (catálogo PlayGame — memory, patrones, versus, cooperativo)
+// ---------------------------------------------------------------------------
+
+enum PlayGameCategory {
+  MEMORY
+  LOGIC
+  MATH
+  LANGUAGE
+  SPATIAL
+  ATTENTION
+  EMOTIONAL
+  GENERAL_KNOWLEDGE
+}
+
+enum PlayGameType {
+  SOLO
+  VERSUS
+  COOPERATIVE
+  DAILY_CHALLENGE
+}
+
+enum PlayGameChallengeStatus {
+  PENDING
+  ACCEPTED
+  COMPLETED
+  EXPIRED
+  DECLINED
+}
+
+model PlayGame {
+  id            String           @id @default(uuid())
+  slug          String           @unique @db.VarChar(64)
+  name          String
+  description   String           @db.Text
+  category      PlayGameCategory
+  type          PlayGameType
+  difficultyMin Int              @default(1)
+  difficultyMax Int              @default(10)
+  isActive      Boolean          @default(true)
+  isPremium     Boolean          @default(false)
+  thumbnailUrl  String?
+  rules         String?          @db.Text
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  sessions    PlayGameSession[]
+  leaderboard PlayGameLeaderboard[]
+  challenges  PlayGameChallenge[]
+  progress    UserPlayGameProgress[]
+
+  @@index([category])
+  @@index([type])
+  @@index([isActive])
+}
+
+model PlayGameSession {
+  id          String   @id @default(uuid())
+  gameId      String
+  userId      String
+  opponentId  String?
+  score       Int      @default(0)
+  durationMs  Int      @default(0)
+  level       Int      @default(1)
+  data        Json     @default("{}")
+  isCompleted Boolean  @default(false)
+  xpEarned    Int      @default(0)
+  playedAt    DateTime @default(now())
+  expiresAt   DateTime?
+
+  game PlayGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedPost Post?
+
+  @@index([gameId, userId])
+  @@index([playedAt])
+  @@index([userId, isCompleted])
+}
+
+model PlayGameLeaderboard {
+  id        String   @id @default(uuid())
+  gameId    String
+  userId    String
+  score     Int
+  streak    Int      @default(0)
+  rank      Int      @default(0)
+  period    String   @db.VarChar(24)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  game PlayGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, userId, period])
+  @@index([gameId, period, score])
+}
+
+model PlayGameChallenge {
+  id              String                  @id @default(uuid())
+  gameId          String
+  challengerId    String
+  opponentId      String?
+  status          PlayGameChallengeStatus @default(PENDING)
+  scoreChallenger Int?
+  scoreOpponent   Int?
+  winnerId        String?
+  sessionId       String?
+  expiresAt       DateTime
+  createdAt       DateTime                @default(now())
+
+  game       PlayGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  challenger User     @relation("PlayChallengeChallenger", fields: [challengerId], references: [id], onDelete: Cascade)
+  opponent   User?    @relation("PlayChallengeOpponent", fields: [opponentId], references: [id], onDelete: SetNull)
+
+  @@index([challengerId])
+  @@index([opponentId])
+  @@index([status])
+}
+
+model UserPlayGameProgress {
+  id            String   @id @default(uuid())
+  userId        String
+  gameId        String
+  totalScore    Int      @default(0)
+  gamesPlayed   Int      @default(0)
+  gamesWon      Int      @default(0)
+  bestScore     Int      @default(0)
+  currentStreak Int      @default(0)
+  maxStreak     Int      @default(0)
+  level         Int      @default(1)
+  xp            Int      @default(0)
+  unlockedAt    DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game PlayGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+}
+
 /// Modelo legacy de juego (resultados); mantener por compatibilidad con posts / feeds.
 model Game {
   id         String          @id @default(uuid())
@@ -859,12 +1009,84 @@ model Post {
   parentModerationVisibleById String?   @db.VarChar(36)
 
   reactions Reaction[]
+  comments    PostComment[]
   contentReports ContentReport[]
 
+  socialGroupChallengeId String?              @unique
+  socialGroupChallenge   SocialGroupChallenge? @relation(fields: [socialGroupChallengeId], references: [id], onDelete: SetNull)
+  playGameSessionId      String?              @unique
+  playGameSession        PlayGameSession?     @relation(fields: [playGameSessionId], references: [id], onDelete: SetNull)
+
+  isPinned  Boolean  @default(false)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, createdAt])
   @@index([type])
+}
+
+model PostComment {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
+}
+
+/// Desafío grupal entre amigos (distinto de PlayGameChallenge 1v1 y de retos gamificados).
+model SocialGroupChallenge {
+  id           String                    @id @default(uuid())
+  type         SocialGroupChallengeType
+  gameId       String?
+  playGameId   String?
+  creatorId    String
+  creator      User                      @relation("SocialChallengeCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  description  String                    @db.Text
+  targetScore  Int?
+  targetTime   Int?
+  status       SocialGroupChallengeStatus @default(ACTIVE)
+  expiresAt    DateTime
+  rewardCoins  Int                       @default(0)
+  rewardGems   Int                       @default(0)
+  createdAt    DateTime                  @default(now())
+
+  members SocialGroupChallengeMember[]
+  post    Post?
+
+  @@index([status, expiresAt])
+  @@index([creatorId])
+}
+
+model SocialGroupChallengeMember {
+  id          String               @id @default(uuid())
+  challengeId String
+  challenge   SocialGroupChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score       Int?
+  completedAt DateTime?
+  createdAt   DateTime             @default(now())
+
+  @@unique([challengeId, userId])
+  @@index([userId])
+}
+
+/// Racha de actividad conjunta entre dos amigos.
+model SocialFriendStreak {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation("SocialStreakUser", fields: [userId], references: [id], onDelete: Cascade)
+  friendId     String
+  friend       User     @relation("SocialStreakFriend", fields: [friendId], references: [id], onDelete: Cascade)
+  streakDays   Int      @default(0)
+  lastActivity DateTime @default(now())
+
+  @@unique([userId, friendId])
+  @@index([friendId])
 }
 
 model Reaction {
@@ -1161,6 +1383,7 @@ enum NotificationKind {
   ACHIEVEMENT
   MISSION
   SYSTEM
+  SOCIAL
 }
 
 enum AchievementSystemKind {
@@ -1182,11 +1405,32 @@ enum PostType {
   POST
   ACHIEVEMENT
   GAME_RESULT
+  CHALLENGE
+  DAILY_STREAK
+  CONTENT_COMPLETED
+  LEVEL_UP
+  FRIEND_MILESTONE
+  GROUP_REWARD
 }
 
 enum Visibility {
   PUBLIC
   FRIENDS
+  PRIVATE
+}
+
+enum SocialGroupChallengeType {
+  BEAT_SCORE
+  COMPLETE_IN_TIME
+  STREAK_DAYS
+  GROUP_GOAL
+}
+
+enum SocialGroupChallengeStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CANCELLED
 }
 
 enum ReactionType {
