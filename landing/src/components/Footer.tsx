@@ -1,11 +1,27 @@
-﻿export default function Footer() {
+﻿'use client';
+
+import { useLocale } from '@/context/LocaleContext';
+
+export default function Footer() {
+  const { t } = useLocale();
+  const section = t.footer;
+
   return (
-    <footer style={{ padding: '2rem 1rem', borderTop: '1px solid #334155', textAlign: 'center', opacity: 0.8 }}>
-      <p>Â© {new Date().getFullYear()} EduPlay. Red social educativa para menores.</p>
+    <footer
+      style={{
+        padding: '2rem 1rem',
+        borderTop: '1px solid #334155',
+        textAlign: 'center',
+        opacity: 0.8,
+      }}
+    >
+      <p>
+        © {new Date().getFullYear()} EduPlay. {section.tagline}
+      </p>
       <p style={{ marginTop: '0.5rem' }}>
-        <a href="#faq">FAQ</a> Â· <a href="#pricing">Precios</a> Â· <a href="mailto:hola@eduplay.app">Contacto</a>
+        <a href="#faq">{section.faq}</a> · <a href="#pricing">{section.pricing}</a> ·{' '}
+        <a href="mailto:hola@eduplay.app">{section.contact}</a>
       </p>
     </footer>
   );
 }
-

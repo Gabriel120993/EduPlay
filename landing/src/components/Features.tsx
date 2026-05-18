@@ -1,16 +1,14 @@
-﻿const features = [
-  { icon: 'ðŸŽ®', title: 'Juegos que entrenan', description: 'Memory, lÃ³gica, matemÃ¡ticas, idiomas. Cada juego desarrolla una habilidad real.' },
-  { icon: 'ðŸ¤', title: 'Amigos seguros', description: 'ConexiÃ³n solo entre menores verificados. Sin contactos de extraÃ±os.' },
-  { icon: 'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§', title: 'TÃº tienes el control', description: 'LÃ­mite de tiempo, reportes semanales, aprobaciÃ³n de contactos.' },
-  { icon: 'ðŸ“š', title: 'Biblioteca infinita', description: 'Videos, audiolibros, cÃ³mics educativos por edad e interÃ©s.' },
-  { icon: 'ðŸ†', title: 'Progreso real', description: 'XP, niveles, logros. Tu hijo ve cÃ³mo mejora dÃ­a a dÃ­a.' },
-  { icon: 'ðŸŒ', title: 'En tu idioma', description: 'EspaÃ±ol e inglÃ©s. MÃ¡s idiomas prÃ³ximamente.' },
-];
+﻿'use client';
+
+import { useLocale } from '@/context/LocaleContext';
 
 export default function Features() {
+  const { t } = useLocale();
+  const f = t.features;
+
   return (
     <section id="features" style={{ padding: '4rem 1rem', background: '#1e293b' }}>
-      <h2 style={{ textAlign: 'center', fontSize: '2rem', marginBottom: '2rem' }}>Por quÃ© EduPlay</h2>
+      <h2 style={{ textAlign: 'center', fontSize: '2rem', marginBottom: '2rem' }}>{f.heading}</h2>
       <div
         style={{
           display: 'grid',
@@ -20,22 +18,23 @@ export default function Features() {
           margin: '0 auto',
         }}
       >
-        {features.map((f) => (
+        {f.items.map((item) => (
           <article
-            key={f.title}
+            key={item.title}
             style={{
               background: '#334155',
               borderRadius: 16,
               padding: '1.5rem',
             }}
           >
-            <span style={{ fontSize: '2rem' }}>{f.icon}</span>
-            <h3 style={{ margin: '0.75rem 0 0.5rem' }}>{f.title}</h3>
-            <p style={{ margin: 0, opacity: 0.85, lineHeight: 1.5 }}>{f.description}</p>
+            <span style={{ fontSize: '2rem' }} aria-hidden>
+              {item.icon}
+            </span>
+            <h3 style={{ margin: '0.75rem 0 0.5rem' }}>{item.title}</h3>
+            <p style={{ margin: 0, opacity: 0.85, lineHeight: 1.5 }}>{item.description}</p>
           </article>
         ))}
       </div>
     </section>
   );
 }
-

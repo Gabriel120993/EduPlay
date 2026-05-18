@@ -25,6 +25,7 @@ import { ChatPushListenerBridge } from "./components/ChatPushListenerBridge";
 import { ParentPushListenerBridge } from "./components/ParentPushListenerBridge";
 import { navigationThemeFrom } from "./navigation/navigationTheme";
 import { parentNavigationRef, rootNavigationRef } from "./navigation/navigationRefs";
+import { authLinking } from "./navigation/authLinking";
 import { AuthNavigator } from "./navigation/AuthNavigator";
 import { ParentOnboardingNavigator } from "./navigation/ParentOnboardingNavigator";
 import { ParentRootNavigator } from "./navigation/ParentRootNavigator";
@@ -40,9 +41,19 @@ import {
 } from "./services/api";
 import { warmUpAudio } from "./services/soundManager";
 
-function ThemedNavigationContainer({ children }: { children: ReactNode }) {
+function ThemedNavigationContainer({
+  children,
+  linking,
+}: {
+  children: ReactNode;
+  linking?: Parameters<typeof NavigationContainer>[0]["linking"];
+}) {
   const { colors } = useTheme();
-  return <NavigationContainer theme={navigationThemeFrom(colors)}>{children}</NavigationContainer>;
+  return (
+    <NavigationContainer linking={linking} theme={navigationThemeFrom(colors)}>
+      {children}
+    </NavigationContainer>
+  );
 }
 
 function ChildNavigationContainer({ children }: { children: ReactNode }) {
@@ -165,7 +176,7 @@ function AppContent() {
 
   if (!token) {
     return (
-      <ThemedNavigationContainer>
+      <ThemedNavigationContainer linking={authLinking}>
         <AuthNavigator />
       </ThemedNavigationContainer>
     );
